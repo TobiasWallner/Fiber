@@ -1,6 +1,7 @@
 #pragma once
 
 //std
+#include <cstdint>
 #include <type_traits>
 #include <cmath>
 #include <chrono>
@@ -463,7 +464,7 @@ namespace embed{
      * \brief Formats an unsigned integer (of any size) for use with OStream
      */
     struct FormatInt : FormatIntParams{
-        using value_type = int32_t;
+        using value_type = int_fast32_t;
         
         value_type _value = 0;
 
@@ -680,21 +681,6 @@ namespace embed{
         bool force_exponent = false;
         bool force_exponent_sign = false;
     };
-
-    float frexp10(float value, int* exponent10);
-
-    /// @brief extracted function from templated function str_add_float(char* first, char* last, Float value, str_add_float_params params) to reduce code bloat
-    /// @param first iterator marking the start of the insertion
-    /// @param last past the end iterator marking the size of the buffer
-    /// @param fixpoint fixpoint variable from str_add_float
-    /// @param pow_10_p_decimals pow_10_p_decimals variable from str_add_float
-    /// @param exponent10 exponent10 variable from str_add_float
-    /// @return iterator past the last printed character
-    char* str_add_float_ff(char* first, const char* last, unsigned long long fixpoint, unsigned long long pow_10_p_decimals, int exponent10, const str_add_float_params& params);
-
-    // TODO only implement float and double - cast long double to double to save on function space
-
-    char* str_add_float(char* first, const char* last, float value, const str_add_float_params& params);
 
     OStream& operator<<(OStream& stream, FormatFloat value);
 
