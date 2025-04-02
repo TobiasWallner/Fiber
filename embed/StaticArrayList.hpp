@@ -21,15 +21,22 @@ namespace embed
     /// @tparam N size/count of the elements in the container
     template<class T, std::size_t N>
     class StaticArrayList{
+    public:
+        using value_type = T;
+        using size_type = std::size_t;
+        using reference = T&;
+        using const_reference = const T&;
+        using iterator = T*;
+        using const_iterator = const T*;
+
     private:
         alignas(T) std::byte _buffer[N * sizeof(T)];
-        std::size_t _size = 0;
-        static constexpr std::size_t _capacity = N;
+        size_type _size = 0;
+        static constexpr size_type _capacity = N;
 
     public:
 
-        using iterator = T*;
-        using const_iterator = const T*;
+        
 
         /// @brief default constructor
         StaticArrayList() = default;
@@ -60,16 +67,16 @@ namespace embed
         }
 
         /// @brief returns the size/count of live elements in the container 
-        constexpr std::size_t size() const {return this->_size;}
+        constexpr size_type size() const {return this->_size;}
 
         /// @brief returns the capacity of the container. Since this is a statically allocated container this is also the maximal size.
-        constexpr std::size_t capacity() const {return this->_capacity;}
+        constexpr size_type capacity() const {return this->_capacity;}
 
         /// @brief returns the maximal number of elements that can be stored in the container 
-        constexpr std::size_t max_size() const {return this->_capacity;}
+        constexpr size_type max_size() const {return this->_capacity;}
 
         /// @brief returns the reserve - number of elements that can be stored until the container is full 
-        constexpr std::size_t reserve() const {return this->capacity() - this->size();}
+        constexpr size_type reserve() const {return this->capacity() - this->size();}
 
         /// @brief returns true if there are not elements in the container, aka. the container is empty. 
         constexpr bool empty() const {return this->size() == 0;}
@@ -218,12 +225,12 @@ namespace embed
         /// @brief appends `value` `count` many times
         /// @param count how often `value` should be emplaced_back()
         /// @param value the value to be created
-        inline void append(const std::size_t count, const T& value){
-            for(std::size_t i = 0; i < count; ++i) this->emplace_back(value);
+        inline void append(const size_type count, const T& value){
+            for(size_type i = 0; i < count; ++i) this->emplace_back(value);
         }
 
         /// @brief assigns a value to the list. after which value is the only element in the list
-        inline void assign(const std::size_t count, const T& value){
+        inline void assign(const size_type count, const T& value){
             this->clear();
             this->append(count, value);
         }
@@ -267,7 +274,7 @@ namespace embed
         }
 
         /// @brief turns the passed position given by an iterator into an integer 
-        constexpr std::size_t to_index(const const_iterator pos) const {return pos - this->begin();}
+        constexpr size_type to_index(const const_iterator pos) const {return pos - this->begin();}
 
         /// @brief turns the passed unsigned integer into an iterator pointing to the same position 
         template<class UInt> requires std::is_unsigned_v<UInt>
@@ -330,7 +337,7 @@ namespace embed
         /// @return an iterator to the start of the start of the insertion
         template<std::forward_iterator Itr>
         iterator insert(const const_iterator pos, Itr first, Itr last){
-            std::size_t dist = std::distance(first, last);
+            size_type dist = std::distance(first, last);
             if(dist > this->reserve()) throw RawStringException("Error: in StaticArrayList::insert. Container cannot store range");
             for(auto i = this->end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             iterator insertIterator = this->unconst(pos);
@@ -391,7 +398,7 @@ namespace embed
             iterator sourceItr = this->unconst(last);
             for(; (destItr != last) && (sourceItr != this->end()); ++destItr, (void)++sourceItr) *destItr = std::move(*sourceItr);
             for(; destItr != this->end(); ++destItr) destItr->~T();
-            const std::size_t dist = std::distance(first, last);
+            const size_type dist = std::distance(first, last);
             this->_size -= dist;
             return this->unconst(last-dist);
         }
