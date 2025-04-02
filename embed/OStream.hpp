@@ -736,7 +736,7 @@ namespace embed{
 
         operator OStream&(){
             if(this->ptr == nullptr){
-                throw RawStringException("Error: stream reference holds a nullptr.");
+                throw Exception("Error: stream reference holds a nullptr.");
             }else{
                 return *this->ptr;
             }    

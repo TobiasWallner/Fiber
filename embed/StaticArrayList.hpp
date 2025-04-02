@@ -205,7 +205,7 @@ namespace embed
         /// @return a reference to the constructed list element
         template<class... Args>
         T& emplace_back(Args&&... args){
-            if(this->full()) throw RawStringException("Error: in StaticArrayList::emplace_back. Container is already full");
+            if(this->full()) throw Exception("Error: in StaticArrayList::emplace_back. Container is already full");
             T* construct_at_addr = this->begin() + this->size();
             new (construct_at_addr) T(std::forward<Args>(args)...);
             this->_size += 1;
@@ -308,7 +308,7 @@ namespace embed
         /// @param value the value that the element at that position should have after the insertion
         /// @return an iterator pointing to the inserted value
         iterator insert(const const_iterator pos, const T& value){
-            if(this->full()) throw RawStringException("Error: in StaticArrayList::insert. Container is already full");
+            if(this->full()) throw Exception("Error: in StaticArrayList::insert. Container is already full");
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
             iterator pos_ = unconst(pos);
@@ -321,7 +321,7 @@ namespace embed
         /// @param value the value that the element at that position should have after the insertion
         /// @return an iterator pointing to the inserted value
         iterator insert(const const_iterator pos, T&& value){
-            if(this->full()) throw RawStringException("Error: in StaticArrayList::insert. Container is already full");
+            if(this->full()) throw Exception("Error: in StaticArrayList::insert. Container is already full");
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
             iterator pos_ = unconst(pos);
@@ -338,7 +338,7 @@ namespace embed
         template<std::forward_iterator Itr>
         iterator insert(const const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
-            if(dist > this->reserve()) throw RawStringException("Error: in StaticArrayList::insert. Container cannot store range");
+            if(dist > this->reserve()) throw Exception("Error: in StaticArrayList::insert. Container cannot store range");
             for(auto i = this->end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             iterator insertIterator = this->unconst(pos);
             for(; first != last; ++first, (void)++insertIterator) *insertIterator = *first;

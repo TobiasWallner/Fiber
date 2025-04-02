@@ -129,20 +129,20 @@ namespace embed{
     
             /**
              * \brief returns the value of the future and waits if necessary
-             * \throws RawStringException of type std::exception if an error occured.
+             * \throws Exception of type std::exception if an error occured.
              */
             T& get(){
                 this->wait();
                 if(this->is_ready()){
                     return this->_value;
                 }else{
-                    throw RawStringException("Read from broken promise in method `Future::get()`.");
+                    throw Exception("Read from broken promise in method `Future::get()`.");
                 }
             }
     
             /**
              * \brief returns the value of the future and waits if necessary
-             * \throws RawStringException of type std::exception if an error occured.
+             * \throws Exception of type std::exception if an error occured.
              */
             [[nodiscard]]inline T* get_if() {
                 this->wait();
@@ -202,9 +202,9 @@ namespace embed{
                     }else{
                         // safely install the callback function and detatch the future from the promise
                         if(this->_promisePtr == nullptr){
-                            throw RawStringException("Error: `Future::on_read()` called on detatched Future. A Promise must have created before calling this function.");
+                            throw Exception("Error: `Future::on_read()` called on detatched Future. A Promise must have created before calling this function.");
                         }else if(this->_promisePtr->_callback != nullptr){
-                            throw RawStringException("Error: `Future::on_read()` called twice on the same Future.");
+                            throw Exception("Error: `Future::on_read()` called twice on the same Future.");
                         }else{
                             // install callback
                             this->_promisePtr->_callback = callback;
@@ -227,7 +227,7 @@ namespace embed{
              * \brief return true if the promise was not kept
              * 
              * This happens when no value was assigned to the promise before deconstruction.
-             * If this happens an RawStringException (Derived from std::exception) will be thrown.
+             * If this happens an Exception (Derived from std::exception) will be thrown.
              */
             [[nodiscard]]inline bool is_broken_promise() const {return this->get_state() == State::BrokenPromise;}
     
@@ -236,7 +236,7 @@ namespace embed{
                 if(this->_promisePtr == nullptr){
                     return Promise<T>(this);
                 }else{
-                    throw RawStringException("Error: `Future::make_promise()` tried to create a second promise for the same future.");
+                    throw Exception("Error: `Future::make_promise()` tried to create a second promise for the same future.");
                 }
             }
     
@@ -460,7 +460,7 @@ namespace embed{
                 // release lock and detatch (futurePtr, promisePtr, clallback = nullptr)
                 this->_futurePtr->release_dual_locks_and_detatch();
             }else{
-                throw RawStringException("Error in `Promise::set_value(const T&)`: Double assignment to already kept promise.");
+                throw Exception("Error in `Promise::set_value(const T&)`: Double assignment to already kept promise.");
             }
         }
 
@@ -484,7 +484,7 @@ namespace embed{
                 // release lock and detatch (futurePtr, clallback = nullptr)
                 this->_futurePtr->release_dual_locks_and_detatch();
             }else{
-                throw RawStringException("Error in `Promise::set_value(const T&)`: Double assignment to already kept promise.");
+                throw Exception("Error in `Promise::set_value(const T&)`: Double assignment to already kept promise.");
             }
         }
 

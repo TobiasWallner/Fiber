@@ -39,7 +39,7 @@ namespace embed{
      */
     void default_enable_interrupts() {
         if (_irq_disable_count == 0) {
-            throw RawStringException(
+            throw Exception(
                 "Error: "
                 " In function `default_enable_interrupts()`:"
                 " unbalanced number of `default_disable_interrupts()` and `default_enable_interrupts()` calls."
