@@ -14,11 +14,31 @@ This project was born from the frustration with existing solutions like FreeRTOS
 
 ---
 
-## Who is `embedOS` for?
+## Who is embedOS for?
 
-- Embedded engineers who care about bare-metal.
-- Control engineers with strict timing requirements.
-- Developers who want modern comfortable software design with almost zero overhead
+If you’re unsure whether embedOS is right for your project, this section will help you decide—and if it’s not, we’ll gladly point you toward alternatives that might serve you better. We’re not here to compete with every RTOS—we're here to **fill a niche**. We believe in putting the power back in the engineer’s hands with a minimal and deterministic scheduling model that gets out of your way.
+
+### TL;DR:
+- **Use Zephyr** if you need a full-stack RTOS with networking and peripherals out of the box.
+- **Use FreeRTOS** if you want simple multitasking and wide vendor support.
+- **Use embedOS** if you want to build tight, precise, low-footprint applications, value full control, and want something that runs anywhere—it's not platform specific.
+
+Here’s how embedOS compares to other common choices:
+
+| Feature               | **Zephyr**                                               | **FreeRTOS**                                             | **embedOS** (this project)                                                             |
+|----------------------|-----------------------------------------------------------|-----------------------------------------------------------|----------------------------------------------------------------------------------------|
+| **Scheduling**        | complex priority-based, preemptive      | priority-based, preemptive, time slicing              | **deadline-based**, cooperative |
+| **Threading Model**   | Full threads, context switching, per-thread stacks | Tasks with independent stacks and context switching    | **Coroutines with state machines**, no separate stacks, |
+| **Memory Usage**      | Higher, depends on configuration and features, full-stack per task >1kB | Moderate, requires full-stack per task >1kB | **Extremely low**, no stacks, small coroutine frame per task ~128B |
+| **Binary Footprint**  | 300kB–500kB+ depending on config                   | ~10kB–100kB                                           | **<10kB for scheduler**, 30–100kB including extras                                    |
+| **Peripheral Handling** | Device tree, HAL, built-in driver APIs           | User-defined, often with vendor HAL                   | **No interference**—you write your own, OS doesn't touch your peripherals             |
+| **Build System**      | CMake + Kconfig (Linux-style)                      | Usually manual Make/CMake                             | Your own build system. embedOS is just a library |
+| **Platform Support**  | Many MCUs and SoCs                                 | Wide MCU support, especially with vendor integrations | **Widest support**—designed to run anywhere, not tied to any platform or architecture |
+| **Use Case**          | IoT, industrial, networking                        | General embedded apps                                 | **Real-time control**, **bare-metal scheduling**, **constrained systems**             |
+| **Philosophy**        | Full-featured ecosystem                            | Lightweight priority based task management            | **real Real-Time** deadline based task management |
+
+If you still don’t know which one to pick, reach out—we’ll help you find the right one, even if it’s not us.
+
 
 ---
 
@@ -63,7 +83,7 @@ Just define your allocator and buffer size—embedOS will rewrite and optimize i
 // Define an allocator that will be used to allocate those frames.
 // For a rough estimate use 128 Bytes per Task.
 template<typename T>
-using MyAlloc = embed::StaticAllocator<T, 1024>;
+using MyAlloc = embed::StaticAllocator<T, 128 * 10>;
 
 int main() {
     // redirect the standard output stream to your e.g. USART
