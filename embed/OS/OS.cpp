@@ -43,8 +43,9 @@ void embed::OS::spin_ready_queue(){
     }
 
     // check return values from `co_return` or `co_yield`
+    /* TODO: Re-DO
     if(task->is_done()){
-        switch(task->exit_value()){
+        switch(task->return_value()){
             case Exit::Success : {
                 task->life_cycle(TaskLifeCycle::ExitSuccess);
                 // do not insert the task back into a queue
@@ -64,12 +65,12 @@ void embed::OS::spin_ready_queue(){
     }else if(task->is_yielding()){
         // from `co_yield` --> check the suspend commands
         switch(task->suspend_value()){
-            case Suspend::Yield : {
+            case SuspendType::Yield : {
                 // put task on the suspend bank
                 task->life_cycle(TaskLifeCycle::Idle);
                 this->_suspend_bench.push_back(task);
             }
-            case Suspend::Cycle : {
+            case SuspendType::Cycle : {
                 // end this cycle, update the tasks schedule and put the task back on the waiting queue
                 task->life_cycle(TaskLifeCycle::Waiting);
                 task->execution_end(this->time());
@@ -90,6 +91,7 @@ void embed::OS::spin_ready_queue(){
         task->life_cycle(TaskLifeCycle::Idle);
         this->_suspend_bench.push_back(task);
     }
+    */
 }
 
 /// @brief puts all tasks that are not idle any more back into the ready list

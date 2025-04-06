@@ -2,149 +2,219 @@
 
 //std
 #include <coroutine>
+#include <memory_resource>
+		
 
 //embed
-#include "Exit.hpp"
-#include "Suspend.hpp"
+
+#include "embed/Exceptions.hpp"
+#include "embed/OStream.hpp"
+
+#include "embed/OS/Exit.hpp"
+#include "embed/OS/Yield.hpp"
+#include "embed/OS/Cycle.hpp"
 
 namespace embed{
+
+    /// @brief pointer to a standard memory ressource that will be used to allocate the coroutine frames
+    inline std::pmr::memory_resource* coroutine_frame_allocator = nullptr;
 
     // foreward declaration
     template<class ReturnType>
     class TaskPromise;
 
+    enum class CoroutineStatusType{
+        Ready,
+        Yield,
+        Cycle,
+        Await,
+        Return,
+        Delay
+    };
+
+    inline OStream& operator<<(OStream& stream, CoroutineStatusType status){
+        #define EMBED_CASE(value) case CoroutineStatusType::value: return stream << FormatStr(#value, sizeof(#value))
+        switch(status){
+            EMBED_CASE(Ready);
+            EMBED_CASE(Yield);
+            EMBED_CASE(Cycle);
+            EMBED_CASE(Await);
+            EMBED_CASE(Return);
+            EMBED_CASE(Delay);
+            default : return stream << FormatStr("N/A", 3);
+        };
+        #undef EMBED_CASE
+    }
+
     template<class ReturnType>
     struct TaskFuture{
         using promise_type = TaskPromise<ReturnType>;
         using handle_type = std::coroutine_handle<promise_type>;
-    
+
     private:
         handle_type coro = nullptr;
 
     public:
 
         /// @brief default constructor 
-        TaskFuture() = default;
+        inline TaskFuture() = default;
 
         /// @brief construct forom coroutine handle
         /// @param h the coroutine handle
         explicit TaskFuture(handle_type h) : coro(h) {}
 
         /// @brief deleted copy constructor 
-        TaskFuture(const TaskFuture&) = delete;
+        inline TaskFuture(const TaskFuture&) = delete;
 
         /// @brief deleted copy assignment 
-        TaskFuture& operator=(const TaskFuture&) = delete;
+        inline TaskFuture& operator=(const TaskFuture&) = delete;
 
         /// @brief is move constructible
-        TaskFuture(TaskFuture&& other) noexcept : coro(other.coro) {
+        inline TaskFuture(TaskFuture&& other) noexcept : coro(other.coro) {
             other.coro = nullptr;
         }
 
         /// @brief is move assignable
-        TaskFuture& operator=(TaskFuture&& other) noexcept {
+        inline TaskFuture& operator=(TaskFuture&& other) noexcept {
             if (this != &other) {
-                coro = other.coro;
+                this->coro = other.coro;
                 other.coro = nullptr;
             }
             return *this;
         }
 
         /// @brief destructor
-        ~TaskFuture() {
-            if (coro) coro.destroy();
-        }
+        inline ~TaskFuture() {if (this->coro) this->coro.destroy();}
 
         /// @brief resumes the coroutine
-        void resume() const {
-            if (coro) coro.resume();
+        inline void resume() {
+            if (this->coro){ 
+                if(!this->is_awaiting()){
+                    this->coro.promise()._return_type = CoroutineStatusType::Yield; // set to yield in case of unsupported use of awaitables
+                    this->coro.resume();
+                }
+            }
         }
 
         /// @brief checks if the coroutine is done
         /// @return returns `true` if the coroutine is done
-        bool done() const {
-            return coro.done();
+        inline bool done() const {return this->coro.done();}
+
+        inline bool is_awaiting() const {return this->coro.promise().is_awaiting();}
+        inline bool is_yielding() const {return this->coro.promise().is_yielding();}
+        inline bool is_ending_cycle() const {return this->coro.promise().is_ending_cycle();}
+        inline bool is_returning() const {return this->coro.promise().is_returning();}
+        inline bool is_delaying() const {return this->coro.promise().is_delaying();}
+        inline CoroutineStatusType co_return_type() const {return this->coro.promise().co_return_type();}
+
+        inline ReturnType get_return_value() const {
+            EMBED_ASSERT_O1(this->is_returning());
+            return this->coro.promise().get_return_value();
         }
 
-        /// @brief returns the promised value
-        auto& promise() const {
-            return coro.promise();
+        inline std::chrono::nanoseconds get_delay_value() const {
+            EMBED_ASSERT_O1(this->is_delaying());
+            return this->coro.promise().get_delay_value();
         }
 
         /// @brief checks if the coroutine exists
         /// @returns `true` if the coroutine exists and `falst` otherwise (you would have to create the coroutine first then)
-        explicit operator bool() const noexcept {
-            return coro != nullptr;
-        }
+        explicit inline operator bool() const noexcept {return this->coro != nullptr;}
+
     };
 
     /**
-     * @brief promise for the result of a `co_await`, `co_yield` or `co_return` in the coroutine function (`main`) of a Task.
+     * @brief promise for the result of a `co_await`, `co_Suspend` or `co_return` in the coroutine function (`main`) of a Task.
      * 
      * Usage in a task function:
      * ```
      * auto async_value = dma_copy(...);
      * calculate();
-     * co_await async_value; // yields execution - equivalent to `co_yield ESuspend::Yield;`
+     * co_await async_value; // Suspends execution - equivalent to `co_Suspend ESuspend::SuspendType;`
      * while(...){
      *      calculate();
-     *      co_yield Suspend::Yield; // manually yield execution to other tasks
+     *      co_Suspend SuspendType::SuspendType; // manually SuspendType execution to other tasks
      * }
-     * co_yield Suspend::Cycle; // manually suspend until the next cycle
+     * co_Suspend SuspendType::Cycle; // manually suspend until the next cycle
      * calculate();
      * co_return Exit::Success; // task finished and will be removed from the scheduling queues
      * ```
      */
     template<class ReturnType>
     struct TaskPromise{
-        ReturnType _return_result;
-        embed::Suspend _yield_result;
-        bool _is_awaiting = false;
-        bool _is_yielding = true;
+        union{
+            ReturnType Return;
+            std::chrono::nanoseconds delay;
+        }_result;
 
-        inline auto get_return_object(){
-            using handle = std::coroutine_handle<TaskPromise<ReturnType>>;
-            return TaskFuture<ReturnType>{handle::from_promise(*this)};
+        CoroutineStatusType _return_type = CoroutineStatusType::Ready;
+
+
+        inline static void* operator new(std::size_t size){
+            // TODO: call to global embed::TaskFramesAllocator
+            EMBED_ASSERT_CRITICAL_MSG(coroutine_frame_allocator != nullptr, "No memory resource provided. S: Assign a memory `embed::coroutine_mem_resource= &resource;`");
+            return coroutine_frame_allocator->allocate(size);
         }
 
+        inline static void operator delete(void* ptr, std::size_t size){
+            // TODO: call to global embed::TaskFramesAllocator
+            EMBED_ASSERT_CRITICAL_MSG(coroutine_frame_allocator != nullptr, "No memory resource provided. S: Assign a memory `embed::coroutine_mem_resource= &resource;`");
+            coroutine_frame_allocator->deallocate(ptr, size);
+            return;
+        }
+
+        inline auto get_return_object(){return TaskFuture<ReturnType>{std::coroutine_handle<TaskPromise<ReturnType>>::from_promise(*this)};}
         inline auto initial_suspend() noexcept {return std::suspend_always{};}
         inline auto final_suspend() noexcept {return std::suspend_always{};}
 
         inline void return_value(ReturnType value) noexcept {
-            this->_return_result = value;
+            this->_result.Return = value;
+            this->_return_type = CoroutineStatusType::Return;
         }
 
-        inline std::suspend_always yield_value(embed::Suspend value) noexcept {
-            this->_yield_result = value; 
-            this->_is_yielding = true;
+        inline std::suspend_always yield_value(embed::Yield value) noexcept {
+            this->_return_type = CoroutineStatusType::Yield;
             return {};
         }
 
-        inline void clear_yield() noexcept {
-            this->_is_yielding = false;
+        inline std::suspend_always yield_value(embed::Cycle value) noexcept {
+            this->_return_type = CoroutineStatusType::Cycle;
+            return {};
         }
 
-        inline bool is_yielding() const noexcept {
-            return this->_is_yielding;
+        template<class Rep, class Period = std::ratio<1>>
+        inline std::suspend_always yield_value(std::chrono::duration<Rep, Period> delay) noexcept {
+            this->_result.delay = std::chrono::duration_cast<std::chrono::nanoseconds>(delay);
+            this->_return_type = CoroutineStatusType::Delay;
+            return {};
         }
-        
+
         inline void unhandled_exception() noexcept {/* Panic in the Disco! */} 
 
-        inline ReturnType get_return_result() const noexcept {return this->_return_result;}
+        inline CoroutineStatusType co_return_type() const noexcept {return this->_return_type;}
 
-        /// @brief returns true if the promis yielded with `co_yield`. Also clears the yield flag. So consecutive reads will return false.
-        inline embed::Suspend get_yield_result() noexcept {
-            this->clear_yield();
-            return this->_yield_result;
+        
+        /// @brief returns `true` if the co-routine returned via `co_Suspend` and then clears that status symbol - consecutive calls will return `false`
+        inline bool is_yielding() const noexcept {return this->_return_type == CoroutineStatusType::Yield;}
+        inline bool is_ending_cycle() const noexcept {return this->_return_type == CoroutineStatusType::Cycle;}
+        inline bool is_returning() const noexcept {return this->_return_type == CoroutineStatusType::Return;}
+        inline bool is_delaying() const noexcept {return this->_return_type == CoroutineStatusType::Delay;}
+
+        inline std::chrono::nanoseconds get_delay_value() const {
+            EMBED_ASSERT_O1(this->is_delaying());
+            return this->_result.delay;
         }
 
-        inline void set_awaiting() noexcept {this->_is_awaiting=true;}
-        inline void clear_awaiting() noexcept {this->_is_awaiting=false;}
-        inline bool is_awaiting() const noexcept {return this->_is_awaiting;}
+        inline ReturnType get_return_value() const {
+            EMBED_ASSERT_O1(this->is_returning());
+            return this->_result.Return;
+        }
 
-        // TODO: manual memory management
-        // static void* operator new(std::size_t size);
-        // static void operator delete(void* ptr);
+        inline void set_awaiting() noexcept {this->_return_type = CoroutineStatusType::Await;}
+        inline void clear_awaiting() noexcept {this->_return_type = CoroutineStatusType::Ready;}
+        inline bool is_awaiting() const noexcept {return this->_return_type == CoroutineStatusType::Await;}
+
+        
     };    
 
 }

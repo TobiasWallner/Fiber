@@ -8,7 +8,7 @@
 #include <queue>
 
 //embed
-#include "CAllocator.hpp"
+#include "BaseTask.hpp"
 
 /* 
     I know one should not provide namespaces, but it is just tedious for the suffixes.
@@ -20,7 +20,7 @@ namespace embed{
 
     //TODO: add template allocation
     class OS{
-    private:
+    /*private:
         using TaskType = BaseTask;
 
         std::chrono::nanoseconds (*_time)(void); ///< function pointer tht retreives the time
@@ -51,5 +51,6 @@ namespace embed{
 
         /// @brief puts all tasks that are past their start time into the ready queue
         void spin_waiting();
+        */
     };
 }

@@ -18,27 +18,22 @@ This project was born from the frustration with existing solutions like FreeRTOS
 
 If you’re unsure whether embedOS is right for your project, this section will help you decide—and if it’s not, we’ll gladly point you toward alternatives that might serve you better. We’re not here to compete with every RTOS—we're here to **fill a niche**. We believe in putting the power back in the engineer’s hands with a minimal and deterministic scheduling model that gets out of your way.
 
-### TL;DR:
-- **Use Zephyr** if you need a full-stack RTOS with networking and peripherals out of the box.
-- **Use FreeRTOS** if you want simple multitasking and wide vendor support.
-- **Use embedOS** if you want to build tight, precise, low-footprint applications, value full control, and want something that runs anywhere—it's not platform specific.
-
 Here’s how embedOS compares to other common choices:
 
-| Feature               | **Zephyr**                                               | **FreeRTOS**                                             | **embedOS** (this project)                                                             |
-|----------------------|-----------------------------------------------------------|-----------------------------------------------------------|----------------------------------------------------------------------------------------|
-| **Scheduling**        | complex priority-based, preemptive      | priority-based, preemptive, time slicing              | **deadline-based**, cooperative |
-| **Threading Model**   | Full threads, context switching, per-thread stacks | Tasks with independent stacks and context switching    | **Coroutines with state machines**, no separate stacks, |
-| **Memory Usage**      | Higher, depends on configuration and features, full-stack per task >1kB | Moderate, requires full-stack per task >1kB | **Extremely low**, no stacks, small coroutine frame per task ~128B |
-| **Binary Footprint**  | 300kB–500kB+ depending on config                   | ~10kB–100kB                                           | **<10kB for scheduler**, 30–100kB including extras                                    |
-| **Peripheral Handling** | Device tree, HAL, built-in driver APIs           | User-defined, often with vendor HAL                   | **No interference**—you write your own, OS doesn't touch your peripherals             |
-| **Build System**      | CMake + Kconfig (Linux-style)                      | Usually manual Make/CMake                             | Your own build system. embedOS is just a library |
-| **Platform Support**  | Many MCUs and SoCs                                 | Wide MCU support, especially with vendor integrations | **Widest support**—designed to run anywhere, not tied to any platform or architecture |
-| **Use Case**          | IoT, industrial, networking                        | General embedded apps                                 | **Real-time control**, **bare-metal scheduling**, **constrained systems**             |
-| **Philosophy**        | Full-featured ecosystem                            | Lightweight priority based task management            | **real Real-Time** deadline based task management |
+| Feature    | **Zephyr**     | **FreeRTOS**   | **embedOS** (this project) |
+|------------|----------------|----------------|----------------------------|
+| **Philosophy** | Full-featured ecosystem  | Lightweight priority based task management | **real Real-Time** deadline based task management with high CPU efficiency |
+| **Use Case** | IoT, industrial, networking | General embedded apps | **"real" Real-time control**, **constrained systems**, **highly-dependable/predictable systems** |
+| **Scheduling** | complex priority-based, preemptive | priority-based, preemptive, time slicing | **deadline-based**, cooperative |
+| **Threading Model** | Full threads, context switching, per-thread stacks | Tasks with independent stacks and context switching    | **Coroutines** coroutine frame buffers instead of stacks, no context switching, state machine task management|
+| **Memory Usage per Task** | High (>1kB), full-stack, depends on configuration and features | Moderate (>1kB), requires full-stack per task  | **Extremely low** (~128B), no stacks, small coroutine frames|
+| **Binary Footprint** | High, 300kB–500kB+ depending on config | Low, ~10kB–100kB | **<10kB for Scheduler**, 30–100kB including extras |
+| **Peripheral Handling** | Device tree, HAL, built-in driver APIs | User-defined, often with vendor HAL | **No interference**—you write your own, OS doesn't touch your peripherals |
+| **Context Switch Overhead**| ~200–1500 cycles, sometimes more | 100–600 cycles (stack switch + cpu register save/load) | 30–100 CPU cycles (function call + frame jump) |
+| **Platform Support** | Pre-built boards + some MCUs and SoCs  | Wide MCU support, especially with vendor integrations | **Widest support**—designed to run anywhere that compiles C++. Not tied to any platform or architecture |
+| **Build System** | CMake + Kconfig (Linux-style) | PlatformIO/Make/CMake | CMake/Your own build system. embedOS is just a simple library. Package manager support: `CPM.cmake` |
 
 If you still don’t know which one to pick, reach out—we’ll help you find the right one, even if it’s not us.
-
 
 ---
 
@@ -62,11 +57,37 @@ If you still don’t know which one to pick, reach out—we’ll help you find t
 class MyTask : public embed::PeriodicTask {
 public:
     task_future<Exit> main() override {
-        while (true) {
-            co_yield this->yield();     // voluntarily yield to other tasks
-            co_await data();            // cooperatively yields when waiting on external events
-            co_return Exit::Success;    // end the task
+        // ============= Cycle 1 =============
+        // async communication with another controller
+
+        send_data();
+        
+        data = co_await receive_data(); // suspends task here - switches to another one - resumes if data has been received
+
+        calculation(data);
+
+        co_yield embed::Cycle();     // ends period cycle, continues computation in the next period
+
+        // ============= Cycle 2 =============
+        bool finished = false;
+        while(!finished){
+            data = calculation(data);
+            finished = condition(data);
+            co_yield embed::Yield();    // manually yield to other tasks
         }
+
+        co_yield embed::Cycle();     // ends period, continues computation in the next period
+
+        // ============= Cycle 2 =============
+        // program script like animations
+
+        drive_fwd();                // start driveing forward
+        co_yield 200ms;             // yield execution for 200ms
+
+        turn_right();               // start turning right
+        co_yield 10ms;              // yield execution for 10ms
+
+        co_return Exit::Success;    // end the task successfully
     }
 };
 ```
@@ -112,38 +133,51 @@ int main() {
 }
 ```
 
-Your OS is no longer a black box—it's your logic, compiled.
+---
+
+## Fault-Error-Failure and Exception Model
+
+A critical question often asked is: when are exceptions thrown?
+
+`embed` uses the error propagation model as per definitions  (🔍 per IEC 61508, Avionics DO-178C, and Laprie taxonomy)
+
+| Term | Definition |
+| ---- | ---- |
+| Fault | The cause of an error—e.g. a bug, hardware issue, or design flaw |
+| Error | A deviation from the correct or expected internal state |
+| Failure | An external deviation in delivered service—observable by the system's users |
+
+Exceptions are thrown on the propagation from error --> failure.
+
+Example:
+| Event | Term | Notes |
+| ---- | ---- |
+| Heap/arena is too small | Fault | May be a configuration error or bad design assumption |
+| returns invalid pointer |	Error |Internal state no longer matches valid memory model |
+| embed::AllocationFailure | Failure | is thrown, task crashes or is aborted |
 
 ---
 
-## Benefits Over Traditional RTOSes
+## Integration
 
-### Coroutine Frame vs Stack
-|              | `embedOS`                  | FreeRTOS                 |
-|--------------|----------------------------|--------------------------|
-| Per-task mem | 64B-256B frame             | 1kB-4kB stack            |
-| Switch type  | Resume/switch statement    | Full context switch      |
-| Safety       | Manual control             | OS interrupts any point  |
+### (Preferred) [CMake](https://cmake.org/) and [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 
-### Context Switching
-|             | `embedOS`                  | FreeRTOS                 |
-|-------------|----------------------------|--------------------------|
-| Method      | `co_await` / `resume()`    | Interrupt, ISR, stack    |
-| Overhead    | 5–50 cycles                | 200–400 cycles           |
-| Determinism | High                       | Medium                   |
+- [CMake](https://cmake.org/) is a build tool generator in witch you can specify how C++ project files should be compiled.
+- [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) is a package manager - just a CMake script that you download and include - that will download, integrate, build and cache source libraries for you. I also allows to build everything always from source with the same compile options/flags, which makes this perfect for embedded.
 
----
+### [CMake](https://cmake.org/) with its command [`FetchContent`](https://cmake.org/cmake/help/latest/module/FetchContent.html)
 
-## Philosophy Recap
+### [CMake](https://cmake.org/) with its command [`add_subdirectory`](https://cmake.org/cmake/help/latest/command/add_subdirectory.html)
 
-- **No stacks**
-- **No preemption**
-- **No vendor bloat**
-- **Just clean, coroutine-based, portable structure**
+### 🛠 Don't Want to Use CMake?
 
-> embedOS is not touching your peripherals. It is just like: you have multiple tasks that you lost track of and want to run with set timings in a state machine/coroutine, here you go, just slap that spin function into your main loop.
+No worries. If you're using STM32CubeIDE, Atmel Studio, or Keil:
 
-> It’s not about measuring time better — it’s about taking time seriously.
+- Add all .cpp files from embed/src/ to your project.
+- Add embed/include/ to your include path.
+- Start using #include <embed/xxx.hpp> and you're good to go.
+
+❗ But seriously, you should try CMake. It's awesome.
 
 ---
 

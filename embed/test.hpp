@@ -1,15 +1,13 @@
+#pragma once
 
-#include "embed/OStream.hpp"
-
+// std
 #include <functional>
 
-#if defined(__clang__) || defined(__GNUC__)
-  #define EMBED_FUNCTION_SIGNATURE __PRETTY_FUNCTION__
-#elif defined(_MSC_VER)
-  #define EMBED_FUNCTION_SIGNATURE __FUNCSIG__
-#else // defined(__func__)
-  #define EMBED_FUNCTION_SIGNATURE __func__
-#endif
+// embed
+#include "OStream.hpp"
+#include "definitions.hpp"
+#include "ansi_codes.hpp"
+
 
 namespace embed{
 
@@ -96,6 +94,9 @@ namespace embed{
         embed::TEST_FALSE_print_2(val);\
     }\
 }
+
 #define TEST_ERROR embed::TEST_ERROR_print(EMBED_FUNCTION_SIGNATURE, __FILE__, __LINE__)
+
+#define TEST_THROW(callable) try{callable; TEST_ERROR;}catch(...){}
 
 

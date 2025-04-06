@@ -16,9 +16,16 @@
 // TODO: document all functions
 namespace embed
 {
-    /// @brief An array of contiguous memory which is statically allocated
-    /// @tparam T type of the data elements
-    /// @tparam N size/count of the elements in the container
+    /** 
+     * @brief An array of contiguous memory which is statically allocated
+     * 
+     * 
+     * Failure Modes and Effects Analysis
+     * ----------------------------------
+     * 
+     * @tparam T type of the data elements
+     * @tparam N size/count of the elements in the container
+     * */ 
     template<class T, std::size_t N>
     class StaticArrayList{
     public:
@@ -112,42 +119,60 @@ namespace embed
         constexpr const_iterator cend() const {return this->cbegin() + this->size();}
 
         /// @brief returns a reference to the first element in the buffer 
-        constexpr T& front() {return *this->begin();}
+        constexpr T& front() {
+            EMBED_ASSERT_O1(!this->empty());
+            return *this->begin();
+        }
 
         /// @brief returns a const-reference to the first element int the buffer
-        constexpr const T& front() const {return *this->cbegin();}
+        constexpr const T& front() const {
+            EMBED_ASSERT_O1(!this->empty());
+            return *this->cbegin();
+        }
 
         /// @brief returns a reference to the last element in the buffer 
-        constexpr T& back() {return *(this->end()-1);}
+        constexpr T& back() {
+            EMBED_ASSERT_O1(!this->empty());
+            return *(this->end()-1);
+        }
 
         /// @brief returns a const reference to the last element in the buffer 
-        constexpr const T& back() const {return *(this->cend()-1);}
+        constexpr const T& back() const {
+            EMBED_ASSERT_O1(!this->empty());
+            return *(this->cend()-1);
+        }
 
         /// @brief returns a reference to the element at the given position
         template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr T& at(const UInt i){return *(this->begin()+i);}
+        constexpr T& at(const UInt i){
+            EMBED_ASSERT_O1(i < this->size());    
+            return *(this->begin()+i);
+        }
 
         /// @brief returns a reference to the element at the given position
-        template<class Int> requires std::is_unsigned_v<Int>
-        constexpr const T& at(const Int i) const {return *(this->begin()+i);}
-        
-        /// @brief returns a reference to the element at the given position
-        template<class Int> requires std::is_unsigned_v<Int>
-        constexpr T& operator[](const Int i){return this->at(i);}
-        
-        /// @brief returns a reference to the element at the given position
-        template<class Int> requires std::is_unsigned_v<Int>
-        constexpr const T& operator[](const Int i) const {return this->at(i);}
-
-        /// @brief returns a reference to the element at the given position
-        /// @details for signed integers will wrap negatives around so -1 will access the last element
-        template<class Int> requires std::is_signed_v<Int>
-        constexpr T& at(const Int si){return *(((si >= 0) ? this->begin() : this->end()) + si);}
+        template<class UInt> requires std::is_unsigned_v<UInt>
+        constexpr const T& at(const UInt i) const {
+            EMBED_ASSERT_O1(i < this->size());  
+            return *(this->begin()+i);
+        }
 
         /// @brief returns a reference to the element at the given position
         /// @details for signed integers will wrap negatives around so -1 will access the last element
-        template<class Int> requires std::is_signed_v<Int>
-        constexpr const T& at(const Int si) const {return *(((si >= 0) ? this->begin() : this->end()) + si);}
+        template<class SInt> requires std::is_signed_v<SInt>
+        constexpr T& at(SInt si){
+            EMBED_ASSERT_O1(si < this->size());
+            EMBED_ASSERT_O1(-si <= this->size());
+            return *(((si >= 0) ? this->begin() : this->end()) + si);
+        }
+
+        /// @brief returns a reference to the element at the given position
+        /// @details for signed integers will wrap negatives around so -1 will access the last element
+        template<class SInt> requires std::is_signed_v<SInt>
+        constexpr const T& at(const SInt si) const {
+            EMBED_ASSERT_O1(si < this->size());
+            EMBED_ASSERT_O1(-si <= this->size());
+            return *(((si >= 0) ? this->begin() : this->end()) + si);
+        }
 
 
         /// @brief Masked indexing
@@ -181,16 +206,15 @@ namespace embed
             return result;
         }
 
-        /// @brief accesses the element at i 
-        template<class Int> requires std::is_signed_v<Int>
+        /// @brief returns a reference to the element at the given position
+        template<class Int> requires std::is_integral_v<Int>
         constexpr T& operator[](const Int i){return this->at(i);}
-
-        /// @brief accesses the element at i 
-        template<class Int> requires std::is_signed_v<Int>
+        
+        /// @brief returns a reference to the element at the given position
+        template<class Int> requires std::is_integral_v<Int>
         constexpr const T& operator[](const Int i) const {return this->at(i);}
 
         /// @brief accesses all elements where `mask` is `true` 
-        template<class Int> requires std::is_signed_v<Int>
         StaticArrayList<T, N> operator[](const StaticArrayList<bool, N>& mask) const {return this->at(mask);}
 
         /// @brief accesses all elements at the given `indices` 
@@ -205,7 +229,7 @@ namespace embed
         /// @return a reference to the constructed list element
         template<class... Args>
         T& emplace_back(Args&&... args){
-            if(this->full()) throw Exception("Error: in StaticArrayList::emplace_back. Container is already full");
+            EMBED_ASSERT_O1(this->full());
             T* construct_at_addr = this->begin() + this->size();
             new (construct_at_addr) T(std::forward<Args>(args)...);
             this->_size += 1;
@@ -274,41 +298,69 @@ namespace embed
         }
 
         /// @brief turns the passed position given by an iterator into an integer 
-        constexpr size_type to_index(const const_iterator pos) const {return pos - this->begin();}
+        constexpr size_type to_index(const const_iterator pos) const {
+            EMBED_ASSERT_O1(this->begin() <= pos && pos < this->end());
+            return pos - this->begin();
+        }
 
         /// @brief turns the passed unsigned integer into an iterator pointing to the same position 
         template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr iterator to_iterator(const UInt pos){return this->begin() + pos;}
+        constexpr iterator to_iterator(const UInt pos){
+            EMBED_ASSERT_O1(pos < this->size());
+            return this->begin() + pos;
+        }
 
         /// @brief turns the passed signed integer into an iterator at the same position and wraps negative number to the end. 
         template<class SInt> requires std::is_signed_v<SInt>
-        constexpr iterator to_iterator(const SInt pos){return ((pos >= 0) ? this->begin() : this->end()) + pos;}
+        constexpr iterator to_iterator(const SInt pos){
+            EMBED_ASSERT_O1(pos < this->size());
+            EMBED_ASSERT_O1(-pos <= this->size());
+            return ((pos >= 0) ? this->begin() : this->end()) + pos;
+        }
 
         /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
         template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr const_iterator to_iterator(const UInt pos) const {return this->begin() + pos;}
+        constexpr const_iterator to_iterator(const UInt pos) const {
+            EMBED_ASSERT_O1(pos < this->size());
+            return this->begin() + pos;
+        }
 
         /// @brief turns the passed signed integer into a const_iterator at the same position and wraps negative number to the end. 
         template<class SInt> requires std::is_signed_v<SInt>
-        constexpr const_iterator to_iterator(const SInt pos) const {return ((pos >= 0) ? this->begin() : this->end()) + pos;}
+        constexpr const_iterator to_iterator(const SInt pos) const {
+            EMBED_ASSERT_O1(pos < this->size());
+            EMBED_ASSERT_O1(-pos <= this->size());
+            return ((pos >= 0) ? this->begin() : this->end()) + pos;
+        }
 
         /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
         template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr const_iterator to_const_iterator(const UInt pos) const {return this->begin() + pos;}
+        constexpr const_iterator to_const_iterator(const UInt pos) const {
+            EMBED_ASSERT_O1(pos < this->size());
+            return this->begin() + pos;
+        }
 
         /// @brief turns the passed signed integer into a const_iterator at the same position and wraps negative number to the end. 
         template<class SInt> requires std::is_signed_v<SInt>
-        constexpr const_iterator to_const_iterator(const SInt pos) const {return ((pos >= 0) ? this->begin() : this->end()) + pos;}
+        constexpr const_iterator to_const_iterator(const SInt pos) const {
+            EMBED_ASSERT_O1(pos < this->size());
+            EMBED_ASSERT_O1(-pos <= this->size());
+            return ((pos >= 0) ? this->begin() : this->end()) + pos;
+        }
 
         /// @brief removes the constnes of an iterator if the user has access to the mutable (un-const) container 
-        constexpr iterator unconst(const const_iterator pos) {return this->begin() + this->to_index(pos);}
+        constexpr iterator unconst(const const_iterator pos) {
+            EMBED_ASSERT_O1(this->begin() <= pos);
+            EMBED_ASSERT_O1(pos < this->end());
+            return this->begin() + this->to_index(pos);
+        }
 
         /// @brief Inserts a value
         /// @param pos the position at which the value should be inserted
         /// @param value the value that the element at that position should have after the insertion
         /// @return an iterator pointing to the inserted value
         iterator insert(const const_iterator pos, const T& value){
-            if(this->full()) throw Exception("Error: in StaticArrayList::insert. Container is already full");
+            EMBED_ASSERT_O1(this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
             iterator pos_ = unconst(pos);
@@ -321,7 +373,7 @@ namespace embed
         /// @param value the value that the element at that position should have after the insertion
         /// @return an iterator pointing to the inserted value
         iterator insert(const const_iterator pos, T&& value){
-            if(this->full()) throw Exception("Error: in StaticArrayList::insert. Container is already full");
+            EMBED_ASSERT_O1(this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
             iterator pos_ = unconst(pos);
@@ -338,7 +390,7 @@ namespace embed
         template<std::forward_iterator Itr>
         iterator insert(const const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
-            if(dist > this->reserve()) throw Exception("Error: in StaticArrayList::insert. Container cannot store range");
+            EMBED_ASSERT_O1(dist > this->reserve());
             for(auto i = this->end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             iterator insertIterator = this->unconst(pos);
             for(; first != last; ++first, (void)++insertIterator) *insertIterator = *first;
@@ -374,6 +426,7 @@ namespace embed
         /// @details does not perform out of bounds checks
         /// @returns an iterator the element after the removed one
         iterator erase(const_iterator cpos){
+            EMBED_ASSERT_O1(!this->empty());
             iterator destItr = this->unconst(cpos);
             iterator sourceItr = destItr + 1;
             for(; sourceItr < this->end(); ++sourceItr, (void)++destItr) *destItr = std::move(*sourceItr);
@@ -394,11 +447,15 @@ namespace embed
         /// @details does not perform out of bounds checks
         /// @returns an iterator the element after the removed ones
         iterator erase(const_iterator first, const_iterator last){
+            EMBED_ASSERT_O1(this->begin() <= first);
+            EMBED_ASSERT_O1(first < this->end());
+            EMBED_ASSERT_O1(this->begin() <= last);
+            EMBED_ASSERT_O1(last < this->end());
             iterator destItr = this->unconst(first);
             iterator sourceItr = this->unconst(last);
             for(; (destItr != last) && (sourceItr != this->end()); ++destItr, (void)++sourceItr) *destItr = std::move(*sourceItr);
             for(; destItr != this->end(); ++destItr) destItr->~T();
-            const size_type dist = std::distance(first, last);
+            const auto dist = std::distance(first, last);
             this->_size -= dist;
             return this->unconst(last-dist);
         }
@@ -411,6 +468,7 @@ namespace embed
 
         /// @brief removes and destructs the last element
         void pop_back(){
+            EMBED_ASSERT_O1(!this->empty());
             if constexpr (!std::is_trivially_destructible<T>::value){
                 this->back().~T();
             }

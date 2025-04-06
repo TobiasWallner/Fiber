@@ -8,7 +8,6 @@
 
 //embed
 #include "embed/math.hpp"
-#include "embed/memory.hpp"
 
 namespace embed{
 
@@ -203,6 +202,7 @@ namespace embed{
         inline FormatStr(const char* first, const char* last) : FormatStr(first, last-first){}
 
         template<class StringViewLike>
+        requires requires (StringViewLike str) {{str.data() } -> std::convertible_to<const char*>; { str.size() } -> std::integral;}
         inline FormatStr(const StringViewLike& str) : FormatStr(str.data(), str.size()){}
 
     private:
@@ -736,10 +736,10 @@ namespace embed{
 
         operator OStream&(){
             if(this->ptr == nullptr){
-                throw Exception("Error: stream reference holds a nullptr.");
+                throw -1; // prevent circular exceptions: throw -> try print error -> throw again -> try print error
             }else{
                 return *this->ptr;
-            }    
+            }
         }
     };
 

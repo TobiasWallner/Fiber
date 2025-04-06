@@ -2,17 +2,13 @@
 
 namespace embed{
     
-    static constexpr const char* failed_function    = "[ Failed ]: Function: ";
-    static constexpr const char* in_file            = "            in File : '";
-    static constexpr const char* at_line            = "' at line: ";
-    static constexpr const char* expected_true_but  = "            expected `true`  but: `";
-    static constexpr const char* expected_false_but = "            expected `false` but: `";
-    
-
+    static constexpr const char* expected_true_but  = "    expected `true`  but: `";
+    static constexpr const char* expected_false_but = "    expected `false` but: `";
 
     void print_failed_function_file_line(const char* signature, const char* file, std::size_t line){
-        embed::cout << failed_function << signature << embed::newl;
-        embed::cout << in_file << file << at_line << line << embed::newl;
+        embed::cout << '[' << embed::ansi::bright_red << embed::ansi::bold << "Failed" << embed::ansi::reset << "]: test function" << embed::newl;
+        embed::cout << "    in: " << embed::ansi::magenta << signature << embed::ansi::reset << embed::newl;
+        embed::cout << "    at: " << embed::ansi::grey << file << ':' << line << embed::ansi::reset << embed::newl;
     }
 
     void TEST_FUNC_print_1(const char* signature, const char* file, std::size_t line, const char* test_func, const char* val_str){
@@ -42,7 +38,7 @@ namespace embed{
 
     void TEST_ERROR_print(const char* signature, const char* file, std::size_t line){
         print_failed_function_file_line(signature, file, line);
-        embed::cout << "            This should not have been reached" << embed::newl << embed::endl;
+        embed::cout << embed::ansi::yellow << "    This should not have been reached" << embed::ansi::reset << embed::newl << embed::endl;
     }
     
 }

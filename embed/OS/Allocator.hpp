@@ -7,50 +7,51 @@ namespace embed
     
     template<size_t N>
     concept is_power_of_two = ((N & (N-1)) == 0);
-
+    /**
+     * @brief A linear allocator that uses stack memory and follows `std::pmr::memory_resource`
+     * @tparam Bytes The number of bytes (rounded up to multiple of 4)
+     */
     template<size_t Bytes>
-    struct StaticLinearMemoryResource{
+    struct StaticLinearAllocator : std::pmr::memory_resource{
         using word = uint32_t;
         static constexpr size_t bufferSize = Bytes / sizeof(uint32_t);
-        static inline word buffer[bufferSize];
-        static inline bool is_initialised = false;
+        word buffer[bufferSize];
 
-        struct Header{
+         struct alignas(word) Header{
             uint32_t is_allocated : 1;
             uint32_t size : 31;   
         };
 
-        static inline void init_once(){
-            if(!is_initialised){
-                Header* header = reinterpret_cast<Header*>(&buffer[0]);
-                header->is_allocated = 0;
-                header->size = Bytes / sizeof(uint32_t)-1;
-                is_initialised = true;
-            }
+        StaticLinearAllocator(){
+            Header* header = reinterpret_cast<Header*>(&buffer[0]);
+            header->is_allocated = 0;
+            header->size = Bytes / sizeof(uint32_t)-1;
         }
 
-        static inline Header* header(size_t index){
+        inline Header* header(size_t index){
             return reinterpret_cast<Header*>(&buffer[index]);
         }
 
-        static void dump_buffer() {
-            std::cout << "==== Memory Dump ====\n";
+        template<class Stream>
+        void dump_buffer(Stream& stream) {
+            stream << "==== Memory Dump ====\n";
             size_t index = 0;
             while (index < bufferSize) {
-                std::cout << "index: " << index
+                stream << "index: " << index
                         << " | allocated: " << header(index)->is_allocated
-                        << " | size: " << header(index)->size << '\n';
+                        << " | size: " << ((header(index)->size - 1) * sizeof(word)) << '\n';
                 index += header(index)->size + 1;
             }
-            std::cout << "=====================\n";
+            stream << "=====================\n";
         }
 
-        static void* allocate(const size_t size, const int alignment){
-            init_once();
+        void* do_allocate(const std::size_t size, const std::size_t alignment) override {
+            const std::size_t num_words = (size + sizeof(word) - 1) / sizeof(word);
 
-            const size_t num_words = (size + sizeof(word) - 1) / sizeof(word);
-
-            size_t index = 0;
+            std::size_t largest_free_size = 0;
+            std::size_t nfree = 0;
+            std::size_t nalloc = 0;
+            std::size_t index = 0;
             while(index < bufferSize){
                 
                 if(header(index)->is_allocated == 0){// scan and see if memory blocks can be combined
@@ -63,7 +64,12 @@ namespace embed
                 
                 const size_t alignment_offset = (reinterpret_cast<size_t>(&buffer[index+1]) % alignment) / sizeof(word);
                 size_t size_to_allocate = num_words + alignment_offset;
-                
+
+                largest_free_size = ((header(index)->size - alignment_offset) > largest_free_size) ? header(index)->size : largest_free_size;
+
+                nfree += (header(index)->is_allocated == 0);
+                nalloc += (header(index)->is_allocated == 1);
+
                 if((header(index)->is_allocated == 0) && (size_to_allocate <= header(index)->size)){
             
                     // get old size
@@ -93,42 +99,20 @@ namespace embed
                     index += increment;
                 }
             }
-            throw std::runtime_error("Allocation Error");
+            // TODO: use an embed error here
+            EMBED_THROW_CRITICAL(AllocationFailure(size, bufferSize*sizeof(word), largest_free_size*sizeof(word), nfree, nalloc));
         }
 
-        static void deallocate(void * const ptr){
+        void do_deallocate(void* ptr, [[maybe_unused]]std::size_t bytes, [[maybe_unused]]std::size_t alignment) override {
             Header* const header = reinterpret_cast<Header*>(ptr)-1;
-            
-            // free header
+            EMBED_ASSERT_CRITICAL_MSG(header->is_allocated, "Freeing unallocated memory region. S: Check for double free or invalid pointer.");
+            EMBED_ASSERT_CRITICAL_MSG((reinterpret_cast<const void*>(&buffer[0]) <= ptr) && (ptr < reinterpret_cast<const void*>(&buffer[bufferSize])), "Freeing pointer not contained by allocator. S: Check for invalid pointer");
             header->is_allocated = 0;
         }
+
+        bool do_is_equal( const std::pmr::memory_resource& other ) const noexcept override {return false;}
     };
 
-    template<class T, class MemoryRessource>
-    struct AllocatorDispatcher {
-        
-        using value_type = T;
-        using size_type = std::size_t;
-        using difference_type = std::ptrdiff_t;
-        using propagate_on_container_move_assignment = std::true_type;
-
-        T* allocate( std::size_t n ){
-            return reinterpret_cast<T*>(MemoryRessource::allocate(sizeof(T) * n, alignof(T)));
-        }
-
-        void deallocate( T* p, [[maybe_unused]]std::size_t n ){
-            MemoryRessource::deallocate(p);
-        }
-
-        template<class U>
-        struct rebind {
-            using other = AllocatorDispatcher<U, MemoryRessource>;
-        };
-
-    };
-
-    template<class T, std::size_t N>
-    using StaticLinearAllocator = AllocatorDispatcher<T, StaticLinearMemoryResource<N>>;
     
 } // namespace embed
 

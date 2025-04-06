@@ -1,22 +1,26 @@
 #pragma once
 
-
-// std
+//std
 #include <exception>
 
 // embed
-#include "OStream.hpp"
+#include "embed/definitions.hpp"
+
+// #include "embed/OStream.hpp" // foreward declare instead
+namespace embed{
+    class OStream;    
+} // namespace embed;
+
+// TODO: add a switch `EMBED_STRIP_EXCEPTIONS` that removes most of the members, diagnostics and strings to reduce binary size and overhead for strongly constrained systems
 
 namespace embed{
 
     /**
-     * @brief Base class for all exceptions in embedOS
+     * @page Exceptions and Assertions
      * 
-     * 
-     * All exceptions inherit from this class.
-     * It provides two runtime string pointers:
-     * - `type`: the static type of the exception
-     * - `message`: an optional runtime message
+     * embed uses `embed::Exception`, which is the base class for all exceptions in embedOS.
+     * This design choice has been made to allow multiple different raw-strings to be passed to exceptions
+     * to generate error messages without heap memory allocation.
      *
      * @section Exception Philosophy
      *
@@ -38,14 +42,14 @@ namespace embed{
      * The user can just add the corresponding define option their compilation.
      * 
      *  - `EMBED_DISABLE_ASSERTIONS`: Disables all assertions
-     *  - `EMBED_ASSERTION_LEVEL_5P`: (default) Tests that will not use more than ~5% of the performance (Test takes less than ~5% of the remaining function). E.g.: Quick checks at the beginning of a function followed by a long calculation.
+     *  - `EMBED_ASSERTION_LEVEL_CRITICAL`: (default) Tests that will not use more than ~5% of the performance and are difficult to reason about, like memory allocation errors.
      *  - `EMBED_ASSERTION_LEVEL_O1`: Tests that will complete in O[1] time but use more than 5% of performance. E.g: range bound checks at every access of a container.
      *  - `EMBED_ASSERTION_LEVEL_FULL`: Tests that will use more than O[1] time. E.g.: checking if the list is sorted befor doing a binary search. Basically turns your project into a test suit.
      * 
      * ### Turning Assertions into Optimisations
      * 
      * You can turn unused assertions into optimisations. If your code is tested and you know for a fact that `EMBED_ASSERTION_LEVEL_O1` assertions will not fail, 
-     * then you can switch to `EMBED_ASSERTION_LEVEL_5P` and also define:
+     * then you can switch to `EMBED_ASSERTION_LEVEL_CRITICAL` and also define:
      * ```
      * EMBED_ASSERTS_AS_ASSUME
      * ```
@@ -57,16 +61,12 @@ namespace embed{
      *  
      * ### How to use Assertion Levels
      * 
-     * - `EMBED_ASSERT_5P(exception)`: Use this for an assert that uses less than ~5% of the time compared to the rest of the function.
-     * - `EMBED_ASSERTR_5P(exception, return_value)`: Use the 'R' variant if the function expects a return type.
+     * - `EMBED_ASSERT_CRITICAL(condition == true)`: Use this for an assert that uses less than ~5% of the time compared to the rest of the function.
+     * - `EMBED_ASSERT_O1(condition == true)`: Use this if an assert can be done in O[1] time but would take a considerable amount of time compared to the rest of the function. (50% performance hit)
+     * - `EMBED_ASSERT_FULL(condition == true)`: Use if an assert will take more than O[1] time. Will take a considerable amount of time.
      * 
-     * - `EMBED_ASSERT_O1(exception)`: Use this if an assert can be done in O[1] time but would take a considerable amount of time compared to the rest of the function. (50% performance hit)
-     * - `EMBED_ASSERTR_O1(exception, return_value)`: Use the 'R' variant if the function expects a return type.
+     * *note that if exceptions are disabled the assertions will trap execution*
      * 
-     * - `EMBED_ASSERT_FULL(exception)`: Use if an assert will take more than O[1] time. Will take a considerable amount of time.
-     * - `EMBED_ASSERTR_FULL(exception, return_value)`: Use the 'R' variant if the function expects a return type.
-     * 
-     * Depending on the assertion you want to check use on of the following
      * 
      * ## Redirect assertions from exceptions to callbacks
      * 
@@ -95,155 +95,180 @@ namespace embed{
      *
      * You can define your own exception like this:
      * ```cpp
-     * struct MyCustomException : public embed::Exception {
+     * class MyException : public Exception {
      * public:
-     *     MyCustomException(const char* msg = "") : Exception("MyCustomException", msg) {}
+     *     constexpr MyException(...) : ... {...}
+     *     void print(OStream& stream) override {stream << "[MyException] " << ... << embed::endl;}
      * };
      * ```
      */
-    class Exception : private std::exception {
-    private:
-        const char* const _message = "";
-        const char* const _type = "";
 
-    
+    /// @brief The base class for exceptions in `embed`
+    class Exception : public std::exception {
+    private:
+        const char* const _what = "";
+        const char* const _type = "Exception";
+
     public:
-        constexpr Exception(const char* message = "", const char* type = "Exception") noexcept
-            : _message(message) 
-            , _type(type)
-            {}
-    
-        /// @brief return a sting containing the error message 
-        constexpr const char* what() const noexcept override {return this->_message;}
-        
-        constexpr const char* message() const noexcept override {return this->_message;}
+        Exception();
+        Exception(const char* what) : _what(what){}
+
+    protected:
+        /// @brief Constructor for classes that derive from Exception
+        /// @param type Name for the type of exception
+        /// @param what Message of the exception
+        Exception(const char* type, const char* what) : _what(what), _type(type){}
+
+    public:
         constexpr const char* type() const noexcept {return this->_type;}
+        const char* what() const noexcept override;
+        virtual void print(embed::OStream& stream) const;   
     };
 
-    OStream& operator<<(OStream& stream, const Exception& e) {
-        return stream << "[Exception]: " << e.what();
-    }
+    OStream& operator<<(OStream& stream, const Exception& e);
+    
+    class AssertionFailure : public Exception {
+    public:
+        const char* const condition = nullptr;
+        const char* const function_signature = nullptr;
+        const char* const filename = nullptr;
+        const size_t line = 0;
+
+        inline AssertionFailure(const char* type_i, char const* condition_i, char const* function_signature_i, char const* filename_i, size_t line_i)
+            : Exception(type_i, condition_i)
+            , condition(nullptr)
+            , function_signature(function_signature_i)
+            , filename(filename_i)
+            , line(line_i){}
+
+        inline AssertionFailure(const char* type_i, char const* condition_i, char const* message_i, char const* function_signature_i, char const* filename_i, size_t line_i)
+            : Exception(type_i, message_i)
+            , condition(condition_i)
+            , function_signature(function_signature_i)
+            , filename(filename_i)
+            , line(line_i){}
+
+        virtual void print(OStream& stream) const override;
+    };
+
+    class AssertionFailureCritical : public AssertionFailure{
+        public:
+
+        inline AssertionFailureCritical(char const* condition, char const* function_signature, char const* filename, size_t line)
+            : AssertionFailure("AssertionFailure:CRITICAL", condition, function_signature, filename, line){}
+
+        inline AssertionFailureCritical(char const* condition, char const* message, char const* function_signature, char const* filename, size_t line)     
+            : AssertionFailure("AssertionFailure:CRITICAL", condition, message, function_signature, filename, line){}
+
+        virtual void print(OStream& stream) const override;
+    };
+
+    class AssertionFailureO1 : public AssertionFailure{
+        public:
+
+        inline AssertionFailureO1(char const* condition, char const* function_signature, char const* filename, size_t line)
+            : AssertionFailure("AssertionFailure:O1", condition, function_signature, filename, line){}
+
+        inline AssertionFailureO1(char const* condition, char const* message, char const* function_signature, char const* filename, size_t line)     
+            : AssertionFailure("AssertionFailure:O1", condition, message, function_signature, filename, line){}
+
+        virtual void print(OStream& stream) const override;
+    };
+
+    class AssertionFailureFull : public AssertionFailure{
+        public:
+
+        inline AssertionFailureFull(char const* condition, char const* function_signature, char const* filename, size_t line)
+            : AssertionFailure("AssertionFailure:FULL", condition, function_signature, filename, line){}
+
+        inline AssertionFailureFull(char const* condition, char const* message, char const* function_signature, char const* filename, size_t line)     
+            : AssertionFailure("AssertionFailure:FULL", condition, message, function_signature, filename, line){}
+
+        virtual void print(OStream& stream) const override;
+    };
+
+    class AllocationFailure : public Exception {
+        public:
+        const std::size_t to_allocate;
+        const std::size_t buffer_size;
+        const std::size_t largest_free;
+        const std::size_t nfree;
+        const std::size_t nalloc;
+        /*
+        [AllocationFailure]: Failed to allocate xx bytes
+        */
+
+        inline AllocationFailure(std::size_t to_allocate, std::size_t buffer_size, std::size_t largest_free, std::size_t nfree, std::size_t nalloc) 
+            : Exception("AllocationFailure", "Could not allocate memory")
+            , to_allocate(to_allocate)
+            , buffer_size(buffer_size)
+            , largest_free(largest_free)
+            , nfree(nfree)
+            , nalloc(nalloc){}
+
+        virtual void print(OStream& stream) const override;
+    };
 
     #if defined(EMBED_USE_EXCEPTION_CALLBACKS)
-        inline default_exception_callback(const Exception& e){embed::cerr << e; while(true){/* trap */}}
+        inline void default_exception_callback(const Exception& e){e.print(embed::cerr); while(true){/* trap */}}
         void (*exception_callback)(const Exception& e) = default_exception_callback;
-        #define EMBED_THROW(exception) exception_callback(exception); return;
-        #define EMBED_THROWR(exception, return_value) exception_callback(exception); return return_value;
-
+        #define EMBED_THROW(exception) exception_callback(exception); while(true){/* trap */}
     #else
-        #define EMBED_THROW(exception) throw exception;
-        #define EMBED_THROWR(exception, return_value) throw exception;
-    #endif
-
-    // compiler independent assume
-    #if (defined(__clang__) || defined(__GNUC__))
-        #define EMBED_ASSUME(cond) __builtin_assume(cond)
-    #elif defined(_MSC_VER)
-        #define EMBED_ASSUME(cond) __assume(cond)
-    #else
-        #define EMBED_ASSUME(cond)
+        #define EMBED_THROW(exception) throw exception
     #endif
 
     // set the standard assertion level
-    #if (defined(EMBED_ASSERTION_LEVEL_5P) + defined(EMBED_ASSERTION_LEVEL_O1) + defined(EMBED_ASSERTION_LEVEL_FULL)) > 1
-        # error "Multiple assertion levels are set. Please only set one."
-    #elif !(defined(EMBED_ASSERTION_LEVEL_5P) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL))
-        #define EMBED_ASSERTION_LEVEL_5P
+    #if (defined(EMBED_ASSERTION_LEVEL_CRITICAL) + defined(EMBED_ASSERTION_LEVEL_O1) + defined(EMBED_ASSERTION_LEVEL_FULL) + defined(EMBED_DISABLE_ASSERTIONS)) > 1
+        #error "Multiple assertion levels are set. Only set one: `EMBED_DISABLE_ASSERTIONS`, `EMBED_ASSERTION_LEVEL_CRITICAL`, `EMBED_ASSERTION_LEVEL_O1` or `EMBED_ASSERTION_LEVEL_FULL`."
+    #elif !(defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL) || defined(EMBED_DISABLE_ASSERTIONS))
+        #pragma message("embed: No assertion level set. Defaulting to EMBED_ASSERTION_LEVEL_CRITICAL")
+        #define EMBED_ASSERTION_LEVEL_CRITICAL
     #endif
 
     // asserts that will have less than 5% performance hit - like checking if a container is not empty before doing some calculations
-    #if (defined(EMBED_ASSERTION_LEVEL_5P) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
-        #define EMBED_ASSERT_5P(condition, exception) if(!(condition)) EMBED_THROW(exception);
-        #define EMBED_ASSERTR_5P(condition, exception, return_value) if(!(condition)) EMBED_THROW(exception); else return return_value;
+    #if (defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
+        #define EMBED_ASSERT_CRITICAL(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureCritical(#condition, EMBED_FUNCTION_SIGNATURE, __FILE__, __LINE__))
+        #define EMBED_ASSERT_CRITICAL_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureCritical(#condition, message, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
     #elif defined(EMBED_ASSERTS_AS_ASSUME)
-        #define EMBED_ASSERT_5P(condition, exception) EMBED_ASSUME(condition)
-        #define EMBED_ASSERTR_5P(condition, exception, return_value) EMBED_ASSUME(condition)
+        #define EMBED_ASSERT_CRITICAL(condition) EMBED_ASSUME(condition)
+        #define EMBED_ASSERT_CRITICAL_MSG(condition, message) EMBED_ASSUME(condition); EMBED_USE_UNUSED(message)
     #else
-        #define EMBED_ASSERT_5P(condition, exception)
-        #define EMBED_ASSERTR_5P(condition, exception, return_value) return return_value;
+        #define EMBED_ASSERT_CRITICAL(condition) EMBED_USE_UNUSED(condition)
+        #define EMBED_ASSERT_CRITICAL_MSG(condition, message) EMBED_USE_UNUSED(condition); EMBED_USE_UNUSED(message)
     #endif
 
     // asserts that may have more than 5% performance hit but can be done in O1 time - like checking if the index on `operator[]` is in the range of the container
     #if (defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
-        #define EMBED_ASSERT_O1(condition, exception) if(!(condition)) EMBED_THROW(exception);
-        #define EMBED_ASSERTR_O1(condition, exception, return_value) if(!(condition)) EMBED_THROW(exception); else return return_value;
+        #define EMBED_ASSERT_O1(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureO1(#condition, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
+        #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureO1(#condition, message, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
     #elif defined(EMBED_ASSERTS_AS_ASSUME)
-        #define EMBED_ASSERT_O1(condition, exception) EMBED_ASSUME(condition)
-        #define EMBED_ASSERTR_O1(condition, exception, return_value) EMBED_ASSUME(condition)
+        #define EMBED_ASSERT_O1(condition) EMBED_ASSUME(condition)
+        #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_ASSUME(condition); EMBED_USE_UNUSED(message)
     #else
-        #define EMBED_ASSERT_O1(condition, exception)
-        #define EMBED_ASSERTR_O1(condition, exception, return_value) return return_value;
+        #define EMBED_ASSERT_O1(condition) EMBED_USE_UNUSED(condition)
+        #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_USE_UNUSED(condition); EMBED_USE_UNUSED(message)
     #endif
 
     // asserts everything that can be asserted - the algorithm expects a sorted list to do binary search and will check if the list is really sorted
     #if (defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
-        #define EMBED_ASSERT_FULL(condition, exception) if(!(condition)) EMBED_THROW(exception);
-        #define EMBED_ASSERTR_FULL(condition, exception, return_value) if(!(condition)) EMBED_THROW(exception); else return return_value;
+        #define EMBED_ASSERT_FULL(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureFull(#condition, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
+        #define EMBED_ASSERT_FULL_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureFull(#condition, message, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
     #elif defined(EMBED_ASSERTS_AS_ASSUME)
-        #define EMBED_ASSERT_FULL(condition, exception) EMBED_ASSUME(condition)
-        #define EMBED_ASSERTR_FULL(condition, exception, return_value) EMBED_ASSUME(condition)
+        #define EMBED_ASSERT_FULL(condition) EMBED_ASSUME(condition)
+        #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_ASSUME(condition); EMBED_USE_UNUSED(message)
     #else
-        #define EMBED_ASSERT_FULL(condition, exception)
-        #define EMBED_ASSERTR_FULL(condition, exception, return_value) return return_value;
+        #define EMBED_ASSERT_FULL(condition) EMBED_USE_UNUSED(condition)
+        #define EMBED_ASSERT_FULL_MSG(condition, message) EMBED_USE_UNUSED(condition); EMBED_USE_UNUSED(message)
     #endif
 
-    // # Core exceptions
 
-    /**
-     * @brief Error that happen on memory allocation, because there is not enough memory.
-     */
-    class AllocationException : public Exception{
-        public:
-        constexpr AllocationException(const char* message) : Exception(message, "AllocationException"){}
-    };
+    // -----------------------------------------------------------------------------------------------------------------------------------------------------
 
-    /**
-     * @brief Thrown when trying to dereference a pointer or iterator at an invalid location
-     */
-    class DereferenceException : public Exception{
-        public:
-        constexpr DereferenceException(const char* message) : Exception(message, "DereferenceException"){}
-    };
-
-    /**
-     * @brief Throw when trying to access an element in a buffer via `.at()` or `operator[]` that is not within the size constraints of the buffer
-     */
-    class OutOfRangeException : public Exception{
-        public:
-        constexpr OutOfBoundException(const char* message) : Exception(message, "OutOfRangeAccessException"){}
-    };
-
-    /**
-     * @brief When trying to push or emplace an object into an buffer that is already full
-     */
-    class BufferOverflowException : public Exception{
-        public:
-        constexpr BufferOverflowException(const char* message) : Exception(message, "BufferOverflowException"){}
-    };
-
-    /**
-     * @brief When trying to pop an object from an empty buffer
-     */
-    class BufferUnderflowException : public Exception{
-        public:
-        constexpr BufferUnderflowException(const char* message) : Exception(message, "BufferUnderflowException"){}
-    };
-
-    /**
-     * @brief When trying to read the value of a Future that has not been set yet. 
-     */
-    class FutureException : public Exception{
-        public:
-        constexpr FutureException(const char* message) : Exception(message, "FutureException"){}
-    };
-
-    /**
-     * @brief When trying to read the value of an Optional, despit the optional not storing that value
-     */
-    class OptionalValueException : public Exception{
-        public:
-        constexpr OptionalValueException(const char* message) : Exception(message, "OptionalValueException"){}
-    };
-
+    
+    #if (defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
+        #define EMBED_THROW_CRITICAL(exception) EMBED_THROW(exception)
+    #else
+        #define EMBED_THROW_CRITICAL(exception) ((void)0)
+    #endif
 
 }

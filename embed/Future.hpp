@@ -253,15 +253,15 @@ namespace embed{
                 this->_taskPromise = &h.promise();  // optional: for use in await_resume()
             }
 
-            /// @brief For co-routine interoperability. Clears the suspension counter, so that the scheduler knows that no progress has been made since the last yield.
+            /// @brief For co-routine interoperability. Signals to the TaskPromise/Future that the data is now ready and the co-routine can be resumed
             inline void await_resume() {
-                if(this->_taskPromise != nullptr) this->_taskPromise->clear_awaiting();
+                EMBED_ASSERT_CRITICAL(this->is_ready());
             }
 
         private:
 
             /// \brief Used by the Future to set the lock for a critical section that affect both the future and the promise
-            /// \details Acquires own lock. Forcefully spins until the Promise lock becomes available.
+            /// \details Disables interrupts. Acquires own lock. Forcefully spins until the Promise lock becomes available.
             void acquire_dual_locks() {
                 // return early - no need to lock if the future is detatched from the promise
                 if(this->_promisePtr == nullptr){return;}
@@ -478,7 +478,7 @@ namespace embed{
                 this->_futurePtr->_value = std::move(value);
                 this->_futurePtr->set_state(Future<T>::State::HasValue);
                 if(this->_futurePtr->_taskPromise != nullptr){
-                    this->_futurePtr->_taskPromise->clear_awaiting;
+                    this->_futurePtr->_taskPromise->clear_awaiting();
                 }
 
                 // release lock and detatch (futurePtr, clallback = nullptr)

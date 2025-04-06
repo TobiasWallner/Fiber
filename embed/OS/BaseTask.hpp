@@ -3,12 +3,16 @@
 //std
 #include <coroutine>
 #include <chrono>
-#include <vector>
-#include <string>
 
 //embed
-#include "Exit.hpp"
-#include "TaskFuture.hpp"
+#include "embed/OStream.hpp"
+#include "embed/Future.hpp"
+#include "embed/OS/Exit.hpp"
+#include "embed/OS/TaskFuture.hpp"
+#include "embed/OS/Schedule.hpp"
+#include "embed/OS/ExecutionTimes.hpp"
+#include "embed/OS/TaskLifeCycle.hpp"
+#include "embed/OS/TaskFuture.hpp"
 
 /* 
     I know one should not provide namespaces, but it is just tedious for the suffixes.
@@ -16,154 +20,145 @@
 */
 using namespace std::chrono_literals;
 
-
-
-
-
 namespace embed{
 
-    enum class TaskLifeCycle{
-        New,            ///< Newly created task --> empty coroutine
-        Created,        ///< New task with created co-routine
-        Waiting,        ///< waiting to become ready. is in the passive running queue. For tasks that are not in avtive window and wait for their next start time.
-        Ready,          ///< ready to be executed. is in the active running queue. For tasks which are in the active window [start_time, deadline).
-        Running,        ///< current executed task
-        Idle,           ///< task that made no progress on the last yield
-        ReReady,        ///< task that is ready again
-        Disabled,       ///< is in the disabled queue. OS will not touch it until enabled by some external stimulus
-        ExitSuccess,    ///< has successfully finished execution - will not be executed again - prepare removal
-        ExitFailure,    ///< some error occured that lead to the exit of this task
-        Died,           ///< Task died on its own - peacfully - we will send flowers to its parent
-        Killed,         ///< someone else killed the task - we will send a special agent to inform the parent
-    };
+        // foreward declarations for friends
+        class BaseTask_TestSuit;
+        class OS;
 
-    // foreward declaration
-    class OS;
-    class BaseTaskTestSuit;
+        class BaseTask{
+        public:
+            using Coroutine = embed::TaskFuture<embed::Exit>;
+            friend class OS;
+            friend class BaseTask_TestSuit;
+        private:
+            Coroutine _coroutine;
+            Schedule _schedule;
+            std::chrono::nanoseconds _delayed_resume_time = 0ns; // next re-redy after yield via delay
+            std::chrono::nanoseconds _execution_start_time = 0ns; // scheduled start time after which task execution is allowed
 
-    /** @brief Interface/Base type for a task 
-     * 
-     * Example:
-     * ```cpp
-     * 
-     * ```
-     * 
-     * */ 
-    class BaseTask{
-    public:
+            TaskLifeCycle _prev_life_cycle = TaskLifeCycle::New;
+            TaskLifeCycle _life_cycle = TaskLifeCycle::New;
+        public:
 
-        friend class embed::OS;
-        friend class embed::BaseTaskTestSuit;
-    public:
-
-        /// @brief default task creates the new task on instantiation
-        BaseTask(){this->create();}
-
-        /// @brief destructor
-        ~BaseTask(){}
-
-        /// @brief Function defined by the user that initialises the first start_time and deadline
-        /// @param now The current system time
-        virtual void init(std::chrono::nanoseconds now) = 0;
-
-        /// @brief User defined co-routine. The task function that will be run.
-        /// @param args A list of optional string arguments that can be passed to the tasks main function
-        /// @return a ETaskExit, like `::Success`, or `::Failure`. uses a TaskFuture which delays that return, allowing the task to be suspended and resumed multiple times before the final exit value returns.
-        virtual TaskFuture<embed::Exit> main() = 0;
-
-        /// @brief User defined function that updates the schedule for the next time period. Will be executed it the task co_awaits with an `End`.
-        virtual void update_schedule() = 0;
-
-
-        inline bool is_awaiting() const {return this->coroutine.promise().is_awaiting();}
-
-        inline void start_time(const std::chrono::nanoseconds& time) {this->_start_time = time;}
-        [[nodiscard]] inline std::chrono::nanoseconds start_time() const {return this->_start_time;}
-
-        inline void deadline(const std::chrono::nanoseconds& time) {this->_deadline = time;}
-        [[nodiscard]] inline std::chrono::nanoseconds deadline() const {return this->_deadline;}
-
-    private:
-        inline void execution_start(const std::chrono::nanoseconds& time){this->_execution_start = time;}
-    public:
-        inline std::chrono::nanoseconds execution_start() const {return this->_execution_start;}
-
-    private:
-        inline void execution_end(const std::chrono::nanoseconds& time){this->_execution_end = time;}
-    public:
-        inline std::chrono::nanoseconds execution_end() const {return this->_execution_end;}
-
-
-        [[nodiscard]] inline TaskLifeCycle life_cycle() const {return this->_state;}
-    private:
-        inline void life_cycle(TaskLifeCycle new_state) {this->_state = new_state;}
-    public:
-
-        inline bool has_been_created() const {return static_cast<bool>(this->coroutine);}
-        inline bool is_done() const {return this->coroutine.done();}
-        inline bool is_yielding() const {return this->coroutine.promise().is_yielding();}
-    private:
-
-        inline void create(){
-            this->coroutine = this->main();
-            this->life_cycle(TaskLifeCycle::Created);
-        }
-
-        inline void create_if(){
-            if(!this->has_been_created()){
-                this->create();
+            BaseTask(Coroutine&& main) : _coroutine(std::move(main)){}
+        private:
+            inline void resume(){this->_coroutine.resume();}
+        public:
+            [[nodiscard]] inline bool done() const {return this->_coroutine.done();}
+            
+            [[nodiscard]] inline TaskLifeCycle life_cycle() const {return this->_life_cycle;}
+            [[nodiscard]] inline TaskLifeCycle previous_life_cycle() const {return this->_prev_life_cycle;}
+        private:            
+            inline void life_cycle(TaskLifeCycle value) {
+                this->_prev_life_cycle = this->_life_cycle;
+                this->_life_cycle = value;
             }
-        }
+        public:
 
-        inline Exit exit_value() const {
-            return this->coroutine.promise().get_return_result();
-        }
+            /**
+             * @brief Initialises the first schedule
+             * 
+             * Gets called by the scheduler when the task is passed to the scheduler the first time.
+             * The scheduler passes its current time and expects a Schedule in return
+             * 
+             * @param now The current time as seen by the scheduler
+             * 
+             * @returns The first Schedule in which the task needs to be executed
+             */
+            virtual Schedule init_schedule(std::chrono::nanoseconds now) = 0;
 
-        inline Suspend suspend_value() const {
-            return this->coroutine.promise().get_yield_result();
-        }
+            /**
+             * @brief Calculates the next schedule
+             * 
+             * Gets called by the scheduler after a cycle ends. 
+             * A cycle ends when the co-routine returns with:
+             * 
+             * ```cpp
+             * co_yield embed::cycle_end();
+             * ```
+             * 
+             * The scheduler passes the last palanned schedule and the execution time of the currently finished cycle
+             * and expects a new schedule in return.
+             * 
+             * The function has to be overridded by the deriving task to calculate the next schedule.
+             * 
+             * @param last_schedule The `Schedule` of the previous execution cycle
+             * @param execution_times The measured `ExecutionTimes` of the just finished cycle
+             * 
+             * @returns The `Schedule` of the next cycle
+             */
+            virtual Schedule update_schedule(const Schedule& last_schedule, const ExecutionTimes& execution_times) = 0;
 
-        inline void resume(){
-            this->coroutine.resume();
-        }
+            /**
+             * @brief A function that can be overloaded by the user and will be called by the
+             * scheduler, if the deadline has been missed.
+             * 
+             * @param over_due the time that the task is over due (aka. the time distance `now - deadline`)
+             * 
+             * @returns 
+             *  - `true` -> the scheduler will still execute the task. 
+             *  - `false` -> the scheduler will not execute the task and call `update_schedule()` for the next cycle, 
+             *    If `on_deadline_miss()` has not killed the task, in which case `on_kill()`
+             */
+            virtual bool on_deadline_miss(std::chrono::nanoseconds over_due) const {return true;}
 
-    private:
-        std::chrono::nanoseconds _start_time = 0ns; // scheduled start time after which task execution is allowed
-        std::chrono::nanoseconds _deadline = 0ns;   // scheduled deadline before which the task execution should have happened
+            /// @brief A function that can be overloaded by the user and will be called by the scheduler
+            /// if the task has been killed. This allows for extra cleanup.
+            virtual void on_kill() const {/* default: RIP */};
         
-        std::chrono::nanoseconds _execution_start = 0ns; // the measurement of the start of execution
-        std::chrono::nanoseconds _execution_end = 0ns;   // the measurement of the end of execution
-    
-        TaskFuture<embed::Exit> coroutine;
-    
-        TaskLifeCycle _state = TaskLifeCycle::New;
-    };
+            /// @brief returns the current schedule
+            [[nodiscard]] inline Schedule schedule() const {return this->_schedule;}
 
-    
-    struct less_start_time{
-        bool operator()( const BaseTask* lhs, const BaseTask* rhs ) const{
-            return lhs->start_time() < rhs->start_time();
-        }
-    };
+            /// @brief returns the time after which the task is ready next.
+            /// @details if the task is in its Delaying lifecycle it will return the delayed resume time, otherwise the ready time of the schedule 
+            [[nodiscard]] inline std::chrono::nanoseconds ready_time() const {
+                if(this->life_cycle() == TaskLifeCycle::Delaying){
+                    return this->_delayed_resume_time;
+                }else{
+                    return this->_schedule.ready;
+                }
+            }
 
-    struct greater_start_time{
-        bool operator()( const BaseTask* lhs, const BaseTask* rhs ) const{
-            return lhs->start_time() > rhs->start_time();
-        }
-    };
+            /// @brief returns a CoroutineStatusType the current status of the coroutine
+            [[nodiscard]] inline CoroutineStatusType co_return_type() const {return this->_coroutine.co_return_type();}
+            
+            /// @brief returns true if the coroutine returned via yielding. `co_yield;`
+            [[nodiscard]] inline bool is_yielding() const {return this->_coroutine.is_yielding();}
 
-    struct less_deadline{
-        bool operator()( const BaseTask* lhs, const BaseTask* rhs ) const{
-            return lhs->start_time() < rhs->start_time();
-        }
-    };
+            /// @brief returns true if the coroutine returned by ending a cycle. `co_yield embed::Cycle();`
+            [[nodiscard]] inline bool is_ending_cycle() const {return this->_coroutine.is_ending_cycle();}
 
-    struct greater_deadline{
-        bool operator()( const BaseTask* lhs, const BaseTask* rhs ) const{
-            return lhs->start_time() > rhs->start_time();
-        }
-    };
-    
+            /// @brief returns true if the coroutine returned via a delay. `co_yield 10ms`.
+            [[nodiscard]] inline bool is_delaying() const {return this->_coroutine.is_delaying();}
+
+            /// @brief returns true if the coroutine is awaiting on Future data. `data = co_await get_async_data();` 
+            [[nodiscard]] inline bool is_awaiting() const {return this->_coroutine.is_awaiting();}
+
+            /// @brief returns true if the coroutine has returned. `co_return Exit::Success;` 
+            [[nodiscard]] inline bool is_returning() const {return this->_coroutine.is_returning();}            
+
+            /**
+             * @brief returns the return value of the task
+             * @throws An O1 level assertion if the task is not actually returning, aka. `this->is_returning(); // false`
+             * @returns the return value of the task
+             *  */ 
+            [[nodiscard]] inline Exit return_value() const {
+                EMBED_ASSERT_O1(this->is_returning());
+                return this->_coroutine.get_return_value();
+            }
+
+            /**
+             * @brief return the delay passed to `co_yield`
+             * @throws An O1 level assertion if the task is not actually delaying, aka. `this->is_delaying(); // false`
+             * @returns the delay
+             */
+            [[nodiscard]] inline std::chrono::nanoseconds delay_value() const {
+                EMBED_ASSERT_O1(this->is_delaying());
+                return this->_coroutine.get_delay_value();
+            }
+
+        };
 
 }//embed
 
