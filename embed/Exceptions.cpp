@@ -31,8 +31,7 @@ namespace embed{
         }else{
             stream << '[' << embed::ansi::bright_red << this->type() << embed::ansi::reset << "]: " << this->what() << embed::endl;
         }
-        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::newl;
-        stream << "    at: " << embed::ansi::grey << this->filename << ':' << this->line << embed::ansi::reset << embed::endl;
+        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::endl;
     };
 
     void AssertionFailureCritical::print(OStream& stream) const {
@@ -42,8 +41,7 @@ namespace embed{
         }else{
             stream << '[' << embed::ansi::bright_red << this->type() << embed::ansi::reset << "]: " << this->what() << embed::endl;
         }
-        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::newl;
-        stream << "    at: " << embed::ansi::grey << this->filename << ':' << this->line << embed::ansi::reset << embed::endl;
+        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::endl;
     };
 
     void AssertionFailureO1::print(OStream& stream) const {
@@ -53,8 +51,7 @@ namespace embed{
         }else{
             stream << '[' << embed::ansi::red << this->type() << embed::ansi::reset << "]: " << this->what() << embed::endl;
         }
-        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::newl;
-        stream << "    at: " << embed::ansi::grey << this->filename << ':' << this->line << embed::ansi::reset << embed::endl;
+        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::endl;
     };
 
     void AssertionFailureFull::print(OStream& stream) const {
@@ -64,8 +61,7 @@ namespace embed{
         }else{
             stream << '[' << embed::ansi::red << this->type() << embed::ansi::reset << "]: " << this->what() << embed::endl;
         }
-        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::newl;
-        stream << "    at: " << embed::ansi::grey << this->filename << ':' << this->line << embed::ansi::reset << embed::endl;
+        stream << "    in: " << embed::ansi::magenta << this->function_signature << embed::ansi::reset << embed::endl;
     };
     
     // -----------------------------------------------------------------------------------------------

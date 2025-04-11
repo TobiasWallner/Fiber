@@ -131,22 +131,16 @@ namespace embed{
     public:
         const char* const condition = nullptr;
         const char* const function_signature = nullptr;
-        const char* const filename = nullptr;
-        const size_t line = 0;
 
-        inline AssertionFailure(const char* type_i, char const* condition_i, char const* function_signature_i, char const* filename_i, size_t line_i)
+        inline AssertionFailure(const char* type_i, char const* condition_i, char const* function_signature_i)
             : Exception(type_i, condition_i)
             , condition(nullptr)
-            , function_signature(function_signature_i)
-            , filename(filename_i)
-            , line(line_i){}
+            , function_signature(function_signature_i){}
 
-        inline AssertionFailure(const char* type_i, char const* condition_i, char const* message_i, char const* function_signature_i, char const* filename_i, size_t line_i)
+        inline AssertionFailure(const char* type_i, char const* condition_i, char const* message_i, char const* function_signature_i)
             : Exception(type_i, message_i)
             , condition(condition_i)
-            , function_signature(function_signature_i)
-            , filename(filename_i)
-            , line(line_i){}
+            , function_signature(function_signature_i){}
 
         virtual void print(OStream& stream) const override;
     };
@@ -154,11 +148,11 @@ namespace embed{
     class AssertionFailureCritical : public AssertionFailure{
         public:
 
-        inline AssertionFailureCritical(char const* condition, char const* function_signature, char const* filename, size_t line)
-            : AssertionFailure("AssertionFailure:CRITICAL", condition, function_signature, filename, line){}
+        inline AssertionFailureCritical(char const* condition, char const* function_signature)
+            : AssertionFailure("AssertionFailure:CRITICAL", condition, function_signature){}
 
-        inline AssertionFailureCritical(char const* condition, char const* message, char const* function_signature, char const* filename, size_t line)     
-            : AssertionFailure("AssertionFailure:CRITICAL", condition, message, function_signature, filename, line){}
+        inline AssertionFailureCritical(char const* condition, char const* message, char const* function_signature)     
+            : AssertionFailure("AssertionFailure:CRITICAL", condition, message, function_signature){}
 
         virtual void print(OStream& stream) const override;
     };
@@ -166,11 +160,11 @@ namespace embed{
     class AssertionFailureO1 : public AssertionFailure{
         public:
 
-        inline AssertionFailureO1(char const* condition, char const* function_signature, char const* filename, size_t line)
-            : AssertionFailure("AssertionFailure:O1", condition, function_signature, filename, line){}
+        inline AssertionFailureO1(char const* condition, char const* function_signature)
+            : AssertionFailure("AssertionFailure:O1", condition, function_signature){}
 
-        inline AssertionFailureO1(char const* condition, char const* message, char const* function_signature, char const* filename, size_t line)     
-            : AssertionFailure("AssertionFailure:O1", condition, message, function_signature, filename, line){}
+        inline AssertionFailureO1(char const* condition, char const* message, char const* function_signature)     
+            : AssertionFailure("AssertionFailure:O1", condition, message, function_signature){}
 
         virtual void print(OStream& stream) const override;
     };
@@ -178,11 +172,11 @@ namespace embed{
     class AssertionFailureFull : public AssertionFailure{
         public:
 
-        inline AssertionFailureFull(char const* condition, char const* function_signature, char const* filename, size_t line)
-            : AssertionFailure("AssertionFailure:FULL", condition, function_signature, filename, line){}
+        inline AssertionFailureFull(char const* condition, char const* function_signature)
+            : AssertionFailure("AssertionFailure:FULL", condition, function_signature){}
 
-        inline AssertionFailureFull(char const* condition, char const* message, char const* function_signature, char const* filename, size_t line)     
-            : AssertionFailure("AssertionFailure:FULL", condition, message, function_signature, filename, line){}
+        inline AssertionFailureFull(char const* condition, char const* message, char const* function_signature)     
+            : AssertionFailure("AssertionFailure:FULL", condition, message, function_signature){}
 
         virtual void print(OStream& stream) const override;
     };
@@ -227,8 +221,8 @@ namespace embed{
 
     // asserts that will have less than 5% performance hit - like checking if a container is not empty before doing some calculations
     #if (defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
-        #define EMBED_ASSERT_CRITICAL(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureCritical(#condition, EMBED_FUNCTION_SIGNATURE, __FILE__, __LINE__))
-        #define EMBED_ASSERT_CRITICAL_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureCritical(#condition, message, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
+        #define EMBED_ASSERT_CRITICAL(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureCritical(#condition, EMBED_FUNCTION_SIGNATURE))
+        #define EMBED_ASSERT_CRITICAL_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureCritical(#condition, message, EMBED_FUNCTION_SIGNATURE))
     #elif defined(EMBED_ASSERTS_AS_ASSUME)
         #define EMBED_ASSERT_CRITICAL(condition) EMBED_ASSUME(condition)
         #define EMBED_ASSERT_CRITICAL_MSG(condition, message) EMBED_ASSUME(condition); EMBED_USE_UNUSED(message)
@@ -239,8 +233,8 @@ namespace embed{
 
     // asserts that may have more than 5% performance hit but can be done in O1 time - like checking if the index on `operator[]` is in the range of the container
     #if (defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
-        #define EMBED_ASSERT_O1(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureO1(#condition, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
-        #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureO1(#condition, message, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
+        #define EMBED_ASSERT_O1(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureO1(#condition, EMBED_FUNCTION_SIGNATURE))
+        #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureO1(#condition, message, EMBED_FUNCTION_SIGNATURE))
     #elif defined(EMBED_ASSERTS_AS_ASSUME)
         #define EMBED_ASSERT_O1(condition) EMBED_ASSUME(condition)
         #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_ASSUME(condition); EMBED_USE_UNUSED(message)
@@ -251,8 +245,8 @@ namespace embed{
 
     // asserts everything that can be asserted - the algorithm expects a sorted list to do binary search and will check if the list is really sorted
     #if (defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
-        #define EMBED_ASSERT_FULL(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureFull(#condition, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
-        #define EMBED_ASSERT_FULL_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureFull(#condition, message, EMBED_FUNCTION_SIGNATURE,  __FILE__, __LINE__))
+        #define EMBED_ASSERT_FULL(condition) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureFull(#condition, EMBED_FUNCTION_SIGNATURE))
+        #define EMBED_ASSERT_FULL_MSG(condition, message) EMBED_IF_UNLIKELY(!(condition)) EMBED_THROW(embed::AssertionFailureFull(#condition, message, EMBED_FUNCTION_SIGNATURE))
     #elif defined(EMBED_ASSERTS_AS_ASSUME)
         #define EMBED_ASSERT_FULL(condition) EMBED_ASSUME(condition)
         #define EMBED_ASSERT_O1_MSG(condition, message) EMBED_ASSUME(condition); EMBED_USE_UNUSED(message)
