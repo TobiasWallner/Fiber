@@ -1,6 +1,6 @@
 #include "Exceptions.hpp"
 #include "OStream.hpp"
-#include "ansi_codes.hpp"
+#include "ansi.hpp"
 
 namespace embed{
     
