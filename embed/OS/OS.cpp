@@ -9,12 +9,7 @@
 //embed
 #include "BaseTask.hpp"
 
-    
-embed::OS::OS(std::chrono::nanoseconds (*time)(void)) 
-    : _time(time)
-    , _prev_time(time()){}
 
-std::chrono::nanoseconds embed::OS::time() const {return this->_time();}
 
 void embed::OS::add_task(BaseTask* task){
     task->create_if();

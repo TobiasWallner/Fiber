@@ -13,12 +13,7 @@
 #include "embed/OS/ExecutionTimes.hpp"
 #include "embed/OS/TaskLifeCycle.hpp"
 #include "embed/OS/TaskFuture.hpp"
-
-/* 
-    I know one should not provide namespaces, but it is just tedious for the suffixes.
-    So I just provide it here and reduce that friction. It is just for numbers: 100us - come on.
-*/
-using namespace std::chrono_literals;
+//#include "embed/OS/Clock.hpp"
 
 namespace embed{
 
@@ -34,8 +29,8 @@ namespace embed{
         private:
             Coroutine _coroutine;
             Schedule _schedule;
-            std::chrono::nanoseconds _delayed_resume_time = 0ns; // next re-redy after yield via delay
-            std::chrono::nanoseconds _execution_start_time = 0ns; // scheduled start time after which task execution is allowed
+            TimePoint _delayed_resume_time = 0ns; // next re-redy after yield via delay
+            TimePoint _execution_start_time = 0ns; // scheduled start time after which task execution is allowed
 
             TaskLifeCycle _prev_life_cycle = TaskLifeCycle::New;
             TaskLifeCycle _life_cycle = TaskLifeCycle::New;
@@ -66,7 +61,7 @@ namespace embed{
              * 
              * @returns The first Schedule in which the task needs to be executed
              */
-            virtual Schedule init_schedule(std::chrono::nanoseconds now) = 0;
+            virtual Schedule init_schedule(TimePoint now) = 0;
 
             /**
              * @brief Calculates the next schedule
@@ -101,7 +96,7 @@ namespace embed{
              *  - `false` -> the scheduler will not execute the task and call `update_schedule()` for the next cycle, 
              *    If `on_deadline_miss()` has not killed the task, in which case `on_kill()`
              */
-            virtual bool on_deadline_miss(std::chrono::nanoseconds over_due) const {return true;}
+            virtual bool on_deadline_miss(Duration over_due) const {return true;}
 
             /// @brief A function that can be overloaded by the user and will be called by the scheduler
             /// if the task has been killed. This allows for extra cleanup.
@@ -112,7 +107,7 @@ namespace embed{
 
             /// @brief returns the time after which the task is ready next.
             /// @details if the task is in its Delaying lifecycle it will return the delayed resume time, otherwise the ready time of the schedule 
-            [[nodiscard]] inline std::chrono::nanoseconds ready_time() const {
+            [[nodiscard]] inline TimePoint ready_time() const {
                 if(this->life_cycle() == TaskLifeCycle::Delaying){
                     return this->_delayed_resume_time;
                 }else{
@@ -153,12 +148,35 @@ namespace embed{
              * @throws An O1 level assertion if the task is not actually delaying, aka. `this->is_delaying(); // false`
              * @returns the delay
              */
-            [[nodiscard]] inline std::chrono::nanoseconds delay_value() const {
+            [[nodiscard]] inline Duration delay_value() const {
                 EMBED_ASSERT_O1(this->is_delaying());
                 return this->_coroutine.get_delay_value();
             }
 
         };
+
+        template<TimePoint modulo>
+        inline Duration unwrapped_distance(TimePoint lhs, TimePoint rhs){
+            const Duration result = (t_lhs < t_rhs) ? (t_rhs - t_lhs) : ((t_rhs + modulo) - t_lhs);
+            return result;
+        }
+        
+        template<TimePoint modulo>
+        inline bool is_earlier(TimePoint lhs, TimePoint rhs){
+            const Duration distance = unwrapped_distance<modulo>(lhs, rhs);
+            const bool result = distance < (max_time / 2);
+            return result;
+        }
+
+        template<TimePoint modulo>
+        inline bool has_earlier_start_time(const BaseTask* lhs, const BaseTask* rhs){
+            return is_earlier<modulo>(lhs->schedule().ready, rhs->schedule().ready);
+        }
+
+        template<TimePoint modulo>
+        inline bool has_earlier_deadline(const BaseTask* lhs, const BaseTask* rhs){
+            return is_earlier<modulo>(lhs->schedule().deadline, rhs->schedule().deadline);
+        }
 
 }//embed
 

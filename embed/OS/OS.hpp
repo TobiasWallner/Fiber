@@ -8,7 +8,13 @@
 #include <queue>
 
 //embed
-#include "BaseTask.hpp"
+#include "embed/OS/BaseTask.hpp"
+#include "embed/StaticPriorityQueue.hpp"
+#include "embed/StaticArrayList.hpp"
+
+
+// TODO: Shared multi buffer system
+// [deadline priority queue][start priority queue][yield bench unordered][await bench unordered][hybernate bench unordered]
 
 /* 
     I know one should not provide namespaces, but it is just tedious for the suffixes.
@@ -19,24 +25,24 @@ using namespace std::chrono_literals;
 namespace embed{
 
     //TODO: add template allocation
+    template<std::chrono::nanoseconds timer_overflow, long MaxNumberOfTasks = -1>
     class OS{
-    /*private:
-        using TaskType = BaseTask;
-
+    private:
         std::chrono::nanoseconds (*_time)(void); ///< function pointer tht retreives the time
         std::chrono::nanoseconds _prev_time; ///< previous spin time to see if an overflow of the systems clock happened
         
-        using start_time_priority = std::priority_queue<TaskType*, std::vector<TaskType*>, embed::greater_start_time>;
-        using deadline_priority = std::priority_queue<TaskType*, std::vector<TaskType*>, embed::greater_deadline>;
-
-        deadline_priority _ready_queue; ///< tasks that are enabled and ready to be executed
-        start_time_priority _waiting_queue; ///< tasks that are enabled but have not reached their start time yet
-        std::vector<TaskType*> _suspend_bench; ///< tasks that are awaiting external input
+        StaticPriorityQueue<CoTask*, MaxNumberOfTasks, embed::has_earlier_deadline<timer_overflow>> _ready_queue; ///< tasks that are enabled and ready to be executed
+        StaticPriorityQueue<CoTask*, MaxNumberOfTasks, embed::has_earlier_start_time<timer_overflow>> _waiting_queue; ///< tasks that are enabled but have not reached their start time yet
+        StaticArrayList<CoTask*, MaxNumberOfTasks> _await_queue; ///< tasks that are awaiting external input
+        StaticArrayList<CoTask*, MaxNumberOfTasks> _yield_queue; ///< tasks that are awaiting external input
+        StaticArrayList<CoTask*, MaxNumberOfTasks> _hybernate_queue; ///< tasks that are awaiting external input
 
     public:
-        OS(std::chrono::nanoseconds (*time)(void));
+        inline embed::OS::OS(std::chrono::nanoseconds (*time)(void)) 
+            : _time(time)
+            , _prev_time(time()){}
 
-        std::chrono::nanoseconds time() const ;
+        inline std::chrono::nanoseconds time() const {return this->_time();};
 
         void add_task(TaskType* task);
 
@@ -51,6 +57,5 @@ namespace embed{
 
         /// @brief puts all tasks that are past their start time into the ready queue
         void spin_waiting();
-        */
     };
 }

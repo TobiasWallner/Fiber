@@ -1,10 +1,11 @@
 #pragma once
 
 #include "embed/Exceptions.hpp"
+#include "embed/OStream.hpp"
 
 namespace embed
 {
-    
+
     template<size_t N>
     concept is_power_of_two = ((N & (N-1)) == 0);
     /**
@@ -17,7 +18,7 @@ namespace embed
         static constexpr size_t bufferSize = Bytes / sizeof(uint32_t);
         word buffer[bufferSize];
 
-         struct alignas(word) Header{
+        struct Header{
             uint32_t is_allocated : 1;
             uint32_t size : 31;   
         };
@@ -25,7 +26,7 @@ namespace embed
         StaticLinearAllocator(){
             Header* header = reinterpret_cast<Header*>(&buffer[0]);
             header->is_allocated = 0;
-            header->size = Bytes / sizeof(uint32_t)-1;
+            header->size = Bytes / sizeof(uint32_t) - 1;
         }
 
         inline Header* header(size_t index){
@@ -33,13 +34,13 @@ namespace embed
         }
 
         template<class Stream>
-        void dump_buffer(Stream& stream) {
+        void dump(Stream& stream) {
             stream << "==== Memory Dump ====\n";
             size_t index = 0;
             while (index < bufferSize) {
                 stream << "index: " << index
                         << " | allocated: " << header(index)->is_allocated
-                        << " | size: " << ((header(index)->size - 1) * sizeof(word)) << '\n';
+                        << " | size: " << ((header(index)->size) * sizeof(word)) << '\n';
                 index += header(index)->size + 1;
             }
             stream << "=====================\n";
@@ -92,6 +93,11 @@ namespace embed
                         header(new_header_index)->size = new_header_size;
 
                     }
+                    // install alignment symbols
+                    for(std::size_t i = 0; i < alignment_offset; ++i){
+                        header(index+i+1)->is_allocated = 0;
+                        header(index+i+1)->size = 0;
+                    }
                     return reinterpret_cast<void*>((header(index + 1 + alignment_offset)));
                 }else{
                     // increment header position
@@ -104,13 +110,37 @@ namespace embed
         }
 
         void do_deallocate(void* ptr, [[maybe_unused]]std::size_t bytes, [[maybe_unused]]std::size_t alignment) override {
-            Header* const header = reinterpret_cast<Header*>(ptr)-1;
-            EMBED_ASSERT_CRITICAL_MSG(header->is_allocated, "Freeing unallocated memory region. S: Check for double free or invalid pointer.");
-            EMBED_ASSERT_CRITICAL_MSG((reinterpret_cast<const void*>(&buffer[0]) <= ptr) && (ptr < reinterpret_cast<const void*>(&buffer[bufferSize])), "Freeing pointer not contained by allocator. S: Check for invalid pointer");
+            #if defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)
+                // do manual, because deallocate is probably in a destructor and noexcept would call `__exit()` instead of propperly throwing
+                if(!(reinterpret_cast<const void*>(&buffer[0]) <= ptr) && (ptr < reinterpret_cast<const void*>(&buffer[bufferSize]))){
+                    embed::cerr << embed::AssertionFailureCritical("(&buffer[0]) <= ptr) && (ptr < (&buffer[bufferSize])", "Tried to free pointer that is not in the range of the allocator.", EMBED_FUNCTION_SIGNATURE) << embed::endl;
+                    return;
+                }
+            #endif
+            Header* header = reinterpret_cast<Header*>(ptr)-1;
+
+            #if defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)
+                std::size_t iterations = 0;
+            #endif
+            while((header->is_allocated == 0) && (header->size == 0)){
+                --header;
+                #if defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)
+                    if(!(reinterpret_cast<const void*>(header) >= reinterpret_cast<const void*>(&buffer[0]))){
+                        embed::cerr << embed::AssertionFailureCritical("reinterpret_cast<const void*>(header) >= reinterpret_cast<const void*>(&buffer[0])", "Tried to free a pointer that is not a valid memory segment within the allocator", EMBED_FUNCTION_SIGNATURE) << embed::endl;
+                        return;
+                    }
+                    if(!(iterations < alignment)){
+                        embed::cerr << embed::AssertionFailureCritical("iterations < alignment", "Tried to free a pointer that is not a valid memory segment within the allocator", EMBED_FUNCTION_SIGNATURE) << embed::endl;
+                        return;
+                    }
+                    ++iterations;
+                #endif
+
+            }
             header->is_allocated = 0;
         }
 
-        bool do_is_equal( const std::pmr::memory_resource& other ) const noexcept override {return false;}
+        bool do_is_equal([[maybe_unused]] const std::pmr::memory_resource& other ) const noexcept override {return false;}
     };
 
     
