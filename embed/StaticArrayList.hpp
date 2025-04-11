@@ -460,6 +460,49 @@ namespace embed
             return this->unconst(last-dist);
         }
 
+        /// @brief erases elements from the list if they satisfy the callable
+        /// @tparam Callable Object that can be called like `bool f(const T&)` or `bool f(T)`.
+        /// @param f Condition that returns `true` if that element should be erased from the list.
+        template<class Callable>
+        std::size_t erase_if(Callable&& f){
+            iterator read_itr = this->begin();
+            const iterator end_itr = this->end();
+
+            // search first that is true
+            for(;read_itr != end_itr; ++read_itr){
+                if(f(*read_itr)) break;
+            }
+
+            // return if it did not aplie to any
+            if(read_itr == end_itr) return 0;
+            
+            // setup first read and write iterators
+            iterator write_itr = read_itr;
+            ++read_itr;
+
+            // move down or skip if erased
+            while(read_itr != end_itr){
+                if(f(*read_itr)){
+                    ++read_itr;
+                }else{
+                    *write_itr = std::move(*read_itr);
+                    ++write_itr;
+                    ++read_itr;
+                }
+            }
+
+            // calculate new and erased size
+            std::size_t new_size = write_itr - this->begin();
+            std::size_t n_erased = this->end() - write_itr;
+
+            // destroy remaining
+            for(; write_itr != end_itr; ++write_itr){
+                write_itr->~T();
+            }
+            this->_size = new_size;
+            return n_erased;
+        }
+
         /// @brief erases/removes the range given by the closed-open indices [first, last)
         /// @details does not perform out of bounds checks
         /// @returns an iterator the element after the removed ones
