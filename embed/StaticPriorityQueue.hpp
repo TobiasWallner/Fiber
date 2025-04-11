@@ -10,7 +10,7 @@
 
 namespace embed
 {
-    template<class T, size_type N>
+    template<class T, size_type N, class greater_priority>
     class StaticPriorityQueue{
     public:
         using comntainer_type = StaticArrayList<T, N>;
@@ -28,9 +28,9 @@ namespace embed
         using iterator = comntainer_type::iterator;
         using const_iterator = comntainer_type::const_iterator;
 
-        StaticPriorityQueue(bool (*greater_priority)(const T& lhs, const T& rhs)) : _greater_priority(greater_priority){}
-        StaticPriorityQueue(const StaticPriorityQueue&) = default;
-        StaticPriorityQueue& operator=(const StaticPriorityQueue&) = default;
+        constexpr StaticPriorityQueue() = default;
+        constexpr StaticPriorityQueue(const StaticPriorityQueue&) = default;
+        constexpr StaticPriorityQueue& operator=(const StaticPriorityQueue&) = default;
         
         /// @brief returns the size/count of live elements in the container 
         constexpr size_type size() const {return this->_buffer.size();}
@@ -57,7 +57,7 @@ namespace embed
         constexpr const_reference top() const {return this->_buffer.front();}
 
         template<class... Args>
-        reference emplace(Args&&... args){
+        inline reference emplace(Args&&... args){
             this->_buffer.emplace_back(std::forward<Args>(args)...);
             return this->sort_up(this->size() - 1);
         }
@@ -81,7 +81,7 @@ namespace embed
             }
         }
 
-        value_type get_top{
+        inline value_type get_top{
             value_type value = std::move(this->top());
             this->pop();
             return value;
@@ -98,7 +98,7 @@ namespace embed
             if(left_idx >= this->size()) return left_idx;
             const size_type right_idx = right_child(parent_idx);
             if(right_idx >= this->size()) return left_idx;
-            if(this->_greater_priority(this->_buffer[left_idx], this->_buffer[right_idx])){
+            if(greater_priority(this->_buffer[left_idx], this->_buffer[right_idx])){
                 return left_idx;
             }else{
                 return right_idx;
@@ -114,7 +114,7 @@ namespace embed
             size_type parent_idx = parent(idx);
 
             // iterate until top element is reached and as long as idx has a greater priority than its parent
-            while((idx != 0) && this->_greater_priority(idx, parent_idx)){
+            while((idx != 0) && greater_priority(idx, parent_idx)){
                 // switch if it has a greater priority than the parend
                 std::swap(this->_buffer[idx], this->_buffer[parent_idx]);
 
