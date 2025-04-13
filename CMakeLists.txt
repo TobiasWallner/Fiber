@@ -39,9 +39,6 @@ if(USE_EMBED_SYS_STUBS)
 
     target_link_options(embed_sys_stubs PUBLIC
         -Wl,--wrap=atexit
-        -Wl,--wrap=__cxa_atexit
-        -Wl,--wrap=__cxa_finalize
-        -Wl,--wrap=_register_exitproc
     )
 endif()
 
