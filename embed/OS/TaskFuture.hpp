@@ -10,7 +10,7 @@
 #include "embed/Exceptions.hpp"
 #include "embed/OStream.hpp"
 
-#include "embed/OS/Exit.hpp"
+#include "embed/OS2/Exit.hpp"
 #include "embed/OS/Yield.hpp"
 #include "embed/OS/Cycle.hpp"
 

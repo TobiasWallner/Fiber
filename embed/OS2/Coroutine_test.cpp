@@ -3,7 +3,7 @@
 #include "Coroutine.hpp"
 
 #include "embed/test.hpp"
-#include "embed/OS/Allocator.hpp"
+#include "embed/OS2/Allocator.hpp"
 namespace{
     void Coroutine_SimpleTask_test(){
         embed::StaticLinearAllocatorDebug<1024> allocator;

@@ -19,7 +19,7 @@ add_library(embed STATIC
     embed/OS2/Coroutine.cpp
     embed/OS2/Coroutine_test.cpp
 
-    embed/OS/Clock_test.cpp
+    embed/OS2/Clock_test.cpp
 )
 
 option(

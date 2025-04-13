@@ -4,8 +4,8 @@
 #include <ranges>
 
 //embed
-#include "embed/OS/Clock.hpp"
-#include "embed/OS/Clock_test.hpp"
+#include "embed/OS2/Clock.hpp"
+#include "embed/OS2/Clock_test.hpp"
 #include "embed/test.hpp"
 
 

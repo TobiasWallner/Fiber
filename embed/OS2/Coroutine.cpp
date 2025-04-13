@@ -94,7 +94,6 @@ namespace embed{
             this->_leaf_coroutine->destroy();
             this->_leaf_coroutine = next;
         }
-        this->_life_cycle = TaskLifeCycle::Killed;
     }
 
 }

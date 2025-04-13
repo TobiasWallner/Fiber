@@ -7,8 +7,7 @@
 
 //embed
 #include "embed/Exceptions.hpp"
-#include "embed/OS/Exit.hpp"
-#include "embed/OS/TaskLifeCycle.hpp"
+#include "embed/OS2/Exit.hpp"
 #include "embed/StaticArrayList.hpp"
 
 /**
@@ -290,7 +289,6 @@ namespace embed{
         CoroutineNode* _leaf_coroutine;
         AwaitableNode* _leaf_awaitable = nullptr;
         std::size_t _task_id = 0;
-        TaskLifeCycle _life_cycle = TaskLifeCycle::New;
         bool _instant_resume = false;
     public:
 
