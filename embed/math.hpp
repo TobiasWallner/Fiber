@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <cinttypes>
+#include <cstddef>
 #include <bit>
 
 namespace embed{
@@ -10,10 +11,20 @@ namespace embed{
     template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
     constexpr Int pow(const Int base, const unsigned int exponent){
         Int result = 1;
-        for(int i = 0; i < exponent; ++i){result *= base;}
+        for(unsigned int i = 0; i < exponent; ++i){result *= base;}
         return result;
     }
 
+    /**
+     * \brief returns the length of a terminated c-style string
+     */
+    constexpr std::size_t string_length(const char* str){
+        std::size_t i = 0;
+        for(;;++i, (void)++str){
+            if(*str == '\0') return i;
+        }
+        return i;
+    }
 
     float frexp(float value, int* exponent);
 
