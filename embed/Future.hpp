@@ -5,11 +5,18 @@
 #endif
 
 #include <coroutine>
+#include <tuple>
 
 #include "embed/Exceptions.hpp"
 #include "embed/interrupts.hpp"
 
 namespace embed{    
+
+    template<class T>
+    struct FuturePromisePair;
+
+    template<class T>
+    FuturePromisePair<T> make_future_promise();
 
     template<class T>
     class Promise;
@@ -22,15 +29,15 @@ namespace embed{
      * It will then remove all the locks and logic that is needed for multi-core thread safety.
      * 
      * Example: one wants to copy data asynchronously (for example with a DMA controller) while doing some computations in the mean time.
-     * ```C++
+     * ```cpp
      * {
-     *      // create a future that expects a result in the future
-     *      Future<int> future_crc;
-     *      future_crc.is_ready(); // returns `false`
      * 
      *      // You want to calculate for example the CRC code of some data and use a hardware module that can do that independently
      *      // The function issues a request to a hardware-unit/co-processor and returns immediately
-     *      async_crc(data, dataLength, future_crc);
+     *      // create a future that expects a result in the future
+     *      Future<int> future_crc = async_crc(data, dataLength);;
+     * 
+     *      future_crc.is_ready(); // returns `false`
      * 
      *      // In the mean time, while the CRC is being calculated, one can do some calculations
      *      // ...
@@ -40,8 +47,13 @@ namespace embed{
      *      // later you you want to get the value from the future - aka. the CRC calculation you call:
      *      int crc = future_crc.get(); // the method waits and blocks this thread until the future value is ready
      * 
-     * } // alternatively, the future waits at the end of the code block in the destructor.
+     * } // alternatively, if you do not wait or get the value, the future and promise safely detatch in the destructor
      * 
+     * ```
+     * 
+     * To create a future promise pair use:
+     * ```cpp
+     * auto [future, promise] = embed::make_future_promise<int>();
      * ```
      */
     template<class T>
@@ -71,54 +83,58 @@ namespace embed{
             friend class Promise<T>;
         public:
     
+            friend FuturePromisePair<T> make_future_promise<T>();
+
             Future() = default;
             Future(const Future&) = delete;
-            Future operator=(const Future&) = delete;
-            Future operator=(Future&&) = delete;
+            Future& operator=(const Future&) = delete;
 
-
+            Future& operator=(Future&& oldFuture){
+                if(this != &oldFuture){
+                    this->acquire_dual_locks();
+                    switch(oldFuture.get_state()){
+                        case State::HasValue: {
+                            this->_value = oldFuture._value;
+                            this->set_state(State::HasValue);
+                        } break;
+                        case State::BrokenPromise: {
+                            this->set_state(State::BrokenPromise);
+                        } break;
+                        case State::Busy: {
+                            // double check, because after the first check there migth have been an interrupt or async write
+                            switch(this->get_state()){
+                                case State::HasValue: {
+                                    this->_value = oldFuture._value;
+                                    this->set_state(State::HasValue);
+                                } break;
+                                case State::BrokenPromise: {
+                                    this->set_state(State::BrokenPromise);
+                                } break;
+                                case State::Busy: {
+                                    // assign new pointer to the promise
+                                    if(this->_promisePtr != nullptr){
+                                        this->_promisePtr->_futurePtr = this;
+                                    }else{
+                                        // assign error if there is no linked promise
+                                        this->set_state(State::BrokenPromise);
+                                    }
+                                }
+                            }
+                        } break;
+                    }
+                    this->release_dual_locks();
+                }
+                return *this;
+            }
+            /// @brief Thread and interrupt save move that re-registers stack pointer in between the future and the promise
+            Future(Future&& oldFuture){
+                *this = std::move(oldFuture);
+            }
             ~Future(){
                 // detatch from the promise
                 this->acquire_dual_locks();
                 this->release_dual_locks_and_detatch();
             }
-            
-            /// @brief Thread and interrupt save move that re-registers stack pointer in between the future and the promise
-            Future(Future&& oldFuture){
-                this->acquire_dual_locks();
-                switch(oldFuture.get_state()){
-                    case State::HasValue: {
-                        this->_value = oldFuture._value;
-                        this->set_state(State::HasValue);
-                    } break;
-                    case State::BrokenPromise: {
-                        this->set_state(State::BrokenPromise);
-                    } break;
-                    case State::Busy: {
-                        // double check, because after the first check there migth have been an interrupt or async write
-                        switch(this->get_state()){
-                            case State::HasValue: {
-                                this->_value = oldFuture._value;
-                                this->set_state(State::HasValue);
-                            } break;
-                            case State::BrokenPromise: {
-                                this->set_state(State::BrokenPromise);
-                            } break;
-                            case State::Busy: {
-                                // assign new pointer to the promise
-                                if(this->_promisePtr != nullptr){
-                                    this->_promisePtr->_futurePtr = this;
-                                }else{
-                                    // assign error if there is no linked promise
-                                    this->set_state(State::BrokenPromise);
-                                }
-                            }
-                        }
-                    } break;
-                }
-                this->release_dual_locks();
-            }
-
 
             /**
              * \brief Blocks the current thread until the value is ready or an error occured.
@@ -230,6 +246,7 @@ namespace embed{
             [[nodiscard]]inline bool is_broken_promise() const {return this->get_state() == State::BrokenPromise;}
     
             
+        private:
             Promise<T> make_promise(){
                 if(this->_promisePtr == nullptr){
                     return Promise<T>(this);
@@ -237,8 +254,6 @@ namespace embed{
                     throw Exception("Error: `Future::make_promise()` tried to create a second promise for the same future.");
                 }
             }
-    
-
 
         private:
 
@@ -321,16 +336,16 @@ namespace embed{
      * static Promise<uint32_t> crc_promise;
      * 
      * // async function that accepts a promise for example when called from a future holder
-     * void async_crc(const void* data, size_t dataLength, Promise<uint32_t> promise){
+     * embed::Future<uint32_t> async_crc(const void* data, size_t dataLength){
      * 
-     *      // move the promise to where the interrupt can access it
-     *      crc_promise = std::move(promise);
+     *      // create a future promise pair use:
+     *      auto [crc_future, crc_promise] = embed::make_future_promise<uint32_t>();
      * 
      *      // start the CRC calculation
      *      CRC_DMA_start(data, dataLength);
      * 
      *      // return before the CRC computation finished
-     *      return;
+     *      return crc_future;
      * } 
      * 
      * // Once the CRC computation finished the interrupt will be called
@@ -343,8 +358,7 @@ namespace embed{
      * int main(){
      *      // ...
      * 
-     *      Future<uint32_t> crc_future;
-     *      async_crc(message, length, crc_future);
+     *      Future<uint32_t> crc_future = async_crc(message, length);
      * 
      *      // let the crc hardware do its thing and do some other math in the mean time
      *      // ... 
@@ -381,6 +395,8 @@ namespace embed{
             this->_futurePtr->_promisePtr = this;
         }
     public:
+
+        friend FuturePromisePair<T> make_future_promise<T>();
 
         Promise() = default;
         Promise(const Promise&) = delete;
@@ -549,4 +565,61 @@ namespace embed{
         }
 
     };
+}// namespace embed
+
+namespace embed{
+    template<class T>
+    struct FuturePromisePair{
+        Future<T> future;
+        Promise<T> promise;
+    };
+}
+
+// make Future Promise Tuple decomposable:
+// specialize the tuple traits:
+namespace std {
+    template<class T> struct tuple_size<embed::FuturePromisePair<T>> : std::integral_constant<std::size_t, 2> {};
+    template<class T> struct tuple_element<0, embed::FuturePromisePair<T>> { using type = embed::Future<T>; };
+    template<class T> struct tuple_element<1, embed::FuturePromisePair<T>> { using type = embed::Promise<T>; };
+} // namespace std
+
+
+
+
+namespace embed{
+
+    // provide `get<>()`
+    template<std::size_t I, class T>
+    decltype(auto) get(embed::FuturePromisePair<T>&& p){
+        if constexpr (I == 0){
+            return std::move(p.future);
+        }else{
+            return std::move(p.promise);
+        }
+    }
+
+    /**
+     * @brief creates a linked future promise pair
+     * 
+     * Example:
+     * ```
+     * auto [future, promise] = make_future_promise<int>();
+     * ```
+     * 
+     * @tparam T The type that is being promised by the promise and awaited by the future
+     * @returns A linked `FuturePromisePair` Future promise pair
+     */
+    template<class T>
+    FuturePromisePair<T> make_future_promise(){
+        // create pair
+        FuturePromisePair<T> pair;
+
+        // link pair
+        pair.future._promisePtr = &pair.promise;
+        pair.promise._futurePtr = &pair.future;
+
+        // return pair
+        return pair;
+    }
+
 } // namespace embed
