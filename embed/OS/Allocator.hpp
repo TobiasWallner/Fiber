@@ -46,6 +46,23 @@ namespace embed
             stream << "=====================\n";
         }
 
+        bool empty(){
+            if(header(0)->is_allocated) return false;
+            this->combine_free(0);
+            const bool result = (header(0)->size + 1) == bufferSize;
+            return result;
+        }
+
+        void combine_free(std::size_t index){
+            if(header(index)->is_allocated == 0){// scan and see if memory blocks can be combined
+                uint32_t totalFreeSize = 0;
+                for(size_t i = index; (i < bufferSize) && (header(i)->is_allocated == 0); i += header(i)->size + 1){
+                    totalFreeSize += header(i)->size + 1;
+                }
+                header(index)->size = totalFreeSize - 1; 
+            }
+        }
+
         void* do_allocate(const std::size_t size, const std::size_t alignment) override {
             const std::size_t num_words = (size + sizeof(word) - 1) / sizeof(word);
 
@@ -55,13 +72,7 @@ namespace embed
             std::size_t index = 0;
             while(index < bufferSize){
                 
-                if(header(index)->is_allocated == 0){// scan and see if memory blocks can be combined
-                    uint32_t totalFreeSize = 0;
-                    for(size_t i = index; (i < bufferSize) && (header(i)->is_allocated == 0); i += header(i)->size + 1){
-                        totalFreeSize += header(i)->size + 1;
-                    }
-                    header(index)->size = totalFreeSize - 1; 
-                }
+                combine_free(index);
                 
                 const size_t alignment_offset = (reinterpret_cast<size_t>(&buffer[index+1]) % alignment) / sizeof(word);
                 size_t size_to_allocate = num_words + alignment_offset;
@@ -86,11 +97,11 @@ namespace embed
                     if(size_to_allocate < old_size){
                         // write next header
 
-                        const size_t new_header_index = index + 1 + size_to_allocate;
-                        const size_t new_header_size = old_size - size_to_allocate - 1;
+                        const size_t next_header_index = index + 1 + size_to_allocate;
+                        const size_t next_header_size = old_size - size_to_allocate - 1;
 
-                        header(new_header_index)->is_allocated = 0;
-                        header(new_header_index)->size = new_header_size;
+                        header(next_header_index)->is_allocated = 0;
+                        header(next_header_index)->size = next_header_size;
 
                     }
                     // install alignment symbols
@@ -98,7 +109,7 @@ namespace embed
                         header(index+i+1)->is_allocated = 0;
                         header(index+i+1)->size = 0;
                     }
-                    return reinterpret_cast<void*>((header(index + 1 + alignment_offset)));
+                    return reinterpret_cast<void*>((&buffer[index + 1 + alignment_offset]));
                 }else{
                     // increment header position
                     const size_t increment = header(index)->size + 1;
@@ -143,6 +154,25 @@ namespace embed
         bool do_is_equal([[maybe_unused]] const std::pmr::memory_resource& other ) const noexcept override {return false;}
     };
 
+    template<size_t Bytes>
+    class StaticLinearAllocatorDebug : public StaticLinearAllocator<Bytes>{
+    private:
+        std::size_t count_alloc = 0;
+        std::size_t count_free = 0;
+    public:
+        std::size_t nalloc() const {return this->count_alloc;}
+        std::size_t nfree() const {return this->count_free;}
+
+        void* do_allocate(const std::size_t size, const std::size_t alignment) override {
+            this->count_alloc += 1;
+            return this->StaticLinearAllocator<Bytes>::do_allocate(size, alignment);
+        }
+
+        void do_deallocate(void* ptr, [[maybe_unused]]std::size_t size, [[maybe_unused]]std::size_t alignment) override {
+            this->count_free += 1;
+            this->StaticLinearAllocator<Bytes>::do_deallocate(ptr, size, alignment);
+        }
+    };
     
 } // namespace embed
 
