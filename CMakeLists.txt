@@ -14,6 +14,7 @@ add_library(embed STATIC
     #embed/OS/OS.cpp
 
     # tests
+    embed/OStream_test.cpp
     #embed/OS/BaseTask_test.cpp
     embed/OS2/Coroutine.cpp
     embed/OS2/Coroutine_test.cpp

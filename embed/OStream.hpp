@@ -8,9 +8,89 @@
 
 //embed
 #include "embed/math.hpp"
+#include "embed/concepts.hpp"
 
 namespace embed{
 
+    #ifdef EMBED_FMT_MINIMAL
+        #if defined(EMBED_FMT_DECIMALS_1)
+            #define EMBED_FMT_DECIMALS 1
+        #elif defined(EMBED_FMT_DECIMALS_2)
+            #define EMBED_FMT_DECIMALS 2
+        #elif defined(EMBED_FMT_DECIMALS_3)
+            #define EMBED_FMT_DECIMALS 3
+        #elif defined(EMBED_FMT_DECIMALS_4)
+            #define EMBED_FMT_DECIMALS 4
+        #elif defined(EMBED_FMT_DECIMALS_5)
+            #define EMBED_FMT_DECIMALS 5
+        #elif defined(EMBED_FMT_DECIMALS_6)
+            #define EMBED_FMT_DECIMALS 6
+        #endif
+
+        #if defined(EMBED_FMT_FLOAT_REP_SCI)
+            #define EMBED_FMT_FLOAT_REP FloatRepresentation::Scientific
+        #elif defined(EMBED_FMT_FLOAT_REP_ENG)
+            #define EMBED_FMT_FLOAT_REP FloatRepresentation::Engineering
+        #else // defined(EMBED_FMT_FLOAT_REP_FULL)
+            #define EMBED_FMT_FLOAT_REP FloatRepresentation::Full
+        #endif
+
+        #ifdef EMBED_FMT_DOT_AS_COMMA
+            #define EMBED_FMT_COMMA_CHAR '.'
+            #define EMBED_FMT_THOUSANDS_CHAR ','
+        #else
+            #define EMBED_FMT_COMMA_CHAR ','
+            #define EMBED_FMT_THOUSANDS_CHAR '.'
+        #endif
+
+        #ifdef EMBED_BOOL_TO_TEXT
+            #define EMBED_BOOL_TO_TEXT_VALUE true
+        #else 
+            #define EMBED_BOOL_TO_TEXT_VALUE false
+        #endif
+
+        #ifdef EMBED_FMT_THOUSANDS
+            #define EMBED_FMT_THOUSANDS_VALUE true
+        #else 
+            #define EMBED_FMT_THOUSANDS_VALUE false
+        #endif
+
+        #ifdef EMBED_FMT_PAD_SIGN
+            #define EMBED_FMT_PAD_SIGN_VALUE true
+        #else 
+            #define EMBED_FMT_PAD_SIGN_VALUE false
+        #endif
+
+        #ifdef EMBED_FMT_FORCE_COMMA
+            #define EMBED_FMT_FORCE_COMMA_VALUE true
+        #else 
+            #define EMBED_FMT_FORCE_COMMA_VALUE false
+        #endif
+
+        #ifdef EMBED_FMT_FORCE_DECIMALS
+            #define EMBED_FMT_FORCE_DECIMALS_VALUE true
+        #else
+            #define EMBED_FMT_FORCE_DECIMALS_VALUE false
+        #endif
+
+        #ifdef EMBED_FMT_FORCE_SIGN
+            #define EMBED_FMT_FORCE_SIGN_VALUE true
+        #else
+            #define EMBED_FMT_FORCE_SIGN_VALUE false
+        #endif
+
+        #ifdef EMBED_FMT_FORCE_EXPONENT
+            #define EMBED_FMT_FORCE_EXPONENT_VALUE true
+        #else
+            #define EMBED_FMT_FORCE_EXPONENT_VALUE false
+        #endif
+
+        #ifdef EMBED_FMT_FORCE_EXPONENT_SIGN
+            #define EMBED_FMT_FORCE_EXPONENT_SIGN_VALUE true
+        #else
+            #define EMBED_FMT_FORCE_EXPONENT_SIGN_VALUE false
+        #endif
+    #endif
 
     /**
      * \brief Abstract class for an output character stream that offers string and number formating.
@@ -156,17 +236,6 @@ namespace embed{
         stream.write(str);
         return stream;
     }
-
-    /**
-     * \brief returns the length of a terminated c-style string
-     */
-    inline size_t string_length(const char* str){
-        size_t i = 0;
-        for(;;++i, (void)++str){
-            if(*str == '\0') return i;
-        }
-        return i;
-    }
     
     enum class AlignmentLRC{Left, Right, Center};
 
@@ -184,41 +253,40 @@ namespace embed{
         size_t _len = 0;
 
         /// @brief Default format constructor
-        inline FormatStr() = default;
+        constexpr FormatStr() = default;
 
         /// @brief Construcs a string formater
         /// @param str Pointer to the start of the string
         /// @param len The length of the string, aka. the number of character that should be printed
-        inline FormatStr(const char* str, size_t len) : FormatStrParams(), _str(str), _len(len){}
+        constexpr FormatStr(const char* str, size_t len) : FormatStrParams(), _str(str), _len(len){}
         
         /**
          * \brief Constructs a string from a terminated c-style string. I urge you to use FormatStr(const char* str, size_t len) instead.
          */
-        inline FormatStr(const char* str) : FormatStr(str, string_length(str)){}
+        constexpr FormatStr(const char* str) : FormatStr(str, string_length(str)){}
 
         /// @brief Constructs a string from a range given by the closed-open iterators [first, last)
         /// @param first The start of the string that should be printed. Points to the first character.
         /// @param last The end of the string that should be printed. Points past the last character.
-        inline FormatStr(const char* first, const char* last) : FormatStr(first, last-first){}
+        constexpr FormatStr(const char* first, const char* last) : FormatStr(first, last-first){}
 
-        template<class StringViewLike>
-        requires requires (StringViewLike str) {{str.data() } -> std::convertible_to<const char*>; { str.size() } -> std::integral;}
-        inline FormatStr(const StringViewLike& str) : FormatStr(str.data(), str.size()){}
+        template<CStringView StringView>
+        constexpr FormatStr(const StringView& str) : FormatStr(str.data(), str.size()){}
 
     private:
         // private constructors
-        inline FormatStr(const char* str, size_t len, const FormatStrParams& params) : FormatStrParams(params), _str(str), _len(len){}
-        inline FormatStr(const char* str, const FormatStrParams& params) : FormatStr(str, string_length(str), params){}
-        inline FormatStr(const char* first, const char* last, const FormatStrParams& params) : FormatStr(first, last-first, params){}
-        template<class StringViewLike>
-        inline FormatStr(const StringViewLike& str, const FormatStrParams& params) : FormatStr(str.data(), str.size(), params){}
+        constexpr FormatStr(const char* str, size_t len, const FormatStrParams& params) : FormatStrParams(params), _str(str), _len(len){}
+        constexpr FormatStr(const char* str, const FormatStrParams& params) : FormatStr(str, string_length(str), params){}
+        constexpr FormatStr(const char* first, const char* last, const FormatStrParams& params) : FormatStr(first, last-first, params){}
+        template<CStringView StringView>
+        constexpr FormatStr(const StringView& str, const FormatStrParams& params) : FormatStr(str.data(), str.size(), params){}
     public:
 
-        inline static FormatStr like(const char* str, size_t len, const FormatStrParams& params){return FormatStr(str, len, params);}
-        inline static FormatStr like(const char* str, const FormatStrParams& params){return FormatStr(str, params);}
-        inline static FormatStr like(const char* first, const char* last, const FormatStrParams& params){return FormatStr(first, last, params);}
-        template<class StringViewLike>
-        inline static FormatStr like(const StringViewLike& str, const FormatStrParams& params){return FormatStr(str, params);}
+        constexpr static FormatStr like(const char* str, size_t len, const FormatStrParams& params){return FormatStr(str, len, params);}
+        constexpr static FormatStr like(const char* str, const FormatStrParams& params){return FormatStr(str, params);}
+        constexpr static FormatStr like(const char* first, const char* last, const FormatStrParams& params){return FormatStr(first, last, params);}
+        template<CStringView StringView>
+        constexpr static FormatStr like(const StringView& str, const FormatStrParams& params){return FormatStr(str, params);}
 
         /**
          * \brief Assigns a string to the object. Allows to re-use formats.
@@ -244,7 +312,7 @@ namespace embed{
          * \param str A terminated c-style string
          * \returns self
          */
-        inline FormatStr& operator()(const char* str){
+        constexpr FormatStr& operator()(const char* str){
             this->_str = str; 
             this->_len = string_length(str);
             return *this;
@@ -258,7 +326,7 @@ namespace embed{
          * \param len the length of the string
          * \returns self
          */
-        inline FormatStr& operator()(const char* str, size_t len){
+        constexpr FormatStr& operator()(const char* str, size_t len){
             this->_str = str; 
             this->_len = len;
             return *this;
@@ -271,7 +339,7 @@ namespace embed{
          * \param last The end of the string that should be printed. Points past the last character.
          * \returns self
          */
-        inline FormatStr& operator()(const char* first, const char* last){
+        constexpr FormatStr& operator()(const char* first, const char* last){
             this->_str = first; 
             this->_len = last - first;
             return *this;
@@ -285,8 +353,8 @@ namespace embed{
          *      - size(): that returns the size/length of the stream
          * \returns self
          */
-        template<class StringViewLike>
-        inline FormatStr& operator()(const StringViewLike& str){
+        template<CStringView StringView>
+        constexpr FormatStr& operator()(const StringView& str){
             this->_str = str.data(); 
             this->_len = str.size();
             return *this;
@@ -306,7 +374,7 @@ namespace embed{
          * \param mw An integer that sets the new minimal width
          * \returns self
          */
-        inline FormatStr& mwidth(int mw){this->_mwidth = mw; return *this;}
+        constexpr FormatStr& mwidth(int mw){this->_mwidth = mw; return *this;}
 
         /**
          * \brief Formats the string to the left area set by mwidth().
@@ -318,7 +386,7 @@ namespace embed{
          * 
          * \returns self
          */
-        inline FormatStr& left(){this->_alignment = AlignmentLRC::Left; return *this;}
+        constexpr FormatStr& left(){this->_alignment = AlignmentLRC::Left; return *this;}
 
         /**
          * \brief Formats the string to the left area set by mwidth().
@@ -330,7 +398,7 @@ namespace embed{
          * 
          * \returns self
          */
-        inline FormatStr& right(){this->_alignment = AlignmentLRC::Right; return *this;}
+        constexpr FormatStr& right(){this->_alignment = AlignmentLRC::Right; return *this;}
 
         /**
          * \brief Formats the string to the left area set by mwidth().
@@ -342,14 +410,14 @@ namespace embed{
          * 
          * \returns self
          */
-        inline FormatStr& center(){this->_alignment = AlignmentLRC::Center; return *this;}
+        constexpr FormatStr& center(){this->_alignment = AlignmentLRC::Center; return *this;}
 
         /**
          * \brief Sets the fill characters used by padding that is applied when mwidth() is used.
          * \param c The new fill character
          * \returns self
          */
-        inline FormatStr& fill(char c){this->_fill = c; return *this;}
+        constexpr FormatStr& fill(char c){this->_fill = c; return *this;}
     };
 
     /**
@@ -359,14 +427,18 @@ namespace embed{
     OStream& operator<<(OStream& stream, const FormatStr& fstr);
 
     struct FormatBoolParam : public FormatStrParams{
-        bool _to_text = true;
+        #ifndef EMBED_FMT_MINIMAL
+            bool _to_text = true;
+        #else
+            static constexpr bool _to_text = EMBED_BOOL_TO_TEXT_VALUE;
+        #endif
 
-        FormatBoolParam()=default;
-        explicit FormatBoolParam(const FormatBoolParam&)=default;
-        FormatBoolParam& operator=(const FormatBoolParam&)=default;
+        constexpr FormatBoolParam()=default;
+        explicit constexpr FormatBoolParam(const FormatBoolParam&)=default;
+        constexpr FormatBoolParam& operator=(const FormatBoolParam&)=default;
 
-        explicit FormatBoolParam(const FormatStrParams& params) : FormatStrParams(params){}
-        FormatBoolParam& operator=(const FormatStrParams& params){
+        explicit constexpr FormatBoolParam(const FormatStrParams& params) : FormatStrParams(params){}
+        constexpr FormatBoolParam& operator=(const FormatStrParams& params){
             this->FormatStrParams::operator=(params);
             return *this;
         }
@@ -378,27 +450,37 @@ namespace embed{
     struct FormatBool : FormatBoolParam{
         bool _value;
         
-        inline FormatBool(bool value) : FormatBoolParam(), _value(value){}
+        constexpr FormatBool(bool value) : FormatBoolParam(), _value(value){}
 
     private:
-        inline FormatBool(bool value, const FormatStrParams& params) : FormatBoolParam(params), _value(value){}
-        inline FormatBool(bool value, const FormatBoolParam& params) : FormatBoolParam(params), _value(value){}
+        constexpr FormatBool(bool value, const FormatStrParams& params) : FormatBoolParam(params), _value(value){}
+        constexpr FormatBool(bool value, const FormatBoolParam& params) : FormatBoolParam(params), _value(value){}
     public:
 
-        inline static FormatBool like(bool value, const FormatStrParams& params){return FormatBool(value, params);}
-        inline static FormatBool like(bool value, const FormatBoolParam& params){return FormatBool(value, params);}
+        constexpr static FormatBool like(bool value, const FormatStrParams& params){return FormatBool(value, params);}
+        constexpr static FormatBool like(bool value, const FormatBoolParam& params){return FormatBool(value, params);}
 
         /**
          * \brief enables formating to text
          * \details prints the bool as text: "true"/"false" (default if not calling the function)
          */
-        inline FormatBool& text(){this->_to_text = true; return *this;}
+        constexpr FormatBool& text(){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_to_text = true; 
+            #endif
+            return *this;
+        }
 
         /**
          * \brief disables formating to a numer
          * \details prints the bool as numbers: '1', '0'
          */
-        inline FormatBool& num(){this->_to_text = false; return *this;}
+        constexpr FormatBool& num(){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_to_text = false; 
+            #endif
+            return *this;
+        }
 
         /**
          * \brief Aligns the number to the left
@@ -409,9 +491,9 @@ namespace embed{
          * stream << "'" << FormatBool(false).mwidth(6).left() << "', Expected: 'false '" << newl;
          * ```
          */
-        inline FormatBool& left(){this->_alignment = AlignmentLRC::Left; return *this;}
-        inline FormatBool& right(){this->_alignment = AlignmentLRC::Right; return *this;}
-        inline FormatBool& center(){this->_alignment = AlignmentLRC::Center; return *this;}
+        constexpr FormatBool& left(){this->_alignment = AlignmentLRC::Left; return *this;}
+        constexpr FormatBool& right(){this->_alignment = AlignmentLRC::Right; return *this;}
+        constexpr FormatBool& center(){this->_alignment = AlignmentLRC::Center; return *this;}
 
         /**
          * \brief Set a minimum width of characters that will be printed to the stream
@@ -423,12 +505,12 @@ namespace embed{
          * stream << '"' << FormatBool(true).left().mwidth(6) << '"' << endl;   // Outputs: "true  "
          * ```
          */
-        inline FormatBool& mwidth(int mw){this->_mwidth = mw; return *this;}
+        constexpr FormatBool& mwidth(int mw){this->_mwidth = mw; return *this;}
 
         /**
          * \brief Sets the fill character used for padding. Default is a space ' '.
          */
-        inline FormatBool& fill(char c){this->_fill = c; return *this;}
+        constexpr FormatBool& fill(char c){this->_fill = c; return *this;}
     };
 
     /**
@@ -444,17 +526,24 @@ namespace embed{
     }
 
     struct FormatIntParams : public FormatStrParams{
-        char _thousands_char = ',';
-        bool _force_sign = false;
-        bool _pad_sign = false;
-        bool _use_thousands = false;
+        #ifndef EMBED_FMT_MINIMAL
+            char _thousands_char = ',';
+            bool _force_sign = false;
+            bool _pad_sign = false;
+            bool _use_thousands = false;
+        #else
+            static constexpr char _thousands_char = EMBED_FMT_THOUSANDS_CHAR;
+            static constexpr bool _force_sign = EMBED_FMT_FORCE_SIGN_VALUE;
+            static constexpr bool _pad_sign = EMBED_FMT_PAD_SIGN_VALUE;
+            static constexpr bool _use_thousands = EMBED_FMT_THOUSANDS_VALUE;
+        #endif
 
-        inline FormatIntParams()=default;
-        inline FormatIntParams(const FormatIntParams&)=default;
-        inline FormatIntParams& operator=(const FormatIntParams&)=default;
+        constexpr FormatIntParams()=default;
+        constexpr FormatIntParams(const FormatIntParams&)=default;
+        constexpr FormatIntParams& operator=(const FormatIntParams&)=default;
 
-        inline FormatIntParams(const FormatStrParams& params) : FormatStrParams(params){}
-        inline FormatIntParams& operator=(const FormatStrParams& params){
+        constexpr FormatIntParams(const FormatStrParams& params) : FormatStrParams(params){}
+        constexpr FormatIntParams& operator=(const FormatStrParams& params){
             this->FormatStrParams::operator=(params);
             return *this;
         }
@@ -468,26 +557,26 @@ namespace embed{
         
         value_type _value = 0;
 
-        FormatInt() = default;
-        FormatInt(const FormatInt&) = default;
-        FormatInt& operator=(const FormatInt&) = default;
+        constexpr FormatInt() = default;
+        constexpr FormatInt(const FormatInt&) = default;
+        constexpr FormatInt& operator=(const FormatInt&) = default;
 
-        inline FormatInt(value_type value) : _value(value){}
+        constexpr FormatInt(value_type value) : _value(value){}
 
         template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
-        inline explicit FormatInt(Int value) : _value(static_cast<value_type>(value)){}
+        constexpr explicit FormatInt(Int value) : _value(static_cast<value_type>(value)){}
     private:
         // private constructors
-        inline FormatInt(value_type value, const FormatIntParams& params) : FormatIntParams(params), _value(value){}
+        constexpr FormatInt(value_type value, const FormatIntParams& params) : FormatIntParams(params), _value(value){}
 
         template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
-        inline FormatInt(Int value, const FormatStrParams& params) : FormatStrParams(params), _value(static_cast<value_type>(value)){}
+        constexpr FormatInt(Int value, const FormatStrParams& params) : FormatStrParams(params), _value(static_cast<value_type>(value)){}
     public:
 
-        static inline FormatInt like(value_type value, const FormatIntParams& params){return FormatInt(value, params);}
+        static constexpr FormatInt like(value_type value, const FormatIntParams& params){return FormatInt(value, params);}
 
         template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
-        static inline FormatInt like(Int value, const FormatStrParams& params){return FormatInt(value, params);}
+        static constexpr FormatInt like(Int value, const FormatStrParams& params){return FormatInt(value, params);}
 
         /**
          * \brief enables thousand characters
@@ -499,7 +588,12 @@ namespace embed{
          * stream << FormatInt(4203).use_thousands(false); //Outputs 4203
          * ```
          */
-        inline FormatInt& use_thousands(bool b=true){this->_use_thousands = b; return *this;}
+        constexpr FormatInt& use_thousands([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_use_thousands = b; 
+            #endif
+            return *this;
+        }
 
         /**
          * \brief enables thousand characters
@@ -510,21 +604,42 @@ namespace embed{
          * stream << FormatInt(4203).thousands(','); //Outputs 4,203
          * ```
          */
-        inline FormatInt& thousands(char c=','){this->_thousands_char = c; return this->use_thousands();}
+        constexpr FormatInt& thousands([[maybe_unused]]char c=','){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_thousands_char = c; 
+                this->_use_thousands = true; 
+            #endif
+            return *this;
+        }
 
         /// @brief force the printing of the sign, even if it is positive. 
-        inline FormatInt& fsign(bool b=true){this->_force_sign = b; return *this;}
-        inline FormatInt& mwidth(int mw){this->_mwidth = mw; return *this;}
-        inline FormatInt& fill(char c){this->_fill = c; return *this;}
-        inline FormatInt& pad_sign(bool b=true){this->_pad_sign = b; return *this;}
-        inline FormatInt& left(){this->_alignment = AlignmentLRC::Left; return *this;}
-        inline FormatInt& right(){this->_alignment = AlignmentLRC::Right; return *this;}
-        inline FormatInt& center(){this->_alignment = AlignmentLRC::Center; return *this;}
+        constexpr FormatInt& fsign([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_force_sign = b; 
+            #endif
+            return *this;
+        }
+        constexpr FormatInt& mwidth(int mw){this->_mwidth = mw; return *this;}
+        constexpr FormatInt& fill(char c){this->_fill = c; return *this;}
+        constexpr FormatInt& pad_sign([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_pad_sign = b; 
+            #endif
+            return *this;
+        }
+        constexpr FormatInt& left(){this->_alignment = AlignmentLRC::Left; return *this;}
+        constexpr FormatInt& right(){this->_alignment = AlignmentLRC::Right; return *this;}
+        constexpr FormatInt& center(){this->_alignment = AlignmentLRC::Center; return *this;}
     };
 
     struct str_add_uint_params{
-        char thousands_char = ',';
-        bool use_thousands = false;
+        #ifndef EMBED_FMT_MINIMAL
+            char thousands_char = ',';
+            bool use_thousands = false;
+        #else
+            static constexpr char thousands_char = EMBED_FMT_THOUSANDS_CHAR;
+            static constexpr bool use_thousands = EMBED_FMT_THOUSANDS_VALUE;
+        #endif
         bool force_sign = false;
     };
 
@@ -551,26 +666,36 @@ namespace embed{
 
 
     struct FormatFloatParams : public FormatIntParams{
-        FloatRepresentation _representation;
-        char _comma = '.';
-        int _decimals = 3;
-        bool _force_comma = false;
-        bool _force_decimals = false;
-        bool _force_exponent = false;
-        bool _force_exponent_sign = false;
+        #ifndef EMBED_FMT_MINIMAL
+            FloatRepresentation _representation = FloatRepresentation::Engineering;
+            char _comma = '.';
+            unsigned int _decimals = 3;
+            bool _force_comma = false;
+            bool _force_decimals = false;
+            bool _force_exponent = false;
+            bool _force_exponent_sign = false;
+        #else
+            static constexpr FloatRepresentation _representation = EMBED_FMT_FLOAT_REP;
+            static constexpr char _comma = EMBED_FMT_COMMA_CHAR;
+            static constexpr unsigned int _decimals = EMBED_FMT_DECIMALS;
+            static constexpr bool _force_comma = EMBED_FMT_FORCE_COMMA_VALUE;
+            static constexpr bool _force_decimals = EMBED_FMT_FORCE_DECIMALS_VALUE;
+            static constexpr bool _force_exponent = EMBED_FMT_FORCE_EXPONENT_VALUE;
+            static constexpr bool _force_exponent_sign = EMBED_FMT_FORCE_EXPONENT_SIGN_VALUE;
+        #endif
 
-        inline FormatFloatParams()=default;
-        inline FormatFloatParams(const FormatFloatParams&)=default;
-        inline FormatFloatParams& operator=(const FormatFloatParams&)=default;
+        constexpr FormatFloatParams()=default;
+        constexpr FormatFloatParams(const FormatFloatParams&)=default;
+        constexpr FormatFloatParams& operator=(const FormatFloatParams&)=default;
 
-        inline FormatFloatParams(const FormatStrParams& params) : FormatIntParams(params){}
-        inline FormatFloatParams& operator=(const FormatStrParams& params){
+        constexpr FormatFloatParams(const FormatStrParams& params) : FormatIntParams(params){}
+        constexpr FormatFloatParams& operator=(const FormatStrParams& params){
             this->FormatIntParams::operator=(params);
             return *this;
         }
 
-        inline FormatFloatParams(const FormatIntParams& params) : FormatIntParams(params){}
-        inline FormatFloatParams& operator=(const FormatIntParams& params){
+        constexpr FormatFloatParams(const FormatIntParams& params) : FormatIntParams(params){}
+        constexpr FormatFloatParams& operator=(const FormatIntParams& params){
             this->FormatIntParams::operator=(params);
             return *this;
         }
@@ -583,109 +708,188 @@ namespace embed{
         using value_type = float;
         value_type _value = 0;
 
-        FormatFloat() = default;
-        FormatFloat(const FormatFloat&) = default;
-        FormatFloat& operator=(const FormatFloat&) = default;
+        constexpr FormatFloat() = default;
+        constexpr FormatFloat(const FormatFloat&) = default;
+        constexpr FormatFloat& operator=(const FormatFloat&) = default;
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        explicit inline FormatFloat(Float value) : _value(static_cast<float>(value)){}
+        explicit constexpr FormatFloat(Float value) : _value(static_cast<float>(value)){}
 
     private:
         // private constructors
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        inline FormatFloat(Float value, const FormatFloatParams& params) : FormatFloatParams(params), _value(static_cast<float>(value)){}
+        constexpr FormatFloat(Float value, const FormatFloatParams& params) : FormatFloatParams(params), _value(static_cast<float>(value)){}
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        inline FormatFloat(Float value, const FormatIntParams& params) : FormatIntParams(params), _value(static_cast<float>(value)){}
+        constexpr FormatFloat(Float value, const FormatIntParams& params) : FormatIntParams(params), _value(static_cast<float>(value)){}
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        inline FormatFloat(Float value, const FormatStrParams& params) : FormatIntParams(params), _value(static_cast<float>(value)){}
+        constexpr FormatFloat(Float value, const FormatStrParams& params) : FormatIntParams(params), _value(static_cast<float>(value)){}
     public:
 
-    template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        inline static FormatFloat like(Float value, const FormatFloatParams& params){return FormatFloat(value, params);}
+        template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
+        constexpr static FormatFloat like(Float value, const FormatFloatParams& params){return FormatFloat(value, params);}
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        inline static FormatFloat like(Float value, const FormatIntParams& params){return FormatFloat(value, params);}
+        constexpr static FormatFloat like(Float value, const FormatIntParams& params){return FormatFloat(value, params);}
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        inline static FormatFloat like(Float value, const FormatStrParams& params){return FormatFloat(value, params);}
+        constexpr static FormatFloat like(Float value, const FormatStrParams& params){return FormatFloat(value, params);}
 
         /**
          * \brief enables thousand characters
          */
-        inline FormatFloat& use_thousands(bool b=true){this->_use_thousands = b; return *this;}
+        constexpr FormatFloat& use_thousands([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_use_thousands = b; 
+            #endif
+            return *this;
+        }
 
         /// @brief enable thousands seperator
         /// @param c the character to be used for thousands seperator (default: ',')
-        inline FormatFloat& thousands(char c=','){this->_thousands_char = c; return this->use_thousands();}
+        constexpr FormatFloat& thousands([[maybe_unused]]char c=','){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_thousands_char = c;
+                this->_use_thousands = true; 
+            #endif
+            return *this;
+        }
 
         /// @brief sets the comma value (default: '.')
-        inline FormatFloat& comma(char c){this->_comma = c; return this->use_thousands();}
+        constexpr FormatFloat& comma([[maybe_unused]]char c){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_comma = c; 
+                this->_use_thousands = true; 
+            #endif
+            return *this;
+        }
 
         /// @brief forces the printing of the sign, even if it is positive
-        inline FormatFloat& fsign(bool b=true){this->_force_sign = b; return *this;}
+        constexpr FormatFloat& fsign([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_force_sign = b; 
+            #endif
+            return *this;
+        }
 
         /// @brief sets the minimum width the the number should occupy in text - the rest will be filled with padding/fill characters 
-        inline FormatFloat& mwidth(int mw){this->_mwidth = mw; return *this;}
+        constexpr FormatFloat& mwidth(int mw){this->_mwidth = mw; return *this;}
 
         /// @brief sets the padding/fill character
-        inline FormatFloat& fill(char c){this->_fill = c; return *this;}
+        constexpr FormatFloat& fill(char c){this->_fill = c; return *this;}
 
         /// @brief enables padding for the sign character
-        inline FormatFloat& pad_sign(bool b=true){this->_pad_sign = b; return *this;}
+        constexpr FormatFloat& pad_sign([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_pad_sign = b; 
+            #endif
+            return *this;
+        }
 
         /// @brief flushright: sets the alignment to right - padding will be applied to the left
-        inline FormatFloat& right(){this->_alignment = AlignmentLRC::Right; return *this;}
+        constexpr FormatFloat& right(){this->_alignment = AlignmentLRC::Right; return *this;}
 
         /// @brief flushleft: sets the alignment to left - padding will be applied to the right
-        inline FormatFloat& left(){this->_alignment = AlignmentLRC::Left; return *this;}
+        constexpr FormatFloat& left(){this->_alignment = AlignmentLRC::Left; return *this;}
 
         /// @brief center: sets the alignment to center - padding will be applied to both sides
-        inline FormatFloat& center(){this->_alignment = AlignmentLRC::Center; return *this;}
+        constexpr FormatFloat& center(){this->_alignment = AlignmentLRC::Center; return *this;}
         
         /// @brief formats the number in scientific notation: exponent so that there is always one digit before the comma.
-        inline FormatFloat& sci(){this->_representation = FloatRepresentation::Scientific; return *this;}
+        constexpr FormatFloat& sci(){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_representation = FloatRepresentation::Scientific; 
+            #endif
+            return *this;
+        }
 
         /// @brief formats the number in engineering notation: exponent in magnitudes of three
-        inline FormatFloat& eng(){this->_representation = FloatRepresentation::Engineering; return *this;}
+        constexpr FormatFloat& eng(){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_representation = FloatRepresentation::Engineering; 
+            #endif
+            return *this;
+        }
 
         /// @brief formats the number so that it is shown in its full length without the use of exponents
-        inline FormatFloat& full(){this->_representation = FloatRepresentation::Full; return *this;}
+        constexpr FormatFloat& full(){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_representation = FloatRepresentation::Full; 
+            #endif
+            return *this;
+        }
 
         /// @brief sets the precision, aka. the number of total digits that will be printed before and after the comma
-        inline FormatFloat& decimals(int d){this->_decimals = d; return *this;}
+        constexpr FormatFloat& decimals([[maybe_unused]]int d){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_decimals = d; 
+            #endif
+            return *this;
+        }
 
         /// @brief force a comma in every print, even if it is not needed to display the number
-        inline FormatFloat& fcomma(bool b=true){this->_force_comma = b; return *this;}
+        constexpr FormatFloat& fcomma([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_force_comma = b; 
+            #endif
+            return *this;
+        }
 
         /// @brief force the printing of all decimals, even if they are zero
-        inline FormatFloat& fdeci(bool b=true){this->_force_decimals = b; return *this;}
+        constexpr FormatFloat& fdeci([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_force_decimals = b; 
+            #endif
+            return *this;
+        }
 
         /// @brief force the printing of the exponent, even if it is zero
-        inline FormatFloat& fexp(bool b=true){this->_force_exponent = b; return *this;}
+        constexpr FormatFloat& fexp([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_force_exponent = b; 
+            #endif
+            return *this;
+        }
 
         /// @brief force the sign of the exponent, even if it is positive
-        inline FormatFloat& fexpsign(bool b=true){this->_force_exponent_sign = b; return *this;}
+        constexpr FormatFloat& fexpsign([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_force_exponent_sign = b; 
+            #endif
+            return *this;
+        }
     };
 
     struct str_add_float_params{
         FloatRepresentation representation = FloatRepresentation::Scientific;
-        int decimals = 6;
-        char comma_char = '.';
-        char thousands_char = ',';
-        bool use_thousands = false;
-        bool force_comma = false;
-        bool force_decimals = false;
-        bool force_sign = false;
-        bool force_exponent = false;
-        bool force_exponent_sign = false;
+        #ifndef EMBED_FMT_MINIMAL
+            unsigned int decimals = 6;
+            char comma_char = '.';
+            char thousands_char = ',';
+            bool use_thousands = false;
+            bool force_comma = false;
+            bool force_decimals = false;
+            bool force_sign = false;
+            bool force_exponent = false;
+            bool force_exponent_sign = false;
+        #else
+            static constexpr unsigned int decimals = EMBED_FMT_DECIMALS;
+            static constexpr char comma_char = EMBED_FMT_COMMA_CHAR;
+            static constexpr char thousands_char = EMBED_FMT_THOUSANDS_CHAR;
+            static constexpr bool use_thousands = EMBED_FMT_THOUSANDS_VALUE;
+            static constexpr bool force_comma = EMBED_FMT_FORCE_COMMA_VALUE;
+            static constexpr bool force_decimals = EMBED_FMT_FORCE_DECIMALS_VALUE;
+            static constexpr bool force_sign = EMBED_FMT_FORCE_SIGN_VALUE;
+            static constexpr bool force_exponent = EMBED_FMT_FORCE_EXPONENT_VALUE;
+            static constexpr bool force_exponent_sign = EMBED_FMT_FORCE_EXPONENT_SIGN_VALUE;
+        #endif
     };
 
     OStream& operator<<(OStream& stream, FormatFloat value);
 
     template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-    OStream& operator<<(OStream& stream, Float value){
+    inline OStream& operator<<(OStream& stream, Float value){
         return stream << FormatFloat(value);
     }
 
@@ -694,7 +898,7 @@ namespace embed{
     // -----------------------------------------------------------------------------------------------
 
     template<class T>
-    OStream& operator<<(OStream& stream, const T* ptr){
+    inline OStream& operator<<(OStream& stream, const T* ptr){
         return stream << reinterpret_cast<std::size_t>(ptr); // TODO: format as hex
     }
 
@@ -724,19 +928,42 @@ namespace embed{
     struct OStreamRef{
         OStream* ptr = nullptr;
 
-        OStreamRef() = default;
+        constexpr OStreamRef() = default;
         
-        OStreamRef(const OStreamRef&)=default;
-        OStreamRef(OStream& stream) : ptr(&stream){}
-        OStreamRef(OStream* stream) : ptr(stream){}
+        constexpr OStreamRef(const OStreamRef&)=default;
+        constexpr OStreamRef(OStream& stream) : ptr(&stream){}
+        constexpr OStreamRef(OStream* stream) : ptr(stream){}
 
-        OStreamRef& operator=(const OStreamRef&)=default;
-        OStreamRef& operator=(OStream& stream){this->ptr = &stream; return *this;}
-        OStreamRef& operator=(OStream* stream){this->ptr = stream; return *this;}
+        constexpr OStreamRef& operator=(const OStreamRef&)=default;
+        constexpr OStreamRef& operator=(OStream& stream){this->ptr = &stream; return *this;}
+        constexpr OStreamRef& operator=(OStream* stream){this->ptr = stream; return *this;}
 
-        operator OStream&(){
+        inline operator OStream&(){
             if(this->ptr == nullptr){
-                throw -1; // prevent circular exceptions: throw -> try print error -> throw again -> try print error
+                while(true){/* trap */}
+                // You are trapped here, because you have not redirected the output streams:
+                //      - embed::cout
+                //      - embed::cerr
+                //      - embed::clog
+                //
+                // Solution:
+                // ---------
+                // 
+                //  ```
+                //  class MyStream : public OStream{
+                //      ...
+                //  };
+                // 
+                //  MyStream my_stream;
+                // 
+                //  int main(){
+                //      embed::cout = my_stream;    
+                //      ...
+                //      embed::cout << "hallo world" << embed::endl;
+                //  }
+                //  ```
+                //
+
             }else{
                 return *this->ptr;
             }
@@ -746,13 +973,5 @@ namespace embed{
     extern OStreamRef cout;
     extern OStreamRef cerr;
     extern OStreamRef clog;
-
-
-
-    void OutputStream_test_string_formating(OStream& stream);
-    void OutputStream_test_bool_formating(OStream& stream);
-    void OutputStream_test_integer_formating(OStream& stream);
-    void OutputStream_test(OStream& stream);
-
 
 }// namespace: embed
