@@ -1,6 +1,7 @@
 
 #include "Coroutine.hpp"
 #include "embed/OStream.hpp"
+#include "embed/ansi.hpp"
 
 namespace embed{
     
@@ -45,15 +46,14 @@ namespace embed{
     }
 
     bool CoTask::is_resumable() const {
-        if(this->_leaf_coroutine){
+        if(this->_leaf_coroutine && !this->done()){
             if(this->_leaf_awaitable != nullptr){
                 return this->_leaf_awaitable->await_ready();
             }else{
                 return true;
             }
-        }else{
-            return false;
         }
+        return false;
     }
 
     bool CoTask::resume(){
@@ -84,7 +84,6 @@ namespace embed{
         embed::cerr << "    Killing task." << embed::endl;
     
         this->kill_chain();
-        this->_exit_status = Exit::Failure;
         this->_instant_resume = false;
     }
 
