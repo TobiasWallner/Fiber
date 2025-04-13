@@ -4,8 +4,6 @@
 
 namespace embed{
 
-    
-
     /**
      * \brief Copies count many bytes from `source` to `dest` in a blocking behaviour.
      * 
