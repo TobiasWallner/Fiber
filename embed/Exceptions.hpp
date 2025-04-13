@@ -6,7 +6,7 @@
 // embed
 #include "embed/definitions.hpp"
 
-// #include "embed/OStream.hpp" // foreward declare instead
+// #include "embed/OStream.hpp" // foreward declare instead to resolve header conflicts
 namespace embed{
     class OStream;    
 } // namespace embed;
@@ -16,7 +16,7 @@ namespace embed{
 namespace embed{
 
     /**
-     * @page Exceptions and Assertions
+     * @page exceptions_and_assertions Exceptions and Assertions
      * 
      * embed uses `embed::Exception`, which is the base class for all exceptions in embedOS.
      * This design choice has been made to allow multiple different raw-strings to be passed to exceptions
