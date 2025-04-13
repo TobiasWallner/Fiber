@@ -8,7 +8,6 @@
 
 #include "embed/Exceptions.hpp"
 #include "embed/interrupts.hpp"
-#include "embed/OS/TaskFuture.hpp"
 
 namespace embed{    
 
@@ -59,7 +58,6 @@ namespace embed{
                 Closed, ///< the lock is closed and cannot be acquired
             };
             
-            TaskPromise<embed::Exit>* _taskPromise = nullptr;
             Promise<T>* _promisePtr = nullptr;
             T _value;
 
@@ -240,23 +238,7 @@ namespace embed{
                 }
             }
     
-            /// @brief For co-routine interoperability. Checks if the value is ready
-            /// @return `true` if the value is ready `false` otherwise
-            inline bool await_ready() const noexcept {
-                return this->is_ready();
-            }
 
-            /// @brief For co-routine interoperability. Increments the suspension counter, so that the scheduler can determine if progress has been made yet.
-            /// @param h the handle to the co-routine task promise
-            inline void await_suspend(std::coroutine_handle<TaskPromise<embed::Exit>> h) {
-                h.promise().set_awaiting();
-                this->_taskPromise = &h.promise();  // optional: for use in await_resume()
-            }
-
-            /// @brief For co-routine interoperability. Signals to the TaskPromise/Future that the data is now ready and the co-routine can be resumed
-            inline void await_resume() {
-                EMBED_ASSERT_CRITICAL(this->is_ready());
-            }
 
         private:
 
@@ -428,9 +410,6 @@ namespace embed{
 
                 // notify the future that the promise has been broken
                 this->_futurePtr->set_state(Future<T>::State::BrokenPromise);
-                if(this->_futurePtr->_taskPromise != nullptr){
-                    this->_futurePtr->_taskPromise->clear_awaiting();
-                }
 
                 // release lock and detatch (futurePtr, promisePtr, clallback = nullptr)
                 this->_futurePtr->release_dual_locks_and_detatch();
@@ -450,9 +429,6 @@ namespace embed{
                 // copy object
                 this->_futurePtr->_value = value;
                 this->_futurePtr->set_state(Future<T>::State::HasValue);
-                if(this->_futurePtr->_taskPromise != nullptr){
-                    this->_futurePtr->_taskPromise->clear_awaiting;
-                }
                 
                 // set the pointer to nullptr - because no bond is needed anymore
                 this->_futurePtr->_promisePtr = nullptr;
@@ -477,9 +453,6 @@ namespace embed{
                 // move object
                 this->_futurePtr->_value = std::move(value);
                 this->_futurePtr->set_state(Future<T>::State::HasValue);
-                if(this->_futurePtr->_taskPromise != nullptr){
-                    this->_futurePtr->_taskPromise->clear_awaiting();
-                }
 
                 // release lock and detatch (futurePtr, clallback = nullptr)
                 this->_futurePtr->release_dual_locks_and_detatch();
