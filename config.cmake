@@ -14,6 +14,18 @@ option(
     "Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size"
     OFF)
 
+# ================================================================================
+#                                Exceptions
+# ================================================================================
+
+option(EMBED_DISABLE_ASSERTIONS         "Disable all embedOS assertions" OFF)
+option(EMBED_DISABLE_EXCEPTIONS  "Disables exceptions, will also disable assertions" OFF)
+
+if(EMBED_DISABLE_EXCEPTIONS AND NOT EMBED_DISABLE_ASSERTIONS)
+    message(STATUS "embed: Disabling assertions `EMBED_DISABLE_ASSERTIONS = ON`, because `EMBED_DISABLE_EXCEPTIONS = ON`")
+    set(EMBED_DISABLE_ASSERTIONS ON)
+endif()
+
 
 # ================================================================================
 #                                Assertions
@@ -21,7 +33,7 @@ option(
 
 # Assertion Levels
 # ----------------
-option(EMBED_DISABLE_ASSERTIONS         "Disable all embedOS assertions" OFF)
+
 option(EMBED_ASSERTION_LEVEL_CRITICAL   "Enable critical level assertions" OFF)
 option(EMBED_ASSERTION_LEVEL_O1         "Enable O[1] cost development assertions + critical" OFF)
 option(EMBED_ASSERTION_LEVEL_FULL       "Enable full deep validation assertions + O[1] + full" OFF)
@@ -63,6 +75,8 @@ endif()
 # ------------------
 option(EMBED_ASSERTS_AS_ASSUME "Use compiler intrinsics that asume values instead of unused asserts - for more optimisations (like __builtin_assume, or a different, or none - depending on the compiler used)" OFF)
 option(EMBED_USE_EXCEPTION_CALLBACKS "Use user-defined callbacks for exceptions instead of throwing them" OFF)
+
+
 
 # ================================================================================
 #                           Output and String Formating
@@ -185,6 +199,7 @@ set(embed_cmake_flags
 
 
 set(embed_main_flags
+    EMBED_DISABLE_EXCEPTIONS
     EMBED_DISABLE_ASSERTIONS
     EMBED_ASSERTION_LEVEL_CRITICAL
     EMBED_ASSERTION_LEVEL_O1

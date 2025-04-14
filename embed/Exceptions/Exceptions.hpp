@@ -207,6 +207,8 @@ namespace embed{
         inline void default_exception_callback(const Exception& e){e.print(embed::cerr); while(true){/* trap */}}
         void (*exception_callback)(const Exception& e) = default_exception_callback;
         #define EMBED_THROW(exception) exception_callback(exception); while(true){/* trap */}
+    #elif defined(EMBED_DISABLE_EXCEPTIONS)
+        #define EMBED_THROW(exception) ((void)sizeof(exception))
     #else
         #define EMBED_THROW(exception) throw exception
     #endif
