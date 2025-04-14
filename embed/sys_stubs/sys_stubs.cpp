@@ -21,7 +21,7 @@
  * In your main `CMakeLists.txt`, enable the wrappers via an option:
  * 
  * @code{.cmake}
- * set(USE_EMBED_SYS_STUBS ON)
+ * set(EMBED_USE_EMBED_SYS_STUBS ON)
  * add_subdirectory(embed)
  * 
  * target_link_libraries(App PRIVATE embed)
