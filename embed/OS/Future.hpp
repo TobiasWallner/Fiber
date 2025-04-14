@@ -1,14 +1,17 @@
 #pragma once
 
+// std
 #ifndef EMBED_SINGLE_CORE
     #include <atomic>
 #endif
-
 #include <coroutine>
 #include <tuple>
+#include <optional>
 
-#include "embed/Exceptions/Exceptions.hpp"
-#include "embed/interrupts/interrupts.hpp"
+// embed
+#include <embed/Exceptions/Exceptions.hpp>
+#include <embed/interrupts/interrupts.hpp>
+#include <embed/OS/Coroutine.hpp>
 
 namespace embed{    
 
@@ -57,7 +60,7 @@ namespace embed{
      * ```
      */
     template<class T>
-    class Future{
+    class Future : public AwaitableNode{
         private:
             enum class State{
                 Busy,   ///< signals that the object is not finished and one has to wait
@@ -74,10 +77,10 @@ namespace embed{
             T _value;
 
             #ifndef EMBED_SINGLE_CORE
-                std::atomic<State> _state = State::Busy; // volatile because this will be set by a different threat.
+                std::atomic<State> _state = State::BrokenPromise; // volatile because this will be set by a different threat.
                 std::atomic<Lock> _lock = Lock::Open;
             #else
-                volatile State _state = State::Busy; // volatile because this will be set by a different threat.
+                volatile State _state = State::BrokenPromise; // volatile because this will be set by a different threat.
             #endif
 
             friend class Promise<T>;
@@ -91,72 +94,128 @@ namespace embed{
 
             Future& operator=(Future&& oldFuture){
                 if(this != &oldFuture){
-                    this->acquire_dual_locks();
-                    switch(oldFuture.get_state()){
-                        case State::HasValue: {
-                            this->_value = oldFuture._value;
-                            this->set_state(State::HasValue);
-                        } break;
-                        case State::BrokenPromise: {
-                            this->set_state(State::BrokenPromise);
-                        } break;
-                        case State::Busy: {
-                            // double check, because after the first check there migth have been an interrupt or async write
-                            switch(this->get_state()){
-                                case State::HasValue: {
-                                    this->_value = oldFuture._value;
-                                    this->set_state(State::HasValue);
-                                } break;
-                                case State::BrokenPromise: {
-                                    this->set_state(State::BrokenPromise);
-                                } break;
-                                case State::Busy: {
-                                    // assign new pointer to the promise
-                                    if(this->_promisePtr != nullptr){
-                                        this->_promisePtr->_futurePtr = this;
-                                    }else{
-                                        // assign error if there is no linked promise
-                                        this->set_state(State::BrokenPromise);
-                                    }
-                                }
-                            }
-                        } break;
+                    // detatch this
+                    if(this->_promisePtr){
+                        this->acquire_dual_locks();
+                        this->detatch_release_dual_locks();
                     }
-                    this->release_dual_locks();
+
+                    switch(oldFuture.state()){
+                        case State::Busy:{
+                            // aquire old locks
+                            oldFuture.acquire_dual_locks();
+                            this->_promisePtr = oldFuture._promisePtr;
+                            this->set_state(oldFuture.state()) ;
+                            this->_value = std::move(oldFuture._value);
+
+                            // re-register
+                            if(this->is_waiting() && (this->_promisePtr != nullptr)){
+                                this->_promisePtr->_futurePtr = this;
+                            }
+
+                            // transfere locks
+                            this->_lock.store(oldFuture._lock.load(std::memory_order_acquire), std::memory_order_release);
+
+                            // invalidate oldFuture
+                            oldFuture._promisePtr = nullptr;
+                            oldFuture.set_state(State::BrokenPromise);
+                            oldFuture._lock.store(Lock::Open, std::memory_order_release);
+
+                            // handover complete, this has to release the lock now
+                            this->release_dual_locks();
+                        }break;
+                        case State::HasValue : {
+                            this->_value = std::move(oldFuture._value);
+                            this->set_state(State::HasValue);
+                        }break;
+                        case State::BrokenPromise : {
+                            this->set_state(State::BrokenPromise);
+                        }break;
+                    }
+                    
                 }
                 return *this;
             }
             /// @brief Thread and interrupt save move that re-registers stack pointer in between the future and the promise
             Future(Future&& oldFuture){
-                *this = std::move(oldFuture);
+                
+                switch(oldFuture.state()){
+                    case State::Busy:{
+                        // aquire old locks
+                        oldFuture.acquire_dual_locks();
+                        this->_promisePtr = oldFuture._promisePtr;
+                        this->set_state(oldFuture.state()) ;
+                        this->_value = std::move(oldFuture._value);
+
+                        // re-register
+                        if(this->is_waiting() && (this->_promisePtr != nullptr)){
+                            this->_promisePtr->_futurePtr = this;
+                        }
+
+                        // transfere locks
+                        this->_lock.store(oldFuture._lock.load(std::memory_order_acquire), std::memory_order_release);
+
+                        // invalidate oldFuture
+                        oldFuture._promisePtr = nullptr;
+                        oldFuture.set_state(State::BrokenPromise);
+                        oldFuture._lock.store(Lock::Open, std::memory_order_release);
+
+                        // handover complete, this has to release the lock now
+                        this->release_dual_locks();
+                    }break;
+                    case State::HasValue : {
+                        this->_value = std::move(oldFuture._value);
+                        this->set_state(State::HasValue);
+                    }break;
+                    case State::BrokenPromise : {
+                        this->set_state(State::BrokenPromise);
+                    }break;
+                }
+                    
+                
+                
             }
+
             ~Future(){
-                // detatch from the promise
-                this->acquire_dual_locks();
-                this->release_dual_locks_and_detatch();
+                if(this->_promisePtr){
+                    // detatch from the promise
+                    this->acquire_dual_locks();
+                    this->detatch_release_dual_locks();
+                }
+            }
+
+            inline bool is_connected() const {return this->_promisePtr != nullptr;}
+            inline bool is_detatched() const {return this->_promisePtr == nullptr;}
+
+            /**
+             * @brief Checks if the promise is connected to the future
+             * @returns `true` if the passed promise is the one connected to this future
+             */
+            inline bool is_connected_to(const Promise<T>& promise) const {
+                const bool result = this->_promisePtr == &promise;
+                return result;
             }
 
             /**
              * \brief Blocks the current thread until the value is ready or an error occured.
              */
-            void wait() {while(this->is_busy()){/* Do Nothing */}}
+            void wait() {while(this->is_waiting()){/* Do Nothing */}}
     
             /**
              * \brief returns the value of the future and waits if necessary
-             * \throws Exception of type std::exception if an error occured.
+             * \throws Exception of type embed::Exception if an error occured.
              */
-            T& get(){
+            [[nodiscard]]T& get(){
                 this->wait();
                 if(this->is_ready()){
                     return this->_value;
                 }else{
-                    throw Exception("Read from broken promise in method `Future::get()`.");
+                    EMBED_THROW(Exception("Read from broken promise."));
                 }
             }
-    
+
             /**
-             * \brief returns the value of the future and waits if necessary
-             * \throws Exception of type std::exception if an error occured.
+             * \brief returns the value of the future and waits if necessary. If the value does not exist, a `nullptr` is being returned
              */
             [[nodiscard]]inline T* get_if() {
                 this->wait();
@@ -175,6 +234,14 @@ namespace embed{
                 #endif
             }
         
+            inline State state() const {
+                #ifndef EMBED_SINGLE_CORE
+                    return this->_state.load(std::memory_order_acquire);
+                #else
+                    return this->_state;
+                #endif
+            }
+
         private:
             inline void set_state(State state) {
                 #ifndef EMBED_SINGLE_CORE
@@ -194,7 +261,7 @@ namespace embed{
             /// Calling this function twice will throw an error. A promis must have been created before calling this function.
             /// The state of this future will turned into a 'broken promise'.
             /// @param callback a function pointer that will be called once the Promis receives a value.
-            /// @throws a std::exception if this function is called twice or if there is no promis attatched
+            /// @throws a embed::Exception if this function is called twice or if there is no promis attatched
             void on_ready(void (*callback)(const T&)){
                 // if the future is already ready and the promise was kept --> call the callback directly
                 if(this->is_ready()){
@@ -216,9 +283,9 @@ namespace embed{
                     }else{
                         // safely install the callback function and detatch the future from the promise
                         if(this->_promisePtr == nullptr){
-                            throw Exception("Error: `Future::on_read()` called on detatched Future. A Promise must have created before calling this function.");
+                            EMBED_THROW(Exception("Assigned callback to detatched future."));
                         }else if(this->_promisePtr->_callback != nullptr){
-                            throw Exception("Error: `Future::on_read()` called twice on the same Future.");
+                            EMBED_THROW(Exception("Already assigned a callback to the future promise pair."));
                         }else{
                             // install callback
                             this->_promisePtr->_callback = callback;
@@ -226,7 +293,7 @@ namespace embed{
                         }
 
                         // release lock in controll path 2/2
-                        this->release_dual_locks_and_detatch();
+                        this->detatch_release_dual_locks();
                     }
                 }
             }
@@ -235,7 +302,7 @@ namespace embed{
             [[nodiscard]]inline operator bool() const {return this->is_ready();}
 
             /// @brief returns true if the result is not finished yet and one has to wait
-            [[nodiscard]]inline bool is_busy() const {return this->get_state() == State::Busy;}
+            [[nodiscard]]inline bool is_waiting() const {return this->get_state() == State::Busy;}
     
             /**
              * \brief return true if the promise was not kept
@@ -245,16 +312,32 @@ namespace embed{
              */
             [[nodiscard]]inline bool is_broken_promise() const {return this->get_state() == State::BrokenPromise;}
     
+            /**
+             * @brief `co_await` interoperability, returns true, if the future is no longer waiting.
+             * 
+             * Returns true if the future is not waiting anymore. Note that this does not mean that it
+             * has a readable value. It could also be broken, because the promise died before it could write 
+             * a value
+             * 
+             * @return `true` if the Future is no longer waiting on the Promise
+             */
+            inline bool await_ready() const noexcept override {
+                return !this->is_waiting();
+            }
             
-        private:
-            Promise<T> make_promise(){
-                if(this->_promisePtr == nullptr){
-                    return Promise<T>(this);
+            /**
+             * @brief `co_await` interoperability and optionally returns a value if one has been set.
+             * 
+             * @returns returns the value if the value has been set and `is_ready()` would also return `true`, returns a `std::nullopt` otherwise.
+             */
+            std::optional<T> await_resume() noexcept {
+                if(this->is_ready()){
+                    return this->_value;
                 }else{
-                    throw Exception("Error: `Future::make_promise()` tried to create a second promise for the same future.");
+                    return std::nullopt;
                 }
             }
-
+            
         private:
 
             /// \brief Used by the Future to set the lock for a critical section that affect both the future and the promise
@@ -302,23 +385,30 @@ namespace embed{
             }
 
             /// \brief releases the locks and sets the pointers of the future and promise to each other to nullptr
-            void release_dual_locks_and_detatch() {
+            void detatch_release_dual_locks() {
                 #ifndef EMBED_SINGLE_CORE
                     // release the lock of the promise
                     if(this->_promisePtr != nullptr){
-                        this->_promisePtr->_futurePtr = nullptr;
+                        this->_promisePtr->_futurePtr = nullptr; /// !!! only time allowed to clear the future pointer
                         this->_promisePtr->_lock.store(Promise<T>::Lock::Open,  std::memory_order_release);
+                        
+                        // release the lock of this future
+                        this->_lock.store(Lock::Open, std::memory_order_release);
+
+                        // re-enable interrupts
+                        embed::enable_interrupts();
                     }
 
-                    // release the lock of this future
-                    this->_lock.store(Lock::Open, std::memory_order_release);
                 #else
-                    this->_promisePtr->_futurePtr = nullptr;
+                    if(this->_promisePtr != nullptr){
+                        this->_promisePtr->_futurePtr = nullptr;
+                        embed::enable_interrupts();
+                    }
                 #endif
-                embed::enable_interrupts();
 
-                this->_promisePtr = nullptr;
+                this->_promisePtr = nullptr; // !!! only time allowed to clear the promise pointer
             }
+
         };
 
 
@@ -402,79 +492,160 @@ namespace embed{
         Promise(const Promise&) = delete;
 
         /// @brief Thread and interrupt save move save move that re-registers stack pointers in between the future and the promise
+        Promise& operator=(Promise&& oldPromise){
+            if(this != &oldPromise){
+                // detatch this
+                if(oldPromise._futurePtr){
+                    this->acquire_dual_locks();
+                    this->detatch_release_dual_locks();
+
+                    // lock old
+                    oldPromise.acquire_dual_locks();
+
+                    // copy data from oldPromise
+                    this->_callback = oldPromise._callback;
+                    this->_futurePtr = oldPromise._futurePtr;
+                    
+                    // re-register
+                    if(this->_futurePtr){
+                        this->_futurePtr->_promisePtr = this;
+                    }
+                    
+                    // transfere locks
+                    this->_lock.store(oldPromise._lock.load(std::memory_order_acquire), std::memory_order_release);
+                    
+                    // invalidate oldPromise
+                    oldPromise._callback = nullptr;
+                    oldPromise._futurePtr = nullptr;
+                    oldPromise._lock.store(Lock::Open);
+
+                    // handover complete release this
+                    this->release_dual_locks();
+                }else{
+                    this->_futurePtr = nullptr;
+                    this->_callback = nullptr;
+                }
+                
+            }
+            return *this;
+        }
+
         Promise(Promise&& oldPromise){
-            if(oldPromise._futurePtr != nullptr){
-                // re-register the new object
+            if(oldPromise._futurePtr){
+                // lock old
+                oldPromise.acquire_dual_locks();
 
-                // acquire lock
-                oldPromise._futurePtr->acquire_dual_locks();
-
-                // set pointers
+                // copy data from oldPromise
+                this->_callback = oldPromise._callback;
                 this->_futurePtr = oldPromise._futurePtr;
-                this->_futurePtr->_promisePtr = this;
+                
+                // re-register
+                if(this->_futurePtr){
+                    this->_futurePtr->_promisePtr = this;
+                }
+                
+                // transfere locks
+                this->_lock.store(oldPromise._lock.load(std::memory_order_acquire), std::memory_order_release);
+                
+                // invalidate oldPromise
+                oldPromise._callback = nullptr;
+                oldPromise._futurePtr = nullptr;
+                oldPromise._lock.store(Lock::Open);
 
-                // release lock
-                oldPromise._futurePtr->release_dual_locks();
+                // handover complete release this
+                this->release_dual_locks();
+            }else{
+                this->_futurePtr = nullptr;
             }
         }
 
-        /// @brief Signals a broken promise to the future if no value has been assigned to the promise before destruction.
-        inline ~Promise(){
-            if(this->_futurePtr != nullptr){
-                // acquire lock
-                this->_futurePtr->acquire_dual_locks();
+        
 
-                // notify the future that the promise has been broken
-                this->_futurePtr->set_state(Future<T>::State::BrokenPromise);
+        /**
+         * @brief Checks if the passed future is the one connected to this promise
+         * @returns `true` if the passed future is the same that this promise is connected to.
+         *  */ 
+        bool is_connected_to(const Future<T>& future) const {
+            const bool result = this->_futurePtr == &future;
+            return result;
+        }
+
+        /// @brief Signals a broken promise to the future if no value has been assigned to the promise before destruction.
+        inline ~Promise() noexcept {
+            if(this->_futurePtr){
+                // acquire lock
+                this->acquire_dual_locks();
+
+                // double-check
+                if(this->_futurePtr != nullptr){
+                    // notify the future that the promise has been broken
+                    this->_futurePtr->set_state(Future<T>::State::BrokenPromise);
+                }
 
                 // release lock and detatch (futurePtr, promisePtr, clallback = nullptr)
-                this->_futurePtr->release_dual_locks_and_detatch();
+                this->detatch_release_dual_locks();
             }
         }
 
         /// @brief Sets a value to the future that this promise is based on.
         /// @param obj The value that should be set to the Future and "keep the promise".
         /// @throws an std::exception on double writes
-        inline void set_value(const T& value){
+        void set_value(const T& value){
             if(this->_callback != nullptr){
                 this->_callback(value);
             }else if(this->_futurePtr != nullptr){
                 // acquire lock
-                this->_futurePtr->acquire_dual_locks();
+                this->acquire_dual_locks();
 
-                // copy object
-                this->_futurePtr->_value = value;
-                this->_futurePtr->set_state(Future<T>::State::HasValue);
-                
-                // set the pointer to nullptr - because no bond is needed anymore
-                this->_futurePtr->_promisePtr = nullptr;
+                // double check
+                if(this->_futurePtr != nullptr){
+                    // copy object
+                    this->_futurePtr->_value = value;
+                    this->_futurePtr->set_state(Future<T>::State::HasValue);
+                }
 
                 // release lock and detatch (futurePtr, promisePtr, clallback = nullptr)
-                this->_futurePtr->release_dual_locks_and_detatch();
+                this->detatch_release_dual_locks();
             }else{
-                throw Exception("Error in `Promise::set_value(const T&)`: Double assignment to already kept promise.");
+                EMBED_THROW(Exception("Double assignment to already kept promise."));
             }
+        }
+
+        /// @brief equivalent to `set_value()` 
+        Promise& operator=(const T& value){
+            this->set_value(value);
+            return *this;
         }
 
         /// @brief Sets a value to the future that this promise is based on.
         /// @param obj The value that should be set to the Future and "keep the promise"
-        /// @throws an std::exception on double writes
-        inline void set_value(T&& value){
+        /// @throws an embed::Exception on double writes
+        void set_value(T&& value){
             if(this->_callback != nullptr){
                 this->_callback(value);
             }else if(this->_futurePtr != nullptr){
+                
                 // acquire lock
-                this->_futurePtr->acquire_dual_locks();
+                this->acquire_dual_locks();
 
-                // move object
-                this->_futurePtr->_value = std::move(value);
-                this->_futurePtr->set_state(Future<T>::State::HasValue);
+                // double check
+                if(this->_futurePtr != nullptr){
+                    // move object
+                    this->_futurePtr->_value = std::move(value);
+                    this->_futurePtr->set_state(Future<T>::State::HasValue);
+                }
 
                 // release lock and detatch (futurePtr, clallback = nullptr)
-                this->_futurePtr->release_dual_locks_and_detatch();
+                this->detatch_release_dual_locks();
             }else{
-                throw Exception("Error in `Promise::set_value(const T&)`: Double assignment to already kept promise.");
+                EMBED_THROW(Exception("Double assignment to already kept promise."));
             }
+        }
+
+        /// @brief equivalent to `set_value()` 
+        Promise& operator=(T&& value){
+            this->set_value(std::move(value));
+            return *this;
         }
 
     private:
@@ -483,20 +654,20 @@ namespace embed{
         /// @details Acquires its own lock. Attempts once to get the Future's lock. If it fails, releases its lock and retries, thereby giving Future a fair chance.
         void acquire_dual_locks(){
             // early return
-            if(this->_promisePtr == nullptr){return;}
+            if(this->_futurePtr == nullptr){return;}
             
             // disable interrupts to prevent deadlocks
             embed::disable_interrupts();
             
             #ifndef EMBED_SINGLE_CORE
-                bool Continue = true;
+                
 
-                while(Continue){
+                while(true){
                     // lock its own lock
                     while (this->_lock.exchange(Lock::Closed, std::memory_order_acquire) != Lock::Open) {/* spin */}
 
                     // double check - because there might have been an interrupt before the first check and the disabling of the interrupts
-                    if(this->_promisePtr == nullptr){
+                    if(this->_futurePtr == nullptr){
                         // cleanup if value changed
 
                         // open lock
@@ -513,11 +684,11 @@ namespace embed{
                         // release the lock so that the future may acquire both locks
                         this->_lock.store(Lock::Open, std::memory_order_release);
 
-                        // failed to get the lock
-                        Continue = true;
+                        // failed to get the lock --> contine loop and retry
+                        continue;
                     }else{
-                        // succeeded in acquireing both locks
-                        Continue = false;
+                        // succeeded in acquireing both locks --> stop trying and exit loop
+                        break;
                     }
                 }
             #endif
@@ -540,27 +711,31 @@ namespace embed{
         }
 
         /// \brief releases the locks and sets the pointers of the future and promise to each other to nullptr
-        void release_dual_locks_and_detatch() {
+        void detatch_release_dual_locks() {
             #ifndef EMBED_SINGLE_CORE
                 // release the lock of the future
                 if(this->_futurePtr != nullptr){
-                    // delete the promises connection to their future before enabling it
-                    this->_futurePtr->_futurePtr = nullptr;
+                    // delete the promises connection before opening the lock
+                    this->_futurePtr->_promisePtr = nullptr;
 
                     // unlock the future
                     this->_futurePtr->_lock.store(Future<T>::Lock::Open,  std::memory_order_release);
+                    this->_lock.store(Lock::Open, std::memory_order_release);
+                    embed::enable_interrupts();
                 }
                 
                 // release the lock of this promise
-                this->_lock.store(Lock::Open, std::memory_order_release);
             #else
-                this->_futurePtr->_futurePtr = nullptr;
+                if(this->_futurePtr != nullptr){
+                    this->_futurePtr->_promisePtr = nullptr;
+                    this->_lock.store(Lock::Open, std::memory_order_release);
+                    embed::enable_interrupts();
+                }
             #endif
 
-            embed::enable_interrupts();
 
             // detatch this
-            this->_promisePtr = nullptr;
+            this->_futurePtr = nullptr;
             this->_callback = nullptr;
         }
 
@@ -616,6 +791,7 @@ namespace embed{
 
         // link pair
         pair.future._promisePtr = &pair.promise;
+        pair.future.set_state(Future<T>::State::Busy);
         pair.promise._futurePtr = &pair.future;
 
         // return pair
