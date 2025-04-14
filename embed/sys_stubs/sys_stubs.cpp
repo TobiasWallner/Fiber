@@ -77,11 +77,7 @@
 
 
 namespace __cxxabiv1{
-    std::terminate_handler __terminate_handler = +[](){
-        while(true){ 
-            continue; // trap 
-            }
-        };
+    std::terminate_handler __terminate_handler = +[](){ while(true){ continue; /* trap */ }};
 }
 
 
