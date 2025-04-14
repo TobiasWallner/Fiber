@@ -1,12 +1,12 @@
 #include "embed/interrupts/interrupts.hpp"
 #include "embed/Exceptions/Exceptions.hpp"
 
-#if !defined(EMBED_SINGLE_CORE)
+#ifndef EMBED_SINGLE_CORE
     #include <atomic>
-    static std::atomic<int32_t> _irq_disable_count{0};
-#else
-    static volatile uint32_t _irq_disable_count = 0;
 #endif
+
+#include <limits>
+
 
 /*
 #if defined(__ARM_ARCH) || defined(__arm__) || defined(__ARM_ARCH_ISA_THUMB) // ARM
@@ -94,29 +94,51 @@
 
 #endif
 */
+
+
 namespace embed{
 
-    /**
-     * \brief default function that disables interrupts with nesting support
-     */
-    void default_disable_interrupts() {
-        if (++_irq_disable_count == 1) {
-            // disable interrupts
-        }
+    #if defined(EMBED_SINGLE_CORE)
+        static volatile uint32_t _irq_disable_count = 0;
+    #else
+        static std::atomic<uint32_t> _irq_disable_count{0};    
+    #endif
+
+    EMBED_WEAK void disable_interrupts_command(){
+        // empty
     }
 
-    /**
-     * \brief default function that enables interrupts with nesting support
-     */
-    void default_enable_interrupts() {
+    
+    EMBED_WEAK void enable_interrupts_command(){
+        // empty
+    }
+
+    void disable_interrupts(){
+        EMBED_ASSERT_CRITICAL(_irq_disable_count != std::numeric_limits<uint32_t>::max());
+        #if defined(EMBED_SINGLE_CORE)
+            if (_irq_disable_count++ == 0) {
+                disable_interrupts_command();
+            }
+        #else
+        if (_irq_disable_count.fetch_add(1, std::memory_order_acq_rel) == 0) {
+            disable_interrupts_command();
+        }
+        #endif
+
+        
+    }
+
+    void enable_interrupts(){
         EMBED_ASSERT_CRITICAL(_irq_disable_count != 0);
-        if (--_irq_disable_count == 0) {
-            // enable interrupts
-        }
+        #if defined(EMBED_SINGLE_CORE)
+            if (_irq_disable_count-- == 1) {
+                enable_interrupts_command();
+            }
+        #else
+            if (_irq_disable_count.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                enable_interrupts_command();
+            }
+        #endif
     }
-
-
-    void (*disable_interrupts)() = default_disable_interrupts;
-    void (*enable_interrupts)() = default_enable_interrupts;
 
 } // namespace embed

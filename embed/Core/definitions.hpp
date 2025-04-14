@@ -42,3 +42,17 @@
 #endif
 
 #define EMBED_USE_UNUSED(value) ((void)sizeof(value))
+
+#if defined(__GNUC__) || defined(__clang__)
+    // Covers GCC, Clang, ARM-GCC, ARMCLANG (Keil 6)
+    #define EMBED_WEAK __attribute__((weak))
+#elif defined(__CC_ARM)
+    // ARM Compiler 5 (Keil <=5.x), old ARMCC
+    #define EMBED_WEAK __weak
+#elif defined(_MSC_VER)
+    // Microsoft Visual Studio (limited to inline-style weak symbols)
+    #define EMBED_WEAK __declspec(selectany)
+#else
+    #define EMBED_WEAK
+    #warning "EMBED_WEAK not defined for this compiler. Please file an issue at the repository, state the compiler you use and how one defines weak symbols for it."
+#endif
