@@ -151,6 +151,21 @@ namespace embed{
 
     inline std::pmr::memory_resource* coroutine_frame_allocator = nullptr;
 
+    /**
+     * @brief Interface tobe awaited via `co_await` and cooperativly works together will all other `embedOS` async infrastructure
+     * 
+     * The `AwaitableNode` is the final leaf of `embed`'s reverse linked coroutine chain. 
+     * 
+     * Example:
+     * ```
+     * send_data(tx_data);
+     * rx_data = co_await receive_data();
+     * ```
+     * 
+     * Derive from `AwaitableNode` and implement:
+     *   - `bool await_ready() const noexcept override { ...Code... }`
+     *   - `auto await_resume() noexcept { ...Code... }`
+     */
     class AwaitableNode{
     private:
         CoTask* master = nullptr;
