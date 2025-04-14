@@ -896,10 +896,165 @@ namespace embed{
     // -----------------------------------------------------------------------------------------------
     //                                    pointer overloads
     // -----------------------------------------------------------------------------------------------
+    
+    struct FormatHexParams{
+        bool include_header = true;
+        bool force_digits = true;
+        bool lowercase = true;
+    };
+
+    template<std::unsigned_integral UInt>
+    struct FormatHex : public FormatStrParams, public FormatHexParams{
+        UInt _value;
+
+        FormatHex(const UInt& v) : _value(v){}
+
+        /**
+         * @brief enable the hex header '0x' in the beginning.
+         */
+        constexpr FormatHex& head(){this->include_header = true; return *this;}
+
+        /**
+         * @brief disable the hex header '0x' in the beginning.
+         */
+        constexpr FormatHex& nohead(){this->include_header = false; return *this;}
+
+        /**
+         * @brief enable leading zeros of the hex number
+         */
+        constexpr FormatHex& lead(){this->force_digits = true; return *this;}
+
+        /**
+         * @brief disables leading zeros of the hex number
+         */
+        constexpr FormatHex& nolead(){this->force_digits = true; return *this;}
+
+        /**
+         * @brief use lower case letters for the hex number
+         */
+        constexpr FormatHex& lower(){this->lowercase = true; return *this;}
+
+        /**
+         * @brief use uppercase letters for hex numbers
+         */
+        constexpr FormatHex& upper(){this->lowercase = false; return *this;}
+
+        
+        /**
+         * \brief Sets the minimum number of character that will be put into the stream. 
+         * 
+         * Padded characters are defined by FormatStr::fill(char c). 
+         * The default fill character is a space ' '.
+         * 
+         * Example:
+         * ```C++
+         * stream << "[" << FormatStr("OK").mwidth(6) << "]" << endl; // Outputs: [    OK]
+         * ```
+         * 
+         * \param mw An integer that sets the new minimal width
+         * \returns self
+         */
+        constexpr FormatHex& mwidth(int mw){this->_mwidth = mw; return *this;}
+
+        /**
+         * \brief Formats the string to the left area set by mwidth().
+         * 
+         * Example:
+         * ```C++
+         * stream << "[" << FormatStr("OK").mwidth(6).left() << "]" << endl; // Outputs: [OK    ]
+         * ```
+         * 
+         * \returns self
+         */
+        constexpr FormatHex& left(){this->_alignment = AlignmentLRC::Left; return *this;}
+
+        /**
+         * \brief Formats the string to the left area set by mwidth().
+         * 
+         * Example:
+         * ```C++
+         * stream << "[" << FormatStr("OK").mwidth(6).right() << "]" << endl; // Outputs: [    OK]
+         * ```
+         * 
+         * \returns self
+         */
+        constexpr FormatHex& right(){this->_alignment = AlignmentLRC::Right; return *this;}
+
+        /**
+         * \brief Formats the string to the left area set by mwidth().
+         * 
+         * Example:
+         * ```C++
+         * stream << "[" << FormatStr("OK").mwidth(6).center() << "]" << endl; // Outputs: [  OK  ]
+         * ```
+         * 
+         * \returns self
+         */
+        constexpr FormatHex& center(){this->_alignment = AlignmentLRC::Center; return *this;}
+
+        /**
+         * \brief Sets the fill characters used by padding that is applied when mwidth() is used.
+         * \param c The new fill character
+         * \returns self
+         */
+        constexpr FormatHex& fill(char c){this->_fill = c; return *this;}
+
+    };
+
+    template<std::unsigned_integral UInt>
+    OStream& operator<<(OStream& stream, FormatHex<UInt> hex){
+        char buffer[sizeof(hex)*2];
+        char* itr = &buffer[0];
+
+        if(hex.include_header){
+            *itr++ = '0';
+            *itr++ = 'x';
+        }
+
+        // print at least 1 zero
+        if(hex._value == 0 && !hex.force_digits){
+            *itr++ = '0';
+            return stream << FormatStr::like(buffer, itr, hex);
+        }
+
+        int i = 0;
+
+        // optional skipp zeros
+        if(!hex.force_digits){
+            for(; i < 8; ++i){
+                uint32_t h = (hex._value >> (4 * (7 - i))) & 0xF;
+                if(h != 0){
+                    break;
+                }
+            }
+        }
+
+        // hex tables
+        constexpr char hex_upper[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+        constexpr char hex_lower[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+        // print hex characters
+        for(; i < 8; ++i){
+            uint32_t h = (hex._value >> (4 * (7 - i))) & 0xF;
+            *itr++ = (hex.lowercase) ? hex_lower[h] : hex_upper[h];
+        }
+
+        // output the formated string
+        return stream << FormatStr::like(buffer, itr, hex);
+    }
+
+    // -----------------------------------------------------------------------------------------------
+    //                                    pointer overloads
+    // -----------------------------------------------------------------------------------------------
 
     template<class T>
     inline OStream& operator<<(OStream& stream, const T* ptr){
-        return stream << reinterpret_cast<std::size_t>(ptr); // TODO: format as hex
+        return stream << FormatHex(reinterpret_cast<std::uintptr_t>(ptr)); // TODO: format as hex
+    }
+
+    
+    inline OStream& operator<<(OStream& stream, [[maybe_unused]]std::nullptr_t ptr){
+        return stream << "nullptr";
     }
 
     // -----------------------------------------------------------------------------------------------
@@ -937,6 +1092,10 @@ namespace embed{
         constexpr OStreamRef& operator=(const OStreamRef&)=default;
         constexpr OStreamRef& operator=(OStream& stream){this->ptr = &stream; return *this;}
         constexpr OStreamRef& operator=(OStream* stream){this->ptr = stream; return *this;}
+
+        constexpr bool is_open() const {return this->ptr != nullptr;}
+
+        constexpr operator bool() const {return this->is_open();}
 
         inline operator OStream&(){
             if(this->ptr == nullptr){
