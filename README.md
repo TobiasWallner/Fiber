@@ -2,6 +2,8 @@
 EmbedOS
 =======
 
+[Documentation](https://tobiaswallner.github.io/embedOS/)
+
 Copyright © Tobias Wallner
 
 ## ⚡ Motivation
