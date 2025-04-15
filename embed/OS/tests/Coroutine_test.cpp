@@ -1,9 +1,12 @@
 
 #include "Coroutine_test.hpp"
-#include <embed/OS/Coroutine.hpp>
 
+#include <embed/OS/Coroutine.hpp>
 #include <embed/test/test.hpp>
 #include <embed/Memory/Allocator.hpp>
+#include <embed/OS/Future.hpp>
+#include <embed/OS/TryAwait.hpp>
+
 namespace{
     void Coroutine_SimpleTask_test(){
         embed::StaticLinearAllocatorDebug<1024> allocator;
@@ -12,7 +15,7 @@ namespace{
         class SimpleTask : public embed::CoTask{
             public:
             int result = 0;
-            SimpleTask() : embed::CoTask("SimpleTask", this->main()){}
+            SimpleTask() : embed::CoTask(this->main(), "SimpleTask"){}
             embed::Coroutine<embed::Exit> main(){
                 result = 42;
                 co_return embed::Exit::Success;
@@ -26,7 +29,7 @@ namespace{
 
             // task is instantiated and allocated but not executed yet
             TEST_FALSE(allocator.empty());
-            TEST_FALSE(task.done());
+            TEST_FALSE(task.is_done());
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
             TEST_EQUAL(task.result, 0);
@@ -36,7 +39,7 @@ namespace{
         
         
             TEST_FALSE(allocator.empty());
-            TEST_TRUE(task.done());
+            TEST_TRUE(task.is_done());
             TEST_FALSE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
             TEST_EQUAL(task.result, 42);
@@ -69,7 +72,7 @@ namespace{
         embed::coroutine_frame_allocator = &allocator;
         
         CoroutineSuite suit;
-        embed::CoTask task("nested task", suit.co_first());
+        embed::CoTask task(suit.co_first(), "nested task");
         
         TEST_EQUAL(suit.result, 0);
 
@@ -87,11 +90,72 @@ namespace{
         embed::cout << "  finished: " << __func__ << embed::endl;
     }
 
+
+    void Coroutine_waiting_on_Future_test(){
+        embed::StaticLinearAllocatorDebug<1024> allocator;
+        embed::coroutine_frame_allocator = &allocator;
+
+        class Task : public embed::CoTask{
+            public:
+            int result = 0;
+            embed::FuturePromisePair<int> future_promise = embed::make_future_promise<int>();
+
+            Task() : CoTask(this->main(), "Awaiting Future"){}
+
+            embed::Coroutine<embed::Exit> main(){
+                result = co_await embed::TryAwait(future_promise.future);
+                co_return embed::Exit::Success;
+            }
+        };
+        {
+            Task task;
+
+            TEST_FALSE(task.is_done());
+            TEST_TRUE(task.is_resumable());
+            TEST_FALSE(task.is_awaiting());
+
+            TEST_TRUE(task.resume()); // did resume -> returns true
+            
+            TEST_FALSE(task.is_resumable());
+            TEST_FALSE(task.is_done());
+            TEST_TRUE(task.is_awaiting());
+
+            TEST_FALSE(task.resume()); // did not resume -> returns false
+            
+            TEST_FALSE(task.is_resumable());
+            TEST_FALSE(task.is_done());
+            TEST_TRUE(task.is_awaiting()); // waits on awaitable
+
+            task.future_promise.promise = 55; // set the awaitable
+
+            TEST_TRUE(task.is_resumable());
+            TEST_FALSE(task.is_done());
+            TEST_FALSE(task.is_awaiting()); // no longer awaiting
+
+            TEST_TRUE(task.resume()); // did resume -> returns true
+
+            TEST_FALSE(task.is_resumable()); // task is done -> no longer resumable
+            TEST_TRUE(task.is_done()); // task is done
+            TEST_FALSE(task.is_awaiting()); // no longer awaiting
+
+            TEST_EQUAL(task.result, 55) // test if promise passed the value correctly to the future.
+            TEST_EQUAL(task.exit_status(), embed::Exit::Success);
+        }
+
+        // check for memory leaks
+        TEST_EQUAL(allocator.nalloc(), allocator.nfree());
+        TEST_TRUE(allocator.empty());
+
+        embed::cout << "  finished: " << __func__ << embed::endl;
+        
+    }
+
 }// private namespace
 
 void embed::Coroutine_test(){
     embed::cout << "started: " << __func__ << embed::endl;
     Coroutine_SimpleTask_test();
     Coroutine_nested_coroutine();
+    Coroutine_waiting_on_Future_test();
     embed::cout << "  finished: " << __func__ << embed::newl << embed::endl;
 }
