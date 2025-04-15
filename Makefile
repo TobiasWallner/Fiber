@@ -22,7 +22,7 @@ deploy-docs:
 	doxygen Doxyfile
 	git checkout gh-pages
 	git rm -rf .
-	COPY ../docs/* .
+	$(COPY) ../docs/* .
 	git add -A
 	git commit -m "Update docs"
 	# git push
