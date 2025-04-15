@@ -255,49 +255,6 @@ namespace embed{
             /// \brief returns true if the value is ready to read 
             [[nodiscard]]inline bool is_ready() const {return this->get_state() == State::HasValue;}
 
-            /// @brief Provide a callback that will be called if the promise is kept
-            /// @details Provideing a callback will redirect the promise to call the callback instead of notifieing the future. 
-            /// The future will be invalid and can no longer be used to receive the value. Further, only one callback can be set. 
-            /// Calling this function twice will throw an error. A promis must have been created before calling this function.
-            /// The state of this future will turned into a 'broken promise'.
-            /// @param callback a function pointer that will be called once the Promis receives a value.
-            /// @throws a embed::Exception if this function is called twice or if there is no promis attatched
-            void on_ready(void (*callback)(const T&)){
-                // if the future is already ready and the promise was kept --> call the callback directly
-                if(this->is_ready()){
-                    // call the callback
-                    callback(this->get());
-                    this->set_state(State::BrokenPromise); // for consistency
-                }else{
-                    // get lock
-                    this->acquire_dual_locks();
-
-                    // double check - an interrupt might have fired between the first check and the lock
-                    if(this->is_ready()){
-                        // release lock in controll path 1/2
-                        this->release_dual_locks();
-
-                        // call the callback
-                        callback(this->get());
-                        this->set_state(State::BrokenPromise); // for consistency
-                    }else{
-                        // safely install the callback function and detatch the future from the promise
-                        if(this->_promisePtr == nullptr){
-                            EMBED_THROW(Exception("Assigned callback to detatched future."));
-                        }else if(this->_promisePtr->_callback != nullptr){
-                            EMBED_THROW(Exception("Already assigned a callback to the future promise pair."));
-                        }else{
-                            // install callback
-                            this->_promisePtr->_callback = callback;
-                            this->set_state(State::BrokenPromise); // for consistency
-                        }
-
-                        // release lock in controll path 2/2
-                        this->detatch_release_dual_locks();
-                    }
-                }
-            }
-
             /// \brief converts to a boolean. same as calling `is_ready()`.
             [[nodiscard]]inline operator bool() const {return this->is_ready();}
 
@@ -473,7 +430,6 @@ namespace embed{
         };    
 
         Future<T> *_futurePtr = nullptr;
-        void (*_callback)(const T&) = nullptr; // optional callback
 
         #ifndef EMBED_SINGLE_CORE
             std::atomic<Lock> _lock = Lock::Open;
@@ -503,7 +459,6 @@ namespace embed{
                     oldPromise.acquire_dual_locks();
 
                     // copy data from oldPromise
-                    this->_callback = oldPromise._callback;
                     this->_futurePtr = oldPromise._futurePtr;
                     
                     // re-register
@@ -515,7 +470,6 @@ namespace embed{
                     this->_lock.store(oldPromise._lock.load(std::memory_order_acquire), std::memory_order_release);
                     
                     // invalidate oldPromise
-                    oldPromise._callback = nullptr;
                     oldPromise._futurePtr = nullptr;
                     oldPromise._lock.store(Lock::Open);
 
@@ -523,7 +477,6 @@ namespace embed{
                     this->release_dual_locks();
                 }else{
                     this->_futurePtr = nullptr;
-                    this->_callback = nullptr;
                 }
                 
             }
@@ -536,7 +489,6 @@ namespace embed{
                 oldPromise.acquire_dual_locks();
 
                 // copy data from oldPromise
-                this->_callback = oldPromise._callback;
                 this->_futurePtr = oldPromise._futurePtr;
                 
                 // re-register
@@ -548,7 +500,6 @@ namespace embed{
                 this->_lock.store(oldPromise._lock.load(std::memory_order_acquire), std::memory_order_release);
                 
                 // invalidate oldPromise
-                oldPromise._callback = nullptr;
                 oldPromise._futurePtr = nullptr;
                 oldPromise._lock.store(Lock::Open);
 
@@ -591,9 +542,7 @@ namespace embed{
         /// @param obj The value that should be set to the Future and "keep the promise".
         /// @throws an std::exception on double writes
         void set_value(const T& value){
-            if(this->_callback != nullptr){
-                this->_callback(value);
-            }else if(this->_futurePtr != nullptr){
+            if(this->_futurePtr != nullptr){
                 // acquire lock
                 this->acquire_dual_locks();
 
@@ -621,9 +570,7 @@ namespace embed{
         /// @param obj The value that should be set to the Future and "keep the promise"
         /// @throws an embed::Exception on double writes
         void set_value(T&& value){
-            if(this->_callback != nullptr){
-                this->_callback(value);
-            }else if(this->_futurePtr != nullptr){
+            if(this->_futurePtr != nullptr){
                 
                 // acquire lock
                 this->acquire_dual_locks();
@@ -736,7 +683,6 @@ namespace embed{
 
             // detatch this
             this->_futurePtr = nullptr;
-            this->_callback = nullptr;
         }
 
     };
