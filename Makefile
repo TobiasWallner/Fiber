@@ -5,5 +5,5 @@ deploy-docs:
 	git checkout gh-pages
 	git add docs
 	git commit -m "Deploy docs"
-	git push origin gh-pages --force
+	git push origin gh-pages
 	git switch main
