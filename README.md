@@ -83,7 +83,7 @@ No stack overflow. No corrupted memory. No waste. Just predictable, dependable e
 
 ---
 
-## Who is embedOS for?
+## 🔍 Who is embedOS for?
 
 If you’re unsure whether embedOS is right for your project, this section will help you decide—and if it’s not, we’ll gladly point you toward alternatives that might serve you better. We’re not here to compete with every RTOS—we're here to **fill a niche**. We believe in putting the power back in the engineer’s hands with a minimal and deterministic scheduling model that gets out of your way.
 
@@ -106,7 +106,7 @@ If you still don’t know which one to pick, reach out—we’ll help you find t
 
 ---
 
-## Design Philosophy
+## 🧠 Design Philosophy
 
 - **No Context Switches**: Tasks are C++20 coroutines that the compiler will turn into switch statements.
 - **Cooperative**: Users must explicitly `co_await` or `co_return`. No task is ever preempted.
@@ -119,7 +119,7 @@ If you still don’t know which one to pick, reach out—we’ll help you find t
 ---
 
 
-## Integration
+## 🧩 Integration
 
 ### (Preferred) [CMake](https://cmake.org/) and [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 
