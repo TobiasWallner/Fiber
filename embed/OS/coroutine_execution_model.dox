@@ -1,5 +1,3 @@
-
-
 @page coroutine_execution_model Coroutine Execution Model
 
 This page describes the core architecture behind coroutine-based task scheduling in embedOS.

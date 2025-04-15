@@ -1,4 +1,3 @@
-
 @page exceptions_and_assertions Exceptions and Assertions
 
 embed uses `embed::Exception`, which is the base class for all exceptions in embedOS.
