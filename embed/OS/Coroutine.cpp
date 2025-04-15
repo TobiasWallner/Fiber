@@ -5,7 +5,7 @@
 
 namespace embed{
     
-    CoTask::CoTask(const char* task_name, Coroutine<embed::Exit>&& main) noexcept
+    CoTask::CoTask(Coroutine<embed::Exit>&& main, const char* task_name) noexcept
             : _task_name(task_name)
             , _main_coroutine(std::move(main))
     {
@@ -46,7 +46,7 @@ namespace embed{
     }
 
     bool CoTask::is_resumable() const {
-        if(this->_leaf_coroutine && !this->done()){
+        if(this->_leaf_coroutine && !this->is_done()){
             if(this->_leaf_awaitable != nullptr){
                 return this->_leaf_awaitable->await_ready();
             }else{

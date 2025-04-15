@@ -10,134 +10,6 @@
 #include <embed/OS/Exit.hpp>
 #include "embed/Containers/StaticArrayList.hpp"
 
-/**
- * @page coroutine_execution_model Coroutine Execution Model
- *
- * This page describes the core architecture behind coroutine-based task scheduling in embedOS.
- * The coroutine system is designed for real-time embedded environments, supporting deeply nested coroutine chains
- * with strict memory control, deterministic behavior, and minimal runtime overhead.
- *
- * ---
- *
- * ## Overview
- *
- * embedOS uses C++20 coroutines to model cooperative tasks. Each task consists of one or more coroutines
- * connected via `co_await` chains. These coroutines form a **reverse-linked list**, where:
- *
- * - Each coroutine node holds a pointer to its **parent coroutine**
- * - The **tail coroutine** is the currently active/resumable node
- * - The **head coroutine** is the original entry point (`Task::main()` or similar)
- *
- * The list structure supports:
- * - Efficient resumption from a single point
- * - Clear, centralized exception and failure handling
- * - Manual memory control and cleanup
- *
- * ---
- *
- * ## Roles
- *
- * - **Coroutine**:
- *   - Represents a single coroutine frame (created from `co_await`, `co_yield`, or `co_return`)
- *   - A coroutine may await another coroutine, forming a parent-child link
- *   - Coroutines are nodes in the reverse-linked list, but not always at the tail
- *
- * - **Awaitable**:
- *   - A special form of coroutine node that is always the **leaf node**
- *   - For example: `co_await delay(10ms)` or `co_await future`
- *
- * - **CoTask**:
- *   - Owns the coroutine chain
- *   - Holds:
- *     - A pointer to the **root** (head/original coroutine)
- *     - A pointer to the **leaf** (tail/current active coroutine)
- *   - Responsible for:
- *     - Resuming the task (`resume()` calls the current leaf coroutine)
- *     - Handling exceptions
- *     - Destroying the coroutine chain
- *     - Tracking lifecycle and status
- * 
- * This means that this coroutine architecture has a memory complexity of O[1] - stack depth does not grow with the number or nested coroutines.
- * Coroutines are only logically nested but physically flat.
- *
- * ---
- *
- * ## Execution Flow
- *
- * 1. `CoTask::resume()` is called
- * 2. It resumes the **leaf coroutine** in the chain
- * 3. The coroutine may:
- *     - `co_await` another coroutine → creates a new coroutine and sets it as the new leaf
- *     - `co_return` or `co_yield` → returns to `final_suspend()`
- * 4. After `final_suspend()`, control returns to `CoTask`
- * 5. If there is a parent coroutine, `CoTask` registers that as the new leaf and resumes it immediately
- * 6. If the chain completes, `CoTask` marks the task as `Exit::Success`
- *
- * All control flow and state transition pass through `CoTask`. The coroutine chain **never resumes itself**.
- *
- * ---
- *
- * ## Exception Handling
- *
- * - When a coroutine throws and does not catch the exception:
- *   - The compiler-generated `try/catch` calls `promise_type::unhandled_exception()`
- *   - That stores `std::current_exception()` inside the coroutine's promise
- *   - Then calls `CoTask::handle_exception()`
- *
- * - `CoTask::handle_exception()`:
- *   - Re-throws the exception to identify its type
- *   - Logs diagnostic output
- *   - Calls `kill_chain()` to destroy all coroutine frames (from leaf to root)
- *   - Marks the task as `Exit::Failure`
- *
- * ---
- *
- * ## Coroutine Chain Destruction
- *
- * - Coroutine memory is not automatically freed unless `.destroy()` is called
- * - `CoTask::kill_chain()` iterates from the **leaf up to the root**, calling `.destroy()` on each coroutine frame
- * - This minimizes stack usage and avoids leaks or dangling handles
- *
- * ---
- *
- * ## Core Invariants
- *
- * - Only `CoTask` is allowed to resume coroutines
- * - Every `co_await`, `co_yield`, and `co_return` returns control to `CoTask`
- * - No coroutine resumes another coroutine directly
- * - The active coroutine is always the tail of the chain (`leaf`)
- * - The chain is always linear and acyclic
- * - All coroutine frames are cleaned up either on success or failure
- *
- * ---
- *
- * ## Analogy
- *
- * Think of the coroutine chain as a linked list:
- *
- * - `Coroutine` is a **node**
- * - `CoTask` is the **owner and controller** of the list
- * - `co_await` links nodes in **reverse**, so the list grows toward the leaf
- * - Only `CoTask` traverses and manipulates the list
- *
- * ---
- *
- * ## Notes
- *
- * - The entire system works without heap allocation if a static memory allocator is used
- * - All coroutines inherit from `CoroutineNode` and register themselves with their task
- * - `CoroutineNode::final_suspend()` bubbles the parent coroutine handle back to the task
- * - Coroutines and tasks use ANSI-formatted logs and structured assertions for diagnostics
- *
- * ---
- *
- * @see embed::Coroutine
- * @see embed::CoTask
- * @see embed::CoroutineNode
- * @see embed::CoroutinePromise
- * @see embed::Future
- * @see embed::Promise
- */
 
 namespace embed{
 
@@ -163,8 +35,10 @@ namespace embed{
      * ```
      * 
      * Derive from `AwaitableNode` and implement:
-     *   - `bool await_ready() const noexcept override { ...Code... }`
-     *   - `auto await_resume() noexcept { ...Code... }`
+     * 
+     * - `bool await_ready() const noexcept override { ...Code... }`
+     * 
+     * - `auto await_resume() noexcept { ...Code... }`
      */
     class AwaitableNode{
     private:
@@ -190,7 +64,7 @@ namespace embed{
         /// @tparam ReturnType Generic return type for custom coroutines with custom returns
         /// @param handle A handle that has to be an `embed::CoroutinePromise` but can have any return type. 
         template<class ReturnType>
-        inline void await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept; // defined after basic task
+        inline void await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept;
     };
 
     class CoroutineNode{
@@ -215,7 +89,7 @@ namespace embed{
         
         virtual void destroy() noexcept = 0;
         virtual void resume() noexcept = 0;
-        virtual bool done() const noexcept = 0;
+        virtual bool is_done() const noexcept = 0;
 
         inline constexpr CoTask* master(){return this->_master;}
         inline constexpr const CoTask* master() const {return this->_master;}
@@ -228,7 +102,7 @@ namespace embed{
 
         template<class ReturnType>
         inline void await_suspend(std::coroutine_handle<CoroutinePromise<ReturnType>> handle) noexcept;
-        inline bool await_ready() const noexcept {return this->done();};
+        inline bool await_ready() const noexcept {return this->is_done();};
 
         inline std::suspend_always final_suspend() noexcept;
         inline std::suspend_always initial_suspend() noexcept {return std::suspend_always{};}
@@ -280,7 +154,7 @@ namespace embed{
 
         inline void Register(CoTask* task);
 
-        inline bool done() const;
+        inline bool is_done() const;
 
         explicit inline operator bool() const noexcept;
 
@@ -309,7 +183,7 @@ namespace embed{
         bool _instant_resume = false;
     public:
 
-        CoTask(const char* task_name, Coroutine<embed::Exit>&& main) noexcept;
+        CoTask(Coroutine<embed::Exit>&& main, const char* task_name = "") noexcept;
         CoTask(const CoTask&)=delete;
         CoTask(CoTask&& other) noexcept;
         CoTask& operator=(const CoTask&)=delete;
@@ -348,10 +222,10 @@ namespace embed{
         inline bool is_awaiting() const {return (this->_leaf_awaitable) ? !this->_leaf_awaitable->await_ready() : false;}
 
         /// @brief returns `true` if the main/root coroutine is done - thus the task is done
-        inline bool done() const {return this->_main_coroutine.done();}
+        inline bool is_done() const {return this->_main_coroutine.is_done();}
 
-        /// @brief same as `done()` but for interoperability with `co_await`
-        inline bool await_ready() const noexcept override {return this->done();}
+        /// @brief same as `is_done()` but for interoperability with `co_await`
+        inline bool await_ready() const noexcept override {return this->is_done();}
 
         inline Exit await_resume();
 
@@ -389,7 +263,7 @@ namespace embed{
         inline void return_value(ReturnType&& value){this->_return_value = std::move(value);}
 
         inline ReturnType&& get_return_value() {
-            EMBED_ASSERT_O1_MSG(this->done(), "Tried to get coroutine return value, before `done()`. S: Read value after the coroutine is finished. Check for `done()` or use co_await");
+            EMBED_ASSERT_O1_MSG(this->is_done(), "Tried to get coroutine return value, before `is_done()`. S: Read value after the coroutine is finished. Check for `is_done()` or use co_await");
             return std::move(_return_value);
         }
 
@@ -413,13 +287,13 @@ namespace embed{
             std::coroutine_handle<CoroutinePromise>::from_promise(*this).resume();
         }
         
-        inline bool done() const noexcept  override{
-            // use const cast, because the `std::coroutine_handle<>::from_promise()` has no `const` version but `done()` is still `const`, so it it fine here.
+        inline bool is_done() const noexcept  override{
+            // use const cast, because the `std::coroutine_handle<>::from_promise()` has no `const` version but `is_done()` is still `const`, so it it fine here.
             // `const_cast` is not ideal but necessary due to the lack of `const` overloads of `std::coroutine_handle<>::from_promise()`
             return std::coroutine_handle<CoroutinePromise>::from_promise(const_cast<CoroutinePromise&>(*this)).done();
         }
         
-        inline bool await_ready() const noexcept {return this->done();}
+        inline bool await_ready() const noexcept {return this->is_done();}
 
         inline ReturnType await_resume() {
             EMBED_ASSERT_CRITICAL_MSG(this->await_ready(), "Resume on unready coroutnie awaitable. S: Check `await_ready()` before calling `resume()`.");
@@ -452,7 +326,7 @@ namespace embed{
     inline void Coroutine<T>::Register(CoTask* task){this->coro.promise().Register(task);}
 
     template<class T>
-    inline bool Coroutine<T>::done() const {return this->coro.done();}
+    inline bool Coroutine<T>::is_done() const {return this->coro.done();}
 
     template<class T>
     inline Coroutine<T>::operator bool() const noexcept {return this->coro != nullptr;}
@@ -488,12 +362,12 @@ namespace embed{
 //------------------------------------------------------------------------------------------------------------------------------------------
 
     inline Exit CoTask::await_resume(){
-        EMBED_ASSERT_O1(this->done());
+        EMBED_ASSERT_O1(this->is_done());
         return this->_main_coroutine.promise().get_return_value();
     }
     
     inline Exit CoTask::exit_status() {
-        EMBED_ASSERT_O1(this->done());
+        EMBED_ASSERT_O1(this->is_done());
         return this->_main_coroutine.promise().get_return_value();
     }
 
@@ -508,7 +382,7 @@ namespace embed{
     template<class ReturnType>
     inline void AwaitableNode::await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept {
         // store the master
-        this->master = handle.promise().future().master;
+        this->master = handle.promise().master();
 
         // register leaf in master to tell it what awaitable to wait for
         this->master->register_leaf(this);
