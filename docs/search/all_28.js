@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['🧩_20integration_0',['🧩 Integration',['../index.html#autotoc_md12',1,'']]]
+  ['🧠_20design_20philosophy_0',['🧠 Design Philosophy',['../index.html#autotoc_md8',1,'']]]
 ];

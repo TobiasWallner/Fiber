@@ -8,6 +8,7 @@ var searchData=
   ['do_5fallocate_5',['do_allocate',['../d6/df6/structembed_1_1_static_linear_allocator.html#a463683ef3a9c3bef2ef349bb4a62e640',1,'embed::StaticLinearAllocator::do_allocate()'],['../d4/dab/classembed_1_1_static_linear_allocator_debug.html#aa36c87510f556ebc4f11ecb2474cc12d',1,'embed::StaticLinearAllocatorDebug::do_allocate()']]],
   ['do_5fdeallocate_6',['do_deallocate',['../d6/df6/structembed_1_1_static_linear_allocator.html#ad804d1642dff43f52becf914f8d1eb6b',1,'embed::StaticLinearAllocator::do_deallocate()'],['../d4/dab/classembed_1_1_static_linear_allocator_debug.html#abe2e98aec95cbecd53029b3bcc1c0388',1,'embed::StaticLinearAllocatorDebug::do_deallocate()']]],
   ['do_5fis_5fequal_7',['do_is_equal',['../d6/df6/structembed_1_1_static_linear_allocator.html#a4e0f6c7b433b1157c79ea055d5ff1b26',1,'embed::StaticLinearAllocator']]],
-  ['done_8',['done',['../df/dd8/classembed_1_1_coroutine_node.html#a692460acf0058088beaa23aebbca2b00',1,'embed::CoroutineNode::done()'],['../d2/d0f/classembed_1_1_coroutine.html#ac8a6b482fbed543a531ae5704dfea4f0',1,'embed::Coroutine::done()'],['../d8/d46/classembed_1_1_co_task.html#a62be7949165dd5e876a43bc94dc0cbd9',1,'embed::CoTask::done()'],['../dd/d4c/classembed_1_1_coroutine_promise.html#a61a63094e94b26cb5e8996e3b323b6fa',1,'embed::CoroutinePromise::done()']]],
-  ['dump_9',['dump',['../d6/df6/structembed_1_1_static_linear_allocator.html#a9b52a3b9137b49dd7123b7942287a02c',1,'embed::StaticLinearAllocator']]]
+  ['dump_8',['dump',['../d6/df6/structembed_1_1_static_linear_allocator.html#a9b52a3b9137b49dd7123b7942287a02c',1,'embed::StaticLinearAllocator']]],
+  ['duration_5ftest_5fconstruction_9',['Duration_test_construction',['../da/d2e/namespaceembed.html#aafeecb6957dade7011f2010a65959aeb',1,'embed']]],
+  ['duration_5ftest_5fstd_5fintegration_10',['Duration_test_std_integration',['../da/d2e/namespaceembed.html#a96c130efb10b5ff96afa06772e6d6c0c',1,'embed']]]
 ];

@@ -8,12 +8,13 @@ var searchData=
   ['is_5fconnected_5',['is_connected',['../d8/d8c/classembed_1_1_future.html#a4ddfa5dabe06bc9bded63c37d2e7020b',1,'embed::Future']]],
   ['is_5fconnected_5fto_6',['is_connected_to',['../d8/d8c/classembed_1_1_future.html#abd63d5c401e9bfa64a5e3fb0a3b17c85',1,'embed::Future::is_connected_to()'],['../de/dd8/classembed_1_1_promise.html#a51ea1ce5692c945f92859555b7f07b97',1,'embed::Promise::is_connected_to()']]],
   ['is_5fdetatched_7',['is_detatched',['../d8/d8c/classembed_1_1_future.html#a55103810dcdccfc208d0368d1654654a',1,'embed::Future']]],
-  ['is_5finf_8',['is_inf',['../da/d2e/namespaceembed.html#a2c99f01dff3225a8a8ea946efb70926e',1,'embed']]],
-  ['is_5fnan_9',['is_nan',['../da/d2e/namespaceembed.html#af0dbc4d9e568dd8f49796585866d083d',1,'embed']]],
-  ['is_5fninf_10',['is_ninf',['../da/d2e/namespaceembed.html#aac368b64120fc9895d53b20d4d57335f',1,'embed']]],
-  ['is_5fopen_11',['is_open',['../d4/dd5/structembed_1_1_o_stream_ref.html#aff8c10b26b259c787d3fd4909af5c18d',1,'embed::OStreamRef']]],
-  ['is_5fpinf_12',['is_pinf',['../da/d2e/namespaceembed.html#afd776e8fcb055db77d25a5378dd14e16',1,'embed']]],
-  ['is_5fready_13',['is_ready',['../d8/d8c/classembed_1_1_future.html#a6acbb4d857e847b2b45a732684ff769e',1,'embed::Future']]],
-  ['is_5fresumable_14',['is_resumable',['../d8/d46/classembed_1_1_co_task.html#afb8471f4dc4eedfa50cfc451a72e4fa5',1,'embed::CoTask']]],
-  ['is_5fwaiting_15',['is_waiting',['../d8/d8c/classembed_1_1_future.html#a857b72a257cc3b68c1cb8c1e8ebbd204',1,'embed::Future']]]
+  ['is_5fdone_8',['is_done',['../df/dd8/classembed_1_1_coroutine_node.html#a8a44c83da9c67337bcc4ccf84640ade8',1,'embed::CoroutineNode::is_done()'],['../d2/d0f/classembed_1_1_coroutine.html#ae68b29d1370245c933a69790afac138e',1,'embed::Coroutine::is_done()'],['../d8/d46/classembed_1_1_co_task.html#a488c9682fba443d54750acaa0d863f64',1,'embed::CoTask::is_done()'],['../dd/d4c/classembed_1_1_coroutine_promise.html#ad98ecfcc051fdbcd6a94e7a7d9cad032',1,'embed::CoroutinePromise::is_done()']]],
+  ['is_5finf_9',['is_inf',['../da/d2e/namespaceembed.html#a2c99f01dff3225a8a8ea946efb70926e',1,'embed']]],
+  ['is_5fnan_10',['is_nan',['../da/d2e/namespaceembed.html#af0dbc4d9e568dd8f49796585866d083d',1,'embed']]],
+  ['is_5fninf_11',['is_ninf',['../da/d2e/namespaceembed.html#aac368b64120fc9895d53b20d4d57335f',1,'embed']]],
+  ['is_5fopen_12',['is_open',['../d4/dd5/structembed_1_1_o_stream_ref.html#aff8c10b26b259c787d3fd4909af5c18d',1,'embed::OStreamRef']]],
+  ['is_5fpinf_13',['is_pinf',['../da/d2e/namespaceembed.html#afd776e8fcb055db77d25a5378dd14e16',1,'embed']]],
+  ['is_5fready_14',['is_ready',['../d8/d8c/classembed_1_1_future.html#a6acbb4d857e847b2b45a732684ff769e',1,'embed::Future']]],
+  ['is_5fresumable_15',['is_resumable',['../d8/d46/classembed_1_1_co_task.html#afb8471f4dc4eedfa50cfc451a72e4fa5',1,'embed::CoTask']]],
+  ['is_5fwaiting_16',['is_waiting',['../d8/d8c/classembed_1_1_future.html#a857b72a257cc3b68c1cb8c1e8ebbd204',1,'embed::Future']]]
 ];

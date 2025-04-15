@@ -1,5 +1,7 @@
 var hierarchy =
 [
+    [ "embed::_TryAwait< T, is_rvalue_reference >", "d5/dfd/classembed_1_1___try_await.html", null ],
+    [ "embed::_TryAwait< T, false >", "d8/d72/classembed_1_1___try_await_3_01_t_00_01false_01_4.html", null ],
     [ "embed::AwaitableNode", "d9/da2/classembed_1_1_awaitable_node.html", [
       [ "embed::CoTask", "d8/d46/classembed_1_1_co_task.html", null ],
       [ "embed::Future< T >", "d8/d8c/classembed_1_1_future.html", null ]
@@ -24,7 +26,9 @@ var hierarchy =
       ] ]
     ] ],
     [ "std::false_type", null, [
+      [ "embed::is_std_optional< std::optional< T > >", "d7/db9/structembed_1_1is__std__optional_3_01std_1_1optional_3_01_t_01_4_01_4.html", null ],
       [ "embed::is_std_ratio< std::ratio< Num, Den > >", "d0/d9b/structembed_1_1is__std__ratio_3_01std_1_1ratio_3_01_num_00_01_den_01_4_01_4.html", null ],
+      [ "embed::is_std_optional< T >", "d6/d49/structembed_1_1is__std__optional.html", null ],
       [ "embed::is_std_ratio< T >", "d5/d2d/structembed_1_1is__std__ratio.html", null ]
     ] ],
     [ "embed::FormatHexParams", "d0/dbb/structembed_1_1_format_hex_params.html", [
@@ -63,6 +67,7 @@ var hierarchy =
     [ "embed::str_add_float_params", "d0/d99/structembed_1_1str__add__float__params.html", null ],
     [ "embed::str_add_uint_params", "d4/dba/structembed_1_1str__add__uint__params.html", null ],
     [ "std::true_type", null, [
+      [ "embed::is_std_optional< std::optional< T > >", "d7/db9/structembed_1_1is__std__optional_3_01std_1_1optional_3_01_t_01_4_01_4.html", null ],
       [ "embed::is_std_ratio< std::ratio< Num, Den > >", "d0/d9b/structembed_1_1is__std__ratio_3_01std_1_1ratio_3_01_num_00_01_den_01_4_01_4.html", null ]
     ] ],
     [ "std::tuple_element< 0, embed::FuturePromisePair< T > >", "d2/d53/structstd_1_1tuple__element_3_010_00_01embed_1_1_future_promise_pair_3_01_t_01_4_01_4.html", null ],

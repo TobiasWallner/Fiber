@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['🧠_20design_20philosophy_0',['🧠 Design Philosophy',['../index.html#autotoc_md10',1,'']]]
+  ['🛠_20don_20t_20want_20to_20use_20cmake_0',['🛠 Don&apos;t Want to Use CMake?',['../index.html#autotoc_md13',1,'']]]
 ];

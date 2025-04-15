@@ -16,5 +16,7 @@ var searchData=
   ['print_5ffailed_5ffunction_5ffile_5fline_13',['print_failed_function_file_line',['../da/d2e/namespaceembed.html#a9a193507bf7b99407e04962553bbec80',1,'embed']]],
   ['promise_14',['Promise',['../de/dd8/classembed_1_1_promise.html#a72c5ce44fd6262753ef756a4c26b73dd',1,'embed::Promise::Promise()=default'],['../de/dd8/classembed_1_1_promise.html#ac7719ed24f6b6bdaf1b7be4caa04223a',1,'embed::Promise::Promise(const Promise &amp;)=delete'],['../de/dd8/classembed_1_1_promise.html#a229e73c6704ae33b86410a662ef73f84',1,'embed::Promise::Promise(Promise &amp;&amp;oldPromise)']]],
   ['promise_15',['promise',['../d2/d0f/classembed_1_1_coroutine.html#a450d0843e672cf50896f2c4f63ed5532',1,'embed::Coroutine']]],
-  ['put_16',['put',['../da/d0a/classembed_1_1_o_stream.html#a10f8173a1b38a4792f59816a7bcb9bcf',1,'embed::OStream::put(char c)=0'],['../da/d0a/classembed_1_1_o_stream.html#abb26c79bfe66766ef4327caa8aff0617',1,'embed::OStream::put(char c, int count)']]]
+  ['promise_5fassign_5fvalue_5ftest_16',['promise_assign_value_test',['../da/d2e/namespaceembed.html#a561f6a5b6948e51da4699a78daeb563f',1,'embed']]],
+  ['promise_5fset_5fvalue_5ftest_17',['promise_set_value_test',['../da/d2e/namespaceembed.html#adb62f815b64f44a1884d124a1ff6e56d',1,'embed']]],
+  ['put_18',['put',['../da/d0a/classembed_1_1_o_stream.html#a10f8173a1b38a4792f59816a7bcb9bcf',1,'embed::OStream::put(char c)=0'],['../da/d0a/classembed_1_1_o_stream.html#abb26c79bfe66766ef4327caa8aff0617',1,'embed::OStream::put(char c, int count)']]]
 ];

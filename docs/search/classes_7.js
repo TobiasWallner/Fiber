@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['promise_0',['Promise',['../de/dd8/classembed_1_1_promise.html',1,'embed']]]
+  ['ostream_0',['OStream',['../da/d0a/classembed_1_1_o_stream.html',1,'embed']]],
+  ['ostreamref_1',['OStreamRef',['../d4/dd5/structembed_1_1_o_stream_ref.html',1,'embed']]]
 ];

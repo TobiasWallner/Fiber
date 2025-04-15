@@ -1,3 +1,4 @@
+/**
 @page coroutine_execution_model Coroutine Execution Model
 
 This page describes the core architecture behind coroutine-based task scheduling in embedOS.
@@ -96,3 +97,5 @@ Think of the coroutine chain as a linked list:
 @see embed::CoroutinePromise
 @see embed::Future
 @see embed::Promise
+
+*/

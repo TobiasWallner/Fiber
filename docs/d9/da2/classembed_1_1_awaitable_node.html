@@ -135,7 +135,8 @@ Public Member Functions</h2></td></tr>
 <p>The <code><a class="el" href="../../d9/da2/classembed_1_1_awaitable_node.html" title="Interface tobe awaited via co_await and cooperativly works together will all other embedOS async infr...">AwaitableNode</a></code> is the final leaf of <code>embed</code>'s reverse linked coroutine chain.</p>
 <p>Example: </p><div class="fragment"><div class="line">send_data(tx_data);</div>
 <div class="line">rx_data = <span class="keyword">co_await</span> receive_data();</div>
-</div><!-- fragment --><p>Derive from <code><a class="el" href="../../d9/da2/classembed_1_1_awaitable_node.html" title="Interface tobe awaited via co_await and cooperativly works together will all other embedOS async infr...">AwaitableNode</a></code> and implement:</p><ul>
+</div><!-- fragment --><p>Derive from <code><a class="el" href="../../d9/da2/classembed_1_1_awaitable_node.html" title="Interface tobe awaited via co_await and cooperativly works together will all other embedOS async infr...">AwaitableNode</a></code> and implement:</p>
+<ul>
 <li><code>bool <a class="el" href="#a1d579620ed892f50d21d821409ca0de6">await_ready() const </a>noexcept override { ...Code... }</code></li>
 <li><code>auto await_resume() noexcept { ...Code... }</code> </li>
 </ul>

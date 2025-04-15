@@ -15,7 +15,6 @@ var classembed_1_1_future =
     [ "is_detatched", "d8/d8c/classembed_1_1_future.html#a55103810dcdccfc208d0368d1654654a", null ],
     [ "is_ready", "d8/d8c/classembed_1_1_future.html#a6acbb4d857e847b2b45a732684ff769e", null ],
     [ "is_waiting", "d8/d8c/classembed_1_1_future.html#a857b72a257cc3b68c1cb8c1e8ebbd204", null ],
-    [ "on_ready", "d8/d8c/classembed_1_1_future.html#a5c854e4110f0fecf1104cb900a015737", null ],
     [ "operator bool", "d8/d8c/classembed_1_1_future.html#af84b5d1954c42047196e7b4fd92a9f81", null ],
     [ "operator=", "d8/d8c/classembed_1_1_future.html#a7361eb0868f3881ca1f1f6666858ad30", null ],
     [ "operator=", "d8/d8c/classembed_1_1_future.html#ac00c50676baa7e34c30b16ff4fb9b0bb", null ],

@@ -1,4 +1,4 @@
-
+/**
 @page embed_sys_stubs System Stub Wrappers for Embedded Binary Size Reduction
 
 @section overview Overview
@@ -68,3 +68,4 @@ It's opt-in, and safe to leave off in non-embedded builds.
 ---
 
 @see __terminate_handler, __wrap_atexit
+*/

@@ -134,8 +134,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a05dee947c50f2797c963949bc1886f6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2d54f5554c567494c27d39c45f1af37" id="r_ae2d54f5554c567494c27d39c45f1af37"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae2d54f5554c567494c27d39c45f1af37">resume</a> () noexcept override</td></tr>
 <tr class="separator:ae2d54f5554c567494c27d39c45f1af37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61a63094e94b26cb5e8996e3b323b6fa" id="r_a61a63094e94b26cb5e8996e3b323b6fa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a61a63094e94b26cb5e8996e3b323b6fa">done</a> () const noexcept override</td></tr>
-<tr class="separator:a61a63094e94b26cb5e8996e3b323b6fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad98ecfcc051fdbcd6a94e7a7d9cad032" id="r_ad98ecfcc051fdbcd6a94e7a7d9cad032"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad98ecfcc051fdbcd6a94e7a7d9cad032">is_done</a> () const noexcept override</td></tr>
+<tr class="separator:ad98ecfcc051fdbcd6a94e7a7d9cad032"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad075922e1a9200991adbb79e7b4e7997" id="r_ad075922e1a9200991adbb79e7b4e7997"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad075922e1a9200991adbb79e7b4e7997">await_ready</a> () const noexcept</td></tr>
 <tr class="separator:ad075922e1a9200991adbb79e7b4e7997"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaaeb6f7278313725849145548af5a712" id="r_aaaeb6f7278313725849145548af5a712"><td class="memItemLeft" align="right" valign="top">ReturnType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aaaeb6f7278313725849145548af5a712">await_resume</a> ()</td></tr>
@@ -263,35 +263,6 @@ template&lt;class ReturnType&gt; </div>
 
 </div>
 </div>
-<a id="a61a63094e94b26cb5e8996e3b323b6fa" name="a61a63094e94b26cb5e8996e3b323b6fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61a63094e94b26cb5e8996e3b323b6fa">&#9670;&#160;</a></span>done()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class ReturnType&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool <a class="el" href="../../dd/d4c/classembed_1_1_coroutine_promise.html">embed::CoroutinePromise</a>&lt; ReturnType &gt;::done </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span><span class="mlabel noexcept">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="../../df/dd8/classembed_1_1_coroutine_node.html#a692460acf0058088beaa23aebbca2b00">embed::CoroutineNode</a>.</p>
-
-</div>
-</div>
 <a id="ab4ec0408be201f26eb680ccfb0cc2d77" name="ab4ec0408be201f26eb680ccfb0cc2d77"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab4ec0408be201f26eb680ccfb0cc2d77">&#9670;&#160;</a></span>get_return_object()</h2>
 
@@ -343,6 +314,35 @@ template&lt;class ReturnType&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad98ecfcc051fdbcd6a94e7a7d9cad032" name="ad98ecfcc051fdbcd6a94e7a7d9cad032"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad98ecfcc051fdbcd6a94e7a7d9cad032">&#9670;&#160;</a></span>is_done()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class ReturnType&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="../../dd/d4c/classembed_1_1_coroutine_promise.html">embed::CoroutinePromise</a>&lt; ReturnType &gt;::is_done </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="../../df/dd8/classembed_1_1_coroutine_node.html#a8a44c83da9c67337bcc4ccf84640ade8">embed::CoroutineNode</a>.</p>
 
 </div>
 </div>

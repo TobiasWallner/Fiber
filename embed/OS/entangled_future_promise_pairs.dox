@@ -1,5 +1,5 @@
+/**
 @page entangled_future_promise_pairs Entangled Future-Promise Pairs
-
 
 @section intro Introduction
 
@@ -95,3 +95,4 @@ which will increase performance and reduce binary size.
 @see embed::Future
 @see embed::Promise
 
+*/

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.13.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>embed: Time: Overflow aware: Clocks, Time Points and Durations</title>
+<title>embed: Overflow aware: Clocks, Time Points and Durations</title>
 <link href="../../tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../../jquery.js"></script>
 <script type="text/javascript" src="../../dynsections.js"></script>
@@ -97,11 +97,11 @@ $(function(){initNavTree('d4/d2b/time.html','../../'); initResizable(true); });
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">Time: Overflow aware: Clocks, Time Points and Durations</div></div>
+  <div class="headertitle"><div class="title">Overflow aware: Clocks, Time Points and Durations</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><h1><a class="anchor" id="intro"></a>
-Overview</h1>
+Introduction</h1>
 <p>The <code>embed</code> library provides a fully overflow-aware timing system including:</p><ul>
 <li>Clocks</li>
 <li>Time points</li>
@@ -139,12 +139,12 @@ Example: Creating Your Own Clock</h1>
 <li>a <code>constexpr</code> function that returns the current counter value</li>
 <li><em>(optional)</em> the maximum value that the counter reaches before wrapping (default is the max of the type)</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md31"></a>
+<h3><a class="anchor" id="autotoc_md25"></a>
 ✔️ Full-range timer:</h3>
 <div class="fragment"><div class="line">uint32_t get_timer_count(); <span class="comment">// your hardware counter</span></div>
 <div class="line"><span class="keyword">using </span>MyClock = <a class="code hl_struct" href="../../da/d86/structembed_1_1_clock.html">embed::Clock&lt;uint32_t, std::micro, get_timer_count&gt;</a>;</div>
-<div class="ttc" id="astructembed_1_1_clock_html"><div class="ttname"><a href="../../da/d86/structembed_1_1_clock.html">embed::Clock</a></div><div class="ttdoc">A template for an overflow aware clock type for the use with TimePoint</div><div class="ttdef"><b>Definition</b> Clock.hpp:413</div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md32"></a>
+<div class="ttc" id="astructembed_1_1_clock_html"><div class="ttname"><a href="../../da/d86/structembed_1_1_clock.html">embed::Clock</a></div><div class="ttdoc">A template for an overflow aware clock type for the use with TimePoint</div><div class="ttdef"><b>Definition</b> Clock.hpp:311</div></div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md26"></a>
 ✔️ Timer that wraps at a custom maximum (e.g., 1023):</h3>
 <div class="fragment"><div class="line"><span class="keyword">using </span>MyClock = <a class="code hl_struct" href="../../da/d86/structembed_1_1_clock.html">embed::Clock</a>&lt;uint32_t, std::micro, get_timer_count, 1024-1&gt;;</div>
 </div><!-- fragment --><blockquote class="doxtable">
@@ -157,14 +157,14 @@ Example: Creating Your Own Clock</h1>
 <div class="line">...</div>
 <div class="line">embed::RealTimeScheduler&lt;MyClock&gt; rtscheduler;</div>
 <div class="line">rtscheduler.addTask(task);</div>
-<div class="ttc" id="anamespaceembed_html_a0223e2bd607a0788b0c7955a65dfe73f"><div class="ttname"><a href="../../da/d2e/namespaceembed.html#a0223e2bd607a0788b0c7955a65dfe73f">embed::Duration</a></div><div class="ttdeci">std::chrono::duration&lt; ClockTick&lt; UInt, MaxTick &gt;, Period &gt; Duration</div><div class="ttdoc">Overflow aware time duration type.</div><div class="ttdef"><b>Definition</b> Clock.hpp:330</div></div>
+<div class="ttc" id="anamespaceembed_html_a0223e2bd607a0788b0c7955a65dfe73f"><div class="ttname"><a href="../../da/d2e/namespaceembed.html#a0223e2bd607a0788b0c7955a65dfe73f">embed::Duration</a></div><div class="ttdeci">std::chrono::duration&lt; ClockTick&lt; UInt, MaxTick &gt;, Period &gt; Duration</div><div class="ttdoc">Overflow aware time duration type.</div><div class="ttdef"><b>Definition</b> Clock.hpp:228</div></div>
 </div><!-- fragment --><hr  />
 <h1><a class="anchor" id="benefits"></a>
 Why Use This?</h1>
 <ul>
 <li>Fully portable overflow handling — just like hardware timers</li>
 <li>Clean, standard-compliant chrono API</li>
-<li>Backed by real unit tests with corner-case handling (<code>Clock_test.cpp</code>)</li>
+<li>Backed by real unit tests with corner-case handling (<code><a class="el" href="../../d2/d0a/_clock__test_8cpp.html">Clock_test.cpp</a></code>)</li>
 <li>Integrates easily into <code>embedOS</code> or any cooperative scheduler</li>
 <li>Avoids common embedded bugs with counter wraparound and time comparison</li>
 </ul>
@@ -177,7 +177,7 @@ Testing</h1>
 <li>Integration with standard chrono literals</li>
 <li>Realistic use cases using custom <code>Clock</code> types</li>
 </ul>
-<p>See <code>Clock_test.cpp</code> for examples.</p>
+<p>See <code><a class="el" href="../../d2/d0a/_clock__test_8cpp.html">Clock_test.cpp</a></code> for examples.</p>
 <hr  />
 <h1><a class="anchor" id="summary"></a>
 Summary</h1>

@@ -1,12 +1,9 @@
 var searchData=
 [
-  ['clock_0',['Clock',['../da/d86/structembed_1_1_clock.html',1,'embed']]],
-  ['clocktick_1',['ClockTick',['../d3/d21/classembed_1_1_clock_tick.html',1,'embed']]],
-  ['clocktick_3c_20uint_2c_20maxtick_20_3e_2',['ClockTick&lt; UInt, MaxTick &gt;',['../d3/d21/classembed_1_1_clock_tick.html',1,'embed']]],
-  ['coroutine_3',['Coroutine',['../d2/d0f/classembed_1_1_coroutine.html',1,'embed']]],
-  ['coroutine_3c_20embed_3a_3aexit_20_3e_4',['Coroutine&lt; embed::Exit &gt;',['../d2/d0f/classembed_1_1_coroutine.html',1,'embed']]],
-  ['coroutinenode_5',['CoroutineNode',['../df/dd8/classembed_1_1_coroutine_node.html',1,'embed']]],
-  ['coroutinepromise_6',['CoroutinePromise',['../dd/d4c/classembed_1_1_coroutine_promise.html',1,'embed']]],
-  ['coroutinepromisesize_7',['CoroutinePromiseSize',['../d9/d04/structembed_1_1_coroutine_promise_size.html',1,'embed']]],
-  ['cotask_8',['CoTask',['../d8/d46/classembed_1_1_co_task.html',1,'embed']]]
+  ['allocationfailure_0',['AllocationFailure',['../d6/d43/classembed_1_1_allocation_failure.html',1,'embed']]],
+  ['assertionfailure_1',['AssertionFailure',['../dd/dc3/classembed_1_1_assertion_failure.html',1,'embed']]],
+  ['assertionfailurecritical_2',['AssertionFailureCritical',['../d2/dfa/classembed_1_1_assertion_failure_critical.html',1,'embed']]],
+  ['assertionfailurefull_3',['AssertionFailureFull',['../da/d9d/classembed_1_1_assertion_failure_full.html',1,'embed']]],
+  ['assertionfailureo1_4',['AssertionFailureO1',['../d9/dfd/classembed_1_1_assertion_failure_o1.html',1,'embed']]],
+  ['awaitablenode_5',['AwaitableNode',['../d9/da2/classembed_1_1_awaitable_node.html',1,'embed']]]
 ];

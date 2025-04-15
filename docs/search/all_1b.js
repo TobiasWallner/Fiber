@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['⏱_20true_20real_20time_20scheduling_0',['⏱ True real-time scheduling',['../index.html#autotoc_md2',1,'']]]
+  ['⏱_20real_20time_20scheduling_0',['⏱ Real-Time scheduling',['../index.html#autotoc_md2',1,'']]]
 ];

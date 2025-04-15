@@ -11,7 +11,7 @@ var classembed_1_1_coroutine =
     [ "await_resume", "d2/d0f/classembed_1_1_coroutine.html#aae54c4e5abd20f510490f290187e0506", null ],
     [ "await_suspend", "d2/d0f/classembed_1_1_coroutine.html#a2d84c9430f02ec1268a05d54b8e23e7b", null ],
     [ "destroy", "d2/d0f/classembed_1_1_coroutine.html#aaa51ede8df6b3884f343722909edd97b", null ],
-    [ "done", "d2/d0f/classembed_1_1_coroutine.html#ac8a6b482fbed543a531ae5704dfea4f0", null ],
+    [ "is_done", "d2/d0f/classembed_1_1_coroutine.html#ae68b29d1370245c933a69790afac138e", null ],
     [ "node", "d2/d0f/classembed_1_1_coroutine.html#ae9d51251ee429a3a196fe44e105b7334", null ],
     [ "node", "d2/d0f/classembed_1_1_coroutine.html#a2c2a9920c26d01b0a3db24d9948d01d6", null ],
     [ "operator bool", "d2/d0f/classembed_1_1_coroutine.html#a5d3b6d1e3d4c97b53a40832f30108d01", null ],

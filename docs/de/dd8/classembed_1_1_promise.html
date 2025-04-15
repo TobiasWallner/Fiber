@@ -189,8 +189,8 @@ class embed::Promise&lt; T &gt;</div><p><a class="el" href="../../de/dd8/classem
 <div class="line">     send_message(message, length, crc_future.get());</div>
 <div class="line">}</div>
 <div class="ttc" id="aclassembed_1_1_future_html"><div class="ttname"><a href="../../d8/d8c/classembed_1_1_future.html">embed::Future</a></div><div class="ttdoc">Future and Promise pairs are used to synchronise values between asynchronous tasks.</div><div class="ttdef"><b>Definition</b> Future.hpp:63</div></div>
-<div class="ttc" id="aclassembed_1_1_promise_html_abf38cffd4c27e3ffc03100a7b36110ae"><div class="ttname"><a href="#abf38cffd4c27e3ffc03100a7b36110ae">embed::Promise::set_value</a></div><div class="ttdeci">void set_value(const T &amp;value)</div><div class="ttdoc">Sets a value to the future that this promise is based on.</div><div class="ttdef"><b>Definition</b> Future.hpp:593</div></div>
-<div class="ttc" id="anamespaceembed_html_aec82ecae8adedfd3652fdad9835931c7"><div class="ttname"><a href="../../da/d2e/namespaceembed.html#aec82ecae8adedfd3652fdad9835931c7">embed::make_future_promise</a></div><div class="ttdeci">FuturePromisePair&lt; T &gt; make_future_promise()</div><div class="ttdoc">creates a linked future promise pair</div><div class="ttdef"><b>Definition</b> Future.hpp:788</div></div>
+<div class="ttc" id="aclassembed_1_1_promise_html_abf38cffd4c27e3ffc03100a7b36110ae"><div class="ttname"><a href="#abf38cffd4c27e3ffc03100a7b36110ae">embed::Promise::set_value</a></div><div class="ttdeci">void set_value(const T &amp;value)</div><div class="ttdoc">Sets a value to the future that this promise is based on.</div><div class="ttdef"><b>Definition</b> Future.hpp:544</div></div>
+<div class="ttc" id="anamespaceembed_html_aec82ecae8adedfd3652fdad9835931c7"><div class="ttname"><a href="../../da/d2e/namespaceembed.html#aec82ecae8adedfd3652fdad9835931c7">embed::make_future_promise</a></div><div class="ttdeci">FuturePromisePair&lt; T &gt; make_future_promise()</div><div class="ttdoc">creates a linked future promise pair</div><div class="ttdef"><b>Definition</b> Future.hpp:734</div></div>
 </div><!-- fragment --> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a72c5ce44fd6262753ef756a4c26b73dd" name="a72c5ce44fd6262753ef756a4c26b73dd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a72c5ce44fd6262753ef756a4c26b73dd">&#9670;&#160;</a></span>Promise() <span class="overload">[1/3]</span></h2>
@@ -554,7 +554,7 @@ template&lt;class T&gt; </div>
 
 <p>creates a linked future promise pair </p>
 <p>Example: </p><div class="fragment"><div class="line"><span class="keyword">auto</span> [future, promise] = <a class="code hl_friend" href="#ac0789e89aad14d96ad83c5481c7d9318">make_future_promise&lt;int&gt;</a>();</div>
-<div class="ttc" id="aclassembed_1_1_promise_html_ac0789e89aad14d96ad83c5481c7d9318"><div class="ttname"><a href="#ac0789e89aad14d96ad83c5481c7d9318">embed::Promise::make_future_promise</a></div><div class="ttdeci">friend FuturePromisePair&lt; T &gt; make_future_promise()</div><div class="ttdoc">creates a linked future promise pair</div><div class="ttdef"><b>Definition</b> Future.hpp:788</div></div>
+<div class="ttc" id="aclassembed_1_1_promise_html_ac0789e89aad14d96ad83c5481c7d9318"><div class="ttname"><a href="#ac0789e89aad14d96ad83c5481c7d9318">embed::Promise::make_future_promise</a></div><div class="ttdeci">friend FuturePromisePair&lt; T &gt; make_future_promise()</div><div class="ttdoc">creates a linked future promise pair</div><div class="ttdef"><b>Definition</b> Future.hpp:734</div></div>
 </div><!-- fragment --><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">T</td><td>The type that is being promised by the promise and awaited by the future </td></tr>

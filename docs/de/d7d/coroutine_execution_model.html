@@ -101,23 +101,18 @@ $(function(){initNavTree('de/d7d/coroutine_execution_model.html','../../'); init
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>This page describes the core architecture behind coroutine-based task scheduling in embedOS. The coroutine system is designed for real-time embedded environments, supporting deeply nested coroutine chains with strict memory control, deterministic behavior, and minimal runtime overhead.</p>
-<hr  />
-<h2><a class="anchor" id="autotoc_md38"></a>
-Overview</h2>
-<p>embedOS uses C++20 coroutines to model cooperative tasks. Each task consists of one or more coroutines connected via <code>co_await</code> chains. These coroutines form a <b>reverse-linked list</b>, where:</p>
-<ul>
+<h1><a class="anchor" id="overview"></a>
+Overview</h1>
+<p>embedOS uses C++20 coroutines to model cooperative tasks. Each task consists of one or more coroutines connected via <code>co_await</code> chains. These coroutines form a <b>reverse-linked list</b>, where:</p><ul>
 <li>Each coroutine node holds a pointer to its <b>parent coroutine</b></li>
 <li>The <b>tail coroutine</b> is the currently active/resumable node</li>
-<li>The <b>head coroutine</b> is the original entry point (<code>Task::main()</code> or similar)</li>
-</ul>
-<p>The list structure supports:</p><ul>
+<li>The <b>head coroutine</b> is the original entry point (<code>Task::main()</code> or similar) The list structure supports:</li>
 <li>Efficient resumption from a single point</li>
 <li>Clear, centralized exception and failure handling</li>
 <li>Manual memory control and cleanup</li>
 </ul>
-<hr  />
-<h2><a class="anchor" id="autotoc_md40"></a>
-Roles</h2>
+<h1><a class="anchor" id="roles"></a>
+Roles</h1>
 <ul>
 <li><b>Coroutine</b>:<ul>
 <li>Represents a single coroutine frame (created from <code>co_await</code>, <code>co_yield</code>, or <code>co_return</code>)</li>
@@ -147,10 +142,11 @@ Roles</h2>
 </ul>
 </li>
 </ul>
-<p>This means that this coroutine architecture has a memory complexity of O[1] - stack depth does not grow with the number or nested coroutines. Coroutines are only logically nested but physically flat.</p>
-<hr  />
-<h2><a class="anchor" id="autotoc_md42"></a>
-Execution Flow</h2>
+<p>This means that this coroutine architecture has a memory complexity of O[1] - stack depth does not grow with the number or nested coroutines. </p>
+<h2><a class="anchor" id="autotoc_md19"></a>
+Coroutines are only logically nested but physically flat.</h2>
+<h1><a class="anchor" id="execution_flow"></a>
+Execution Flow</h1>
 <ol type="1">
 <li><code>CoTask::resume()</code> is called</li>
 <li>It resumes the <b>leaf coroutine</b> in the chain</li>
@@ -161,12 +157,11 @@ Execution Flow</h2>
 </li>
 <li>After <code>final_suspend()</code>, control returns to <code>CoTask</code></li>
 <li>If there is a parent coroutine, <code>CoTask</code> registers that as the new leaf and resumes it immediately</li>
-<li>If the chain completes, <code>CoTask</code> marks the task as <code>Exit::Success</code></li>
+<li>If the chain completes, <code>CoTask</code> marks the task as <code>Exit::Success</code> All control flow and state transition pass through <code>CoTask</code>. The coroutine chain <b>never resumes itself</b>.</li>
 </ol>
-<p>All control flow and state transition pass through <code>CoTask</code>. The coroutine chain <b>never resumes itself</b>.</p>
 <hr  />
-<h2><a class="anchor" id="autotoc_md44"></a>
-Exception Handling</h2>
+<h1><a class="anchor" id="exception_handling"></a>
+Exception Handling</h1>
 <ul>
 <li>When a coroutine throws and does not catch the exception:<ul>
 <li>The compiler-generated <code>try/catch</code> calls <code>promise_type::unhandled_exception()</code></li>
@@ -177,50 +172,37 @@ Exception Handling</h2>
 <li><code>CoTask::handle_exception()</code>:<ul>
 <li>Re-throws the exception to identify its type</li>
 <li>Logs diagnostic output</li>
-<li>Calls <code>kill_chain()</code> to destroy all coroutine frames (from leaf to root)</li>
-<li>Marks the task as <code>Exit::Failure</code></li>
+<li>Calls <code>kill_chain()</code> to destroy all coroutine frames (from leaf to root) </li>
 </ul>
 </li>
 </ul>
-<hr  />
-<h2><a class="anchor" id="autotoc_md46"></a>
-Coroutine Chain Destruction</h2>
+<h2><a class="anchor" id="autotoc_md21"></a>
+- Marks the task as <code>Exit::Failure</code></h2>
+<h1><a class="anchor" id="coroutine_chain_destruction"></a>
+Coroutine Chain Destruction</h1>
 <ul>
 <li>Coroutine memory is not automatically freed unless <code>.destroy()</code> is called</li>
 <li><code>CoTask::kill_chain()</code> iterates from the <b>leaf up to the root</b>, calling <code>.destroy()</code> on each coroutine frame</li>
 <li>This minimizes stack usage and avoids leaks or dangling handles</li>
 </ul>
-<hr  />
-<h2><a class="anchor" id="autotoc_md48"></a>
-Core Invariants</h2>
+<h1><a class="anchor" id="core_invariants"></a>
+Core Invariants</h1>
 <ul>
 <li>Only <code>CoTask</code> is allowed to resume coroutines</li>
-<li>Every <code>co_await</code>, <code>co_yield</code>, and <code>co_return</code> returns control to <code>CoTask</code></li>
+<li>Every <code>co_await</code> and <code>co_return</code> returns control to <code>CoTask</code></li>
 <li>No coroutine resumes another coroutine directly</li>
 <li>The active coroutine is always the tail of the chain (<code>leaf</code>)</li>
 <li>The chain is always linear and acyclic</li>
 <li>All coroutine frames are cleaned up either on success or failure</li>
 </ul>
-<hr  />
-<h2><a class="anchor" id="autotoc_md50"></a>
-Analogy</h2>
-<p>Think of the coroutine chain as a linked list:</p>
-<ul>
+<h1><a class="anchor" id="analogy"></a>
+Analogy</h1>
+<p>Think of the coroutine chain as a linked list:</p><ul>
 <li><code>Coroutine</code> is a <b>node</b></li>
 <li><code>CoTask</code> is the <b>owner and controller</b> of the list</li>
 <li><code>co_await</code> links nodes in <b>reverse</b>, so the list grows toward the leaf</li>
 <li>Only <code>CoTask</code> traverses and manipulates the list</li>
 </ul>
-<hr  />
-<h2><a class="anchor" id="autotoc_md52"></a>
-Notes</h2>
-<ul>
-<li>The entire system works without heap allocation if a static memory allocator is used</li>
-<li>All coroutines inherit from <code>CoroutineNode</code> and register themselves with their task</li>
-<li><code>CoroutineNode::final_suspend()</code> bubbles the parent coroutine handle back to the task</li>
-<li>Coroutines and tasks use ANSI-formatted logs and structured assertions for diagnostics</li>
-</ul>
-<hr  />
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="../../d2/d0f/classembed_1_1_coroutine.html">embed::Coroutine</a> </dd>
 <dd>
 <a class="el" href="../../d8/d46/classembed_1_1_co_task.html">embed::CoTask</a> </dd>

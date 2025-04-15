@@ -991,17 +991,8 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  =    README.md \
-                            embed/Containers \
-                            embed/Core \
-                            embed/Exceptions \
-                            embed/interrupts \
-                            embed/math \
-                            embed/Memory \
-                            embed/OS \
-                            embed/OStream \
-                            embed/sys_stubs \
-                            embed/test 
+INPUT                  =    README.md embed/
+                            
 
 
 # This tag can be used to specify the character encoding of the source files
@@ -1053,7 +1044,7 @@ FILE_PATTERNS          = *.c \
 # be searched for input files as well.
 # The default value is: NO.
 
-RECURSIVE              = NO
+RECURSIVE              = YES
 
 # The EXCLUDE tag can be used to specify files and/or directories that should be
 # excluded from the INPUT source files. This way you can easily exclude a

@@ -26,21 +26,29 @@ var NAVTREE =
 [
   [ "embed", "index.html", [
     [ "EmbedOS", "index.html", "index" ],
-    [ "Exceptions and Assertions", "d0/d28/exceptions_and_assertions.html", [
-      [ "Philosophy", "d0/d28/exceptions_and_assertions.html#Exception", [
-        [ "Assertion Levels", "d0/d28/exceptions_and_assertions.html#autotoc_md22", [
-          [ "Turning Assertions into Optimisations", "d0/d28/exceptions_and_assertions.html#autotoc_md23", [
-            [ "But Be Careful!", "d0/d28/exceptions_and_assertions.html#autotoc_md24", null ]
-          ] ],
-          [ "How to use Assertion Levels", "d0/d28/exceptions_and_assertions.html#autotoc_md25", null ]
-        ] ],
-        [ "Redirect assertions from exceptions to callbacks", "d0/d28/exceptions_and_assertions.html#autotoc_md26", null ],
-        [ "Disable all checks and assertions", "d0/d28/exceptions_and_assertions.html#autotoc_md27", null ]
+    [ "Coroutine Execution Model", "de/d7d/coroutine_execution_model.html", [
+      [ "Overview", "de/d7d/coroutine_execution_model.html#overview", null ],
+      [ "Roles", "de/d7d/coroutine_execution_model.html#roles", [
+        [ "Coroutines are only logically nested but physically flat.", "de/d7d/coroutine_execution_model.html#autotoc_md19", null ]
       ] ],
-      [ "Custom Exceptions", "d0/d28/exceptions_and_assertions.html#Defining", null ]
+      [ "Execution Flow", "de/d7d/coroutine_execution_model.html#execution_flow", null ],
+      [ "Exception Handling", "de/d7d/coroutine_execution_model.html#exception_handling", [
+        [ "Marks the task as Exit::Failure", "de/d7d/coroutine_execution_model.html#autotoc_md21", null ]
+      ] ],
+      [ "Coroutine Chain Destruction", "de/d7d/coroutine_execution_model.html#coroutine_chain_destruction", null ],
+      [ "Core Invariants", "de/d7d/coroutine_execution_model.html#core_invariants", null ],
+      [ "Analogy", "de/d7d/coroutine_execution_model.html#analogy", null ]
     ] ],
-    [ "Time: Overflow aware: Clocks, Time Points and Durations", "d4/d2b/time.html", [
-      [ "Overview", "d4/d2b/time.html#intro", null ],
+    [ "Entangled Future-Promise Pairs", "d0/db8/entangled_future_promise_pairs.html", [
+      [ "Introduction", "d0/db8/entangled_future_promise_pairs.html#intro", null ],
+      [ "Use Case: Asynchronous Data Retrieval", "d0/db8/entangled_future_promise_pairs.html#use_case", null ],
+      [ "Life Cycle", "d0/db8/entangled_future_promise_pairs.html#lifecycle", null ],
+      [ "API Summary", "d0/db8/entangled_future_promise_pairs.html#api", null ],
+      [ "Coroutine Integration", "d0/db8/entangled_future_promise_pairs.html#awaitables", null ],
+      [ "Teardown Safety", "d0/db8/entangled_future_promise_pairs.html#teardown", null ],
+      [ "Optinisations", "d0/db8/entangled_future_promise_pairs.html#Optinisations", null ]
+    ] ],
+    [ "Overflow aware: Clocks, Time Points and Durations", "d4/d2b/time.html", [
       [ "Awareness of Overflow", "d4/d2b/time.html#overflow", null ],
       [ "Integration with <chrono>", "d4/d2b/time.html#chrono", null ],
       [ "Example: Creating Your Own Clock", "d4/d2b/time.html#example", null ],
@@ -48,9 +56,7 @@ var NAVTREE =
       [ "Testing", "d4/d2b/time.html#test", null ],
       [ "Summary", "d4/d2b/time.html#summary", null ]
     ] ],
-    [ "Coroutine Execution Model", "de/d7d/coroutine_execution_model.html", null ],
     [ "System Stub Wrappers for Embedded Binary Size Reduction", "d9/d9d/embed_sys_stubs.html", [
-      [ "Overview", "d9/d9d/embed_sys_stubs.html#overview", null ],
       [ "Usage Example", "d9/d9d/embed_sys_stubs.html#cmake_usage", null ],
       [ "It Works", "d9/d9d/embed_sys_stubs.html#How", null ],
       [ "Results and Measured Impact", "d9/d9d/embed_sys_stubs.html#results", null ]
@@ -83,6 +89,7 @@ var NAVTREE =
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
         [ "Functions", "globals_func.html", null ],
+        [ "Variables", "globals_vars.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
     ] ]
@@ -92,11 +99,11 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"d3/d21/classembed_1_1_clock_tick.html#aae6f9f1bc134fdc9663a4bbd871b4d26",
-"d5/def/classembed_1_1_static_array_list.html#a7c135c0709a82679d99f593d682e13d9",
-"d8/d05/structembed_1_1_format_float.html#acf4bac9e23af154e264e4a0e55f02998",
-"da/d2e/namespaceembed.html#acbecfc83a78e298a7740b8c6c87cdd25",
-"df/dd8/classembed_1_1_coroutine_node.html#a3cb22f83dd087078221bab8240506167"
+"d3/d21/classembed_1_1_clock_tick.html#a96fd5abb544754edb363ec44277603e9",
+"d5/def/classembed_1_1_static_array_list.html#a6de5c93d31faa80398f3e8202c4b418f",
+"d8/d05/structembed_1_1_format_float.html#a3eafedba86bf8404591dac16cf8297c1",
+"da/d2e/namespaceembed.html#a616af44b9923435b00065f423d5517a0",
+"dd/d78/classembed_1_1_i_scheduler.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';

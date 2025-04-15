@@ -123,8 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8696d61dc640dc9db8e69325c52672fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe492efb299b096be6e961a990351bd3" id="r_afe492efb299b096be6e961a990351bd3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#afe492efb299b096be6e961a990351bd3">resume</a> () noexcept=0</td></tr>
 <tr class="separator:afe492efb299b096be6e961a990351bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a692460acf0058088beaa23aebbca2b00" id="r_a692460acf0058088beaa23aebbca2b00"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a692460acf0058088beaa23aebbca2b00">done</a> () const noexcept=0</td></tr>
-<tr class="separator:a692460acf0058088beaa23aebbca2b00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a44c83da9c67337bcc4ccf84640ade8" id="r_a8a44c83da9c67337bcc4ccf84640ade8"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8a44c83da9c67337bcc4ccf84640ade8">is_done</a> () const noexcept=0</td></tr>
+<tr class="separator:a8a44c83da9c67337bcc4ccf84640ade8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ba3d2740df0cdce9f3953eeda34a475" id="r_a5ba3d2740df0cdce9f3953eeda34a475"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="../../d8/d46/classembed_1_1_co_task.html">CoTask</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5ba3d2740df0cdce9f3953eeda34a475">master</a> ()</td></tr>
 <tr class="separator:a5ba3d2740df0cdce9f3953eeda34a475"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02fab0790c39ee6f0dadb72ab6c2db38" id="r_a02fab0790c39ee6f0dadb72ab6c2db38"><td class="memItemLeft" align="right" valign="top">constexpr const <a class="el" href="../../d8/d46/classembed_1_1_co_task.html">CoTask</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a02fab0790c39ee6f0dadb72ab6c2db38">master</a> () const</td></tr>
@@ -251,33 +251,6 @@ template&lt;class ReturnType&gt; </div>
 
 </div>
 </div>
-<a id="a692460acf0058088beaa23aebbca2b00" name="a692460acf0058088beaa23aebbca2b00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a692460acf0058088beaa23aebbca2b00">&#9670;&#160;</a></span>done()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool embed::CoroutineNode::done </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel pure-virtual">pure virtual</span><span class="mlabel noexcept">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="../../dd/d4c/classembed_1_1_coroutine_promise.html#a61a63094e94b26cb5e8996e3b323b6fa">embed::CoroutinePromise&lt; ReturnType &gt;</a>.</p>
-
-</div>
-</div>
 <a id="ac8c7c214fd1c0d024dfb59b85aec02d5" name="ac8c7c214fd1c0d024dfb59b85aec02d5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac8c7c214fd1c0d024dfb59b85aec02d5">&#9670;&#160;</a></span>final_suspend()</h2>
 
@@ -325,6 +298,33 @@ template&lt;class ReturnType&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8a44c83da9c67337bcc4ccf84640ade8" name="a8a44c83da9c67337bcc4ccf84640ade8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a44c83da9c67337bcc4ccf84640ade8">&#9670;&#160;</a></span>is_done()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool embed::CoroutineNode::is_done </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel pure-virtual">pure virtual</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="../../dd/d4c/classembed_1_1_coroutine_promise.html#ad98ecfcc051fdbcd6a94e7a7d9cad032">embed::CoroutinePromise&lt; ReturnType &gt;</a>.</p>
 
 </div>
 </div>
