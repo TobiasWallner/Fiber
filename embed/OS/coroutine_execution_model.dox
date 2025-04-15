@@ -1,129 +1,100 @@
 
-/**
- * @page coroutine_execution_model Coroutine Execution Model
- *
- * This page describes the core architecture behind coroutine-based task scheduling in embedOS.
- * The coroutine system is designed for real-time embedded environments, supporting deeply nested coroutine chains
- * with strict memory control, deterministic behavior, and minimal runtime overhead.
- *
- * ---
- *
- * ## Overview
- *
- * embedOS uses C++20 coroutines to model cooperative tasks. Each task consists of one or more coroutines
- * connected via `co_await` chains. These coroutines form a **reverse-linked list**, where:
- *
- * - Each coroutine node holds a pointer to its **parent coroutine**
- * - The **tail coroutine** is the currently active/resumable node
- * - The **head coroutine** is the original entry point (`Task::main()` or similar)
- *
- * The list structure supports:
- * - Efficient resumption from a single point
- * - Clear, centralized exception and failure handling
- * - Manual memory control and cleanup
- *
- * ---
- *
- * ## Roles
- *
- * - **Coroutine**:
- *   - Represents a single coroutine frame (created from `co_await`, `co_yield`, or `co_return`)
- *   - A coroutine may await another coroutine, forming a parent-child link
- *   - Coroutines are nodes in the reverse-linked list, but not always at the tail
- *
- * - **Awaitable**:
- *   - A special form of coroutine node that is always the **leaf node**
- *   - For example: `co_await delay(10ms)` or `co_await future`
- *
- * - **CoTask**:
- *   - Owns the coroutine chain
- *   - Holds:
- *     - A pointer to the **root** (head/original coroutine)
- *     - A pointer to the **leaf** (tail/current active coroutine)
- *   - Responsible for:
- *     - Resuming the task (`resume()` calls the current leaf coroutine)
- *     - Handling exceptions
- *     - Destroying the coroutine chain
- *     - Tracking lifecycle and status
- * 
- * This means that this coroutine architecture has a memory complexity of O[1] - stack depth does not grow with the number or nested coroutines.
- * Coroutines are only logically nested but physically flat.
- *
- * ---
- *
- * ## Execution Flow
- *
- * 1. `CoTask::resume()` is called
- * 2. It resumes the **leaf coroutine** in the chain
- * 3. The coroutine may:
- *     - `co_await` another coroutine → creates a new coroutine and sets it as the new leaf
- *     - `co_return` or `co_yield` → returns to `final_suspend()`
- * 4. After `final_suspend()`, control returns to `CoTask`
- * 5. If there is a parent coroutine, `CoTask` registers that as the new leaf and resumes it immediately
- * 6. If the chain completes, `CoTask` marks the task as `Exit::Success`
- *
- * All control flow and state transition pass through `CoTask`. The coroutine chain **never resumes itself**.
- *
- * ---
- *
- * ## Exception Handling
- *
- * - When a coroutine throws and does not catch the exception:
- *   - The compiler-generated `try/catch` calls `promise_type::unhandled_exception()`
- *   - That stores `std::current_exception()` inside the coroutine's promise
- *   - Then calls `CoTask::handle_exception()`
- *
- * - `CoTask::handle_exception()`:
- *   - Re-throws the exception to identify its type
- *   - Logs diagnostic output
- *   - Calls `kill_chain()` to destroy all coroutine frames (from leaf to root)
- *   - Marks the task as `Exit::Failure`
- *
- * ---
- *
- * ## Coroutine Chain Destruction
- *
- * - Coroutine memory is not automatically freed unless `.destroy()` is called
- * - `CoTask::kill_chain()` iterates from the **leaf up to the root**, calling `.destroy()` on each coroutine frame
- * - This minimizes stack usage and avoids leaks or dangling handles
- *
- * ---
- *
- * ## Core Invariants
- *
- * - Only `CoTask` is allowed to resume coroutines
- * - Every `co_await`, `co_yield`, and `co_return` returns control to `CoTask`
- * - No coroutine resumes another coroutine directly
- * - The active coroutine is always the tail of the chain (`leaf`)
- * - The chain is always linear and acyclic
- * - All coroutine frames are cleaned up either on success or failure
- *
- * ---
- *
- * ## Analogy
- *
- * Think of the coroutine chain as a linked list:
- *
- * - `Coroutine` is a **node**
- * - `CoTask` is the **owner and controller** of the list
- * - `co_await` links nodes in **reverse**, so the list grows toward the leaf
- * - Only `CoTask` traverses and manipulates the list
- *
- * ---
- *
- * ## Notes
- *
- * - The entire system works without heap allocation if a static memory allocator is used
- * - All coroutines inherit from `CoroutineNode` and register themselves with their task
- * - `CoroutineNode::final_suspend()` bubbles the parent coroutine handle back to the task
- * - Coroutines and tasks use ANSI-formatted logs and structured assertions for diagnostics
- *
- * ---
- *
- * @see embed::Coroutine
- * @see embed::CoTask
- * @see embed::CoroutineNode
- * @see embed::CoroutinePromise
- * @see embed::Future
- * @see embed::Promise
- */
+
+@page coroutine_execution_model Coroutine Execution Model
+
+This page describes the core architecture behind coroutine-based task scheduling in embedOS.
+The coroutine system is designed for real-time embedded environments, supporting deeply nested coroutine chains
+with strict memory control, deterministic behavior, and minimal runtime overhead.
+
+@section overview Overview
+
+embedOS uses C++20 coroutines to model cooperative tasks. Each task consists of one or more coroutines
+connected via `co_await` chains. These coroutines form a **reverse-linked list**, where:
+- Each coroutine node holds a pointer to its **parent coroutine**
+- The **tail coroutine** is the currently active/resumable node
+- The **head coroutine** is the original entry point (`Task::main()` or similar)
+The list structure supports:
+- Efficient resumption from a single point
+- Clear, centralized exception and failure handling
+- Manual memory control and cleanup
+
+@section roles Roles
+
+- **Coroutine**:
+  - Represents a single coroutine frame (created from `co_await`, `co_yield`, or `co_return`)
+  - A coroutine may await another coroutine, forming a parent-child link
+  - Coroutines are nodes in the reverse-linked list, but not always at the tail
+- **Awaitable**:
+  - A special form of coroutine node that is always the **leaf node**
+  - For example: `co_await delay(10ms)` or `co_await future`
+- **CoTask**:
+  - Owns the coroutine chain
+  - Holds:
+    - A pointer to the **root** (head/original coroutine)
+    - A pointer to the **leaf** (tail/current active coroutine)
+  - Responsible for:
+    - Resuming the task (`resume()` calls the current leaf coroutine)
+    - Handling exceptions
+    - Destroying the coroutine chain
+    - Tracking lifecycle and status
+
+This means that this coroutine architecture has a memory complexity of O[1] - stack depth does not grow with the number or nested coroutines.
+Coroutines are only logically nested but physically flat.
+---
+
+@section execution_flow Execution Flow
+
+1. `CoTask::resume()` is called
+2. It resumes the **leaf coroutine** in the chain
+3. The coroutine may:
+    - `co_await` another coroutine → creates a new coroutine and sets it as the new leaf
+    - `co_return` or `co_yield` → returns to `final_suspend()`
+4. After `final_suspend()`, control returns to `CoTask`
+5. If there is a parent coroutine, `CoTask` registers that as the new leaf and resumes it immediately
+6. If the chain completes, `CoTask` marks the task as `Exit::Success`
+All control flow and state transition pass through `CoTask`. The coroutine chain **never resumes itself**.
+
+---
+
+@section exception_handling Exception Handling
+
+- When a coroutine throws and does not catch the exception:
+  - The compiler-generated `try/catch` calls `promise_type::unhandled_exception()`
+  - That stores `std::current_exception()` inside the coroutine's promise
+  - Then calls `CoTask::handle_exception()`
+- `CoTask::handle_exception()`:
+  - Re-throws the exception to identify its type
+  - Logs diagnostic output
+  - Calls `kill_chain()` to destroy all coroutine frames (from leaf to root)
+  - Marks the task as `Exit::Failure`
+---
+
+@section coroutine_chain_destruction Coroutine Chain Destruction
+
+- Coroutine memory is not automatically freed unless `.destroy()` is called
+- `CoTask::kill_chain()` iterates from the **leaf up to the root**, calling `.destroy()` on each coroutine frame
+- This minimizes stack usage and avoids leaks or dangling handles
+
+@section core_invariants Core Invariants
+
+- Only `CoTask` is allowed to resume coroutines
+- Every `co_await` and `co_return` returns control to `CoTask`
+- No coroutine resumes another coroutine directly
+- The active coroutine is always the tail of the chain (`leaf`)
+- The chain is always linear and acyclic
+- All coroutine frames are cleaned up either on success or failure
+
+@section analogy Analogy
+
+Think of the coroutine chain as a linked list:
+- `Coroutine` is a **node**
+- `CoTask` is the **owner and controller** of the list
+- `co_await` links nodes in **reverse**, so the list grows toward the leaf
+- Only `CoTask` traverses and manipulates the list
+
+@see embed::Coroutine
+@see embed::CoTask
+@see embed::CoroutineNode
+@see embed::CoroutinePromise
+@see embed::Future
+@see embed::Promise
