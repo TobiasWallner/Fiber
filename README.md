@@ -127,7 +127,7 @@ If you still don’t know which one to pick, reach out—we’ll help you find t
   - No threads, no stacks—just pure control flow
   - Supports task failure propagation, exception handling, and kill-safe teardown
 - 🧮 **Fixed-Size, Stack-Friendly Containers**
-  - `StaticArrayList`, `StaticPriorityQueue`, `StaticLinearAllocator` and more
+  - `ArrayList`, `PriorityQueue`, `StaticLinearAllocator` and more
   - Designed for bounded memory environments (MCUs, no heap)
   - Fast, safe, and easy to reason about
 - 🔧 **Custom Allocator Support**
