@@ -1,7 +1,7 @@
 target_sources(embed
     PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/StaticArrayList.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/StaticPriorityQueue.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/ArrayList.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/PriorityQueue.hpp
     PRIVATE
 )
 

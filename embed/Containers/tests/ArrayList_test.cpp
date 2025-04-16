@@ -1,16 +1,16 @@
 
-#include "embed/Containers/StaticArrayList.hpp"
+#include "embed/Containers/ArrayList.hpp"
 #include <embed/test/test.hpp>
 
-void embed::StaticArrayList_test(){
-    embed::cout << "start: StaticArrayList_test()" << embed::endl; 
+void embed::ArrayList_test(){
+    embed::cout << "start: ArrayList_test()" << embed::endl; 
 
     using namespace embed;
 
     {
 
-        StaticArrayList<int, 3> arr;
-        const StaticArrayList<int, 3>& const_ref_arr = arr;
+        ArrayList<int, 3> arr;
+        const ArrayList<int, 3>& const_ref_arr = arr;
 
         // check size and empty after creation
         TEST_EQUAL(arr.size(), 0);
@@ -83,7 +83,7 @@ void embed::StaticArrayList_test(){
     }
 
     {
-        StaticArrayList<int, 6> arr;
+        ArrayList<int, 6> arr;
         arr.assign(/*count*/5, /*value*/188);
         TEST_EQUAL(arr.size(), 5);
         TEST_FALSE(arr.empty());
@@ -144,21 +144,21 @@ void embed::StaticArrayList_test(){
     }
     {
 
-        StaticArrayList<unsigned int, 10> a({1, 2, 3, 4});
+        ArrayList<unsigned int, 10> a({1, 2, 3, 4});
         TEST_EQUAL(a.size(), 4);
         TEST_EQUAL(a[0], 1);
         TEST_EQUAL(a[1], 2);
         TEST_EQUAL(a[2], 3);
         TEST_EQUAL(a[3], 4);
 
-        StaticArrayList<int, 11> b({11, 22, 33, 44});
+        ArrayList<int, 11> b({11, 22, 33, 44});
         TEST_EQUAL(b.size(), 4);
         TEST_EQUAL(b[0], 11);
         TEST_EQUAL(b[1], 22);
         TEST_EQUAL(b[2], 33);
         TEST_EQUAL(b[3], 44);
 
-        StaticArrayList<long, 9> c(a);
+        ArrayList<long, 9> c(a);
         TEST_EQUAL(c.size(), 4);
         c.append(b);
         TEST_EQUAL(c.size(), 8);
@@ -257,10 +257,10 @@ void embed::StaticArrayList_test(){
     }
 
     {
-        StaticArrayList<unsigned int, 10> a({1, 2, 3, 4});
-        StaticArrayList<unsigned int, 10> b({1, 2, 3, 4, 5});
-        StaticArrayList<unsigned int, 10> c({0, 1, 2, 3});
-        StaticArrayList<unsigned int, 10> d({0, 1, 3, 3});
+        ArrayList<unsigned int, 10> a({1, 2, 3, 4});
+        ArrayList<unsigned int, 10> b({1, 2, 3, 4, 5});
+        ArrayList<unsigned int, 10> c({0, 1, 2, 3});
+        ArrayList<unsigned int, 10> d({0, 1, 3, 3});
 
         TEST_TRUE(equal(a, a));
         TEST_FALSE(equal(a, b));
@@ -282,26 +282,26 @@ void embed::StaticArrayList_test(){
     }
 
     {
-        StaticArrayList<unsigned int, 10> a({1, 2, 3, 4, 5, 6});
-        StaticArrayList<unsigned int, 10> b({1, 2, 0, 10, 5, 11});
-        StaticArrayList<bool, 10> expected_equal({true, true, false, false, true, false});
+        ArrayList<unsigned int, 10> a({1, 2, 3, 4, 5, 6});
+        ArrayList<unsigned int, 10> b({1, 2, 0, 10, 5, 11});
+        ArrayList<bool, 10> expected_equal({true, true, false, false, true, false});
 
         TEST_FUNC2(equal, a == b, expected_equal);
 
-        StaticArrayList<bool, 10> mask({true, true, false, false, true, false});
-        StaticArrayList<int, 10> expected_masked({1, 2, 5});
+        ArrayList<bool, 10> mask({true, true, false, false, true, false});
+        ArrayList<int, 10> expected_masked({1, 2, 5});
         auto masked = a[mask];
         TEST_FUNC2(equal, masked, expected_masked);
 
-        StaticArrayList<long, 10> indices({1, 3, 5, 2});
-        StaticArrayList<int, 10> expected_indexed({2, 10, 11, 0});
+        ArrayList<long, 10> indices({1, 3, 5, 2});
+        ArrayList<int, 10> expected_indexed({2, 10, 11, 0});
         auto indexed = b[indices];
         TEST_FUNC2(equal, indexed, expected_indexed);
     }
     {
-        StaticArrayList<bool, 5> a({true, true, false});
-        StaticArrayList<bool, 5> b({true, true, true});
-        StaticArrayList<bool, 5> c({false, false, false});
+        ArrayList<bool, 5> a({true, true, false});
+        ArrayList<bool, 5> b({true, true, true});
+        ArrayList<bool, 5> c({false, false, false});
 
         TEST_TRUE(any(a));
         TEST_TRUE(any(b));
@@ -317,24 +317,24 @@ void embed::StaticArrayList_test(){
     }
 
     {
-        StaticArrayList<int, 5> a({1, 0, 10});
-        StaticArrayList<bool, 5> expected_not_a({false, true, false});
+        ArrayList<int, 5> a({1, 0, 10});
+        ArrayList<bool, 5> expected_not_a({false, true, false});
         TEST_FUNC2(equal, !a, expected_not_a);
         
-        StaticArrayList<int, 5> b({true, true, false});
-        StaticArrayList<bool, 5> expected_not_b({false, false, true});
+        ArrayList<int, 5> b({true, true, false});
+        ArrayList<bool, 5> expected_not_b({false, false, true});
         TEST_FUNC2(equal, !b, expected_not_b);
     }
 
     {
-        StaticArrayList<int, 6> a{0, 1, 2, 3, 4, 5};
+        ArrayList<int, 6> a{0, 1, 2, 3, 4, 5};
 
         auto square_result = for_each(a, [](const int& i){return i*i;});
-        StaticArrayList<int, 6> expected_square_result{0, 1, 4, 9, 16, 25};
+        ArrayList<int, 6> expected_square_result{0, 1, 4, 9, 16, 25};
         TEST_FUNC2(equal, square_result, expected_square_result);
 
         a.for_each([](const int& i){return i*i;});
         TEST_FUNC2(equal, a, expected_square_result);
     }
-    embed::cout << "finished: StaticArrayList_test()" << embed::endl; 
+    embed::cout << "finished: ArrayList_test()" << embed::endl; 
 }

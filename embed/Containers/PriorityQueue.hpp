@@ -6,18 +6,18 @@
 #include <algorithm> // swap
 
 // embed
-#include "StaticArrayList.hpp"
+#include "ArrayList.hpp"
 
 namespace embed
 {
     template<class T, size_type N, class greater_priority>
-    class StaticPriorityQueue{
+    class PriorityQueue{
     public:
-        using comntainer_type = StaticArrayList<T, N>;
+        using comntainer_type = ArrayList<T, N>;
     
     private:
         bool (*_greater_priority)(const T& lhs, const T& rhs);
-        StaticArrayList<T, N> _buffer;
+        ArrayList<T, N> _buffer;
 
     public:
 
@@ -28,9 +28,9 @@ namespace embed
         using iterator = comntainer_type::iterator;
         using const_iterator = comntainer_type::const_iterator;
 
-        constexpr StaticPriorityQueue() = default;
-        constexpr StaticPriorityQueue(const StaticPriorityQueue&) = default;
-        constexpr StaticPriorityQueue& operator=(const StaticPriorityQueue&) = default;
+        constexpr PriorityQueue() = default;
+        constexpr PriorityQueue(const PriorityQueue&) = default;
+        constexpr PriorityQueue& operator=(const PriorityQueue&) = default;
         
         /// @brief returns the size/count of live elements in the container 
         constexpr size_type size() const {return this->_buffer.size();}
@@ -81,7 +81,7 @@ namespace embed
             }
         }
 
-        inline value_type get_top{
+        inline value_type top_pop{
             value_type value = std::move(this->top());
             this->pop();
             return value;

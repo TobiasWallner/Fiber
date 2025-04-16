@@ -27,7 +27,7 @@ namespace embed
      * @tparam N size/count of the elements in the container
      * */ 
     template<class T, std::size_t N>
-    class StaticArrayList{
+    class ArrayList{
     public:
         using value_type = T;
         using size_type = std::size_t;
@@ -35,6 +35,8 @@ namespace embed
         using const_reference = const T&;
         using iterator = T*;
         using const_iterator = const T*;
+        using pointer = T*;
+        using const_pointer = T*;
 
     private:
         alignas(T) std::byte _buffer[N * sizeof(T)];
@@ -46,26 +48,28 @@ namespace embed
         
 
         /// @brief default constructor
-        StaticArrayList() = default;
+        ArrayList() = default;
 
         /// @brief default copy constructor
-        StaticArrayList(const StaticArrayList&) = default;
+        template<size_t N1>
+        ArrayList(const ArrayList<T, N1>& other){this->assign(other);}
 
         /// @brief default copy assignment 
-        StaticArrayList& operator=(const StaticArrayList&) = default;
+        template<size_t N1>
+        ArrayList& operator=(const ArrayList<T, N1>& other){this->assign(other);};
 
         /// @brief construct from an initialiser list
         /// @param ilist initialiser list
-        inline StaticArrayList(std::initializer_list<T> ilist){this->append(ilist);}
+        inline ArrayList(std::initializer_list<T> ilist){this->append(ilist);}
 
         /// @brief construct from an generic range that follows the concept `std::ranges::forward_range`
         /// @tparam Range templated range class that follows the concept `std::ranges::forward_range`
         /// @param range the range that should be assigned on construction
         template<std::ranges::forward_range Range>
-        inline StaticArrayList(const Range& range){this->append(range);}
+        inline ArrayList(const Range& range){this->append(range);}
 
         /// @brief destructor
-        ~StaticArrayList(){
+        ~ArrayList(){
             if constexpr (!std::is_trivially_destructible<T>::value){
                 for(T& elem : *this){
                     elem->~T();
@@ -177,9 +181,9 @@ namespace embed
 
         /// @brief Masked indexing
         /// @param mask the mask that selects which elements to get. `true` will be included, `false` excluded
-        /// @return A StaticArrayList that contains all values where of this where mask is `true`
-        StaticArrayList<T, N> at(const StaticArrayList<bool, N>& mask) const {
-            StaticArrayList<T, N> result;
+        /// @return A ArrayList that contains all values where of this where mask is `true`
+        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {
+            ArrayList<T, N> result;
             auto thisItr = this->begin();
             const auto thisEnd = this->end();
             auto maskItr = mask.begin();
@@ -192,14 +196,14 @@ namespace embed
             return result;
         }
 
-        /// @brief Inices list indexing
+        /// @brief Indices list indexing
         /// @tparam Int a generic integer
         /// @param indices a list of indices that should be extracted
-        /// @return a StaticArrayList containing all the elements from this that are contained in the `indices`
+        /// @return a ArrayList containing all the elements from this that are contained in the `indices`
         template<class Int>
         requires std::is_integral_v<Int>
-        StaticArrayList<T, N> at(const StaticArrayList<Int, N>& indices) const {
-            StaticArrayList<T, N> result;
+        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {
+            ArrayList<T, N> result;
             for(const Int& index : indices){
                 result.emplace_back(this->at(index));
             }
@@ -215,12 +219,12 @@ namespace embed
         constexpr const T& operator[](const Int i) const {return this->at(i);}
 
         /// @brief accesses all elements where `mask` is `true` 
-        StaticArrayList<T, N> operator[](const StaticArrayList<bool, N>& mask) const {return this->at(mask);}
+        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->at(mask);}
 
         /// @brief accesses all elements at the given `indices` 
         template<class Int>
         requires std::is_integral_v<Int>
-        StaticArrayList<T, N> operator[](const StaticArrayList<Int, N>& indices) const {return this->at(indices);}
+        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->at(indices);}
 
         /// @brief emplaces (aka. pushes) an element to the back of the list
         /// @details Actually constructs an element in place
@@ -253,7 +257,7 @@ namespace embed
             for(size_type i = 0; i < count; ++i) this->emplace_back(value);
         }
 
-        /// @brief assigns a value to the list. after which value is the only element in the list
+        /// @brief clears the list and assigns the `value` `count` many times to the list.
         inline void assign(const size_type count, const T& value){
             this->clear();
             this->append(count, value);
@@ -404,23 +408,33 @@ namespace embed
         /// @param range the range that should be inserted
         /// @return an iterator to the inserted range
         template<std::ranges::forward_range Range>
-        inline iterator insert(const const_iterator pos, const Range& range){return this->insert(pos, range.begin(), range.end());}
+        inline iterator insert(const const_iterator pos, const Range& range){
+            return this->insert(pos, range.begin(), range.end());
+        }
 
         /// @brief inserts the `value` at the `pos`ition passed as an integer that wraps if it is a signed type 
         template<class Int> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, const T& value){return this->insert(this->to_iterator(pos), value);}
+        inline iterator insert(const Int pos, const T& value){
+            return this->insert(this->to_iterator(pos), value);
+        }
 
         /// @brief inserts the `value` at the `pos`ition passed as an integer that wraps if it is a signed type
         template<class Int> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, T&& value){return this->insert(this->to_iterator(pos), std::move(value));}
+        inline iterator insert(const Int pos, T&& value){
+            return this->insert(this->to_iterator(pos), std::move(value));
+        }
 
         /// @brief inserts the `range` at the `pos`ition passed as an integer that wraps if it is a signed type
         template<class Int, std::ranges::forward_range Range> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, const Range& range){return this->insert(this->to_iterator(pos), range);}
+        inline iterator insert(const Int pos, const Range& range){
+            return this->insert(this->to_iterator(pos), range);
+        }
 
         /// @brief inserts the closed-open [`first`, `last`) range at the given `pos`ition
         template<class Int, std::forward_iterator Itr> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, Itr first, Itr last){return this->insert(this->to_iterator(pos), first, last);}
+        inline iterator insert(const Int pos, Itr first, Itr last){
+            return this->insert(this->to_iterator(pos), first, last);
+        }
 
         /// @brief erases/removes the element at the position pointed to by `cpos` 
         /// @details does not perform out of bounds checks
@@ -430,7 +444,9 @@ namespace embed
             iterator destItr = this->unconst(cpos);
             iterator sourceItr = destItr + 1;
             for(; sourceItr < this->end(); ++sourceItr, (void)++destItr) *destItr = std::move(*sourceItr);
-            this->back().~T();
+            if constexpr (!std::is_trivially_destructible_v<T>){
+                this->back().~T();
+            }
             this->_size -= 1;
             return this->unconst(cpos);
         }
@@ -454,7 +470,11 @@ namespace embed
             iterator destItr = this->unconst(first);
             iterator sourceItr = this->unconst(last);
             for(; (destItr != last) && (sourceItr != this->end()); ++destItr, (void)++sourceItr) *destItr = std::move(*sourceItr);
-            for(; destItr != this->end(); ++destItr) destItr->~T();
+            
+            if constexpr (!std::is_trivially_destructible_v<T>){
+                for(; destItr != this->end(); ++destItr) destItr->~T();
+            }
+            
             const auto dist = std::distance(first, last);
             this->_size -= dist;
             return this->unconst(last-dist);
@@ -492,13 +512,16 @@ namespace embed
             }
 
             // calculate new and erased size
-            std::size_t new_size = write_itr - this->begin();
-            std::size_t n_erased = this->end() - write_itr;
+            std::size_t new_size = std::distance(this->begin(), write_itr);
+            std::size_t n_erased = std::distance(write_itr, this->end());
 
             // destroy remaining
-            for(; write_itr != end_itr; ++write_itr){
-                write_itr->~T();
+            if constexpr (!std::is_trivially_destructible_v<T>){
+                for(; write_itr != end_itr; ++write_itr){
+                    write_itr->~T();
+                }
             }
+            
             this->_size = new_size;
             return n_erased;
         }
@@ -519,8 +542,8 @@ namespace embed
         }
 
         /// @brief Applies the negation (!) operator to all elements and returns it as a bool list 
-        StaticArrayList<bool, N> operator!() const {
-            StaticArrayList<bool, N> result;
+        ArrayList<bool, N> operator!() const {
+            ArrayList<bool, N> result;
             for(const auto& elem : *this){
                 result.emplace_back(!elem);
             }
@@ -528,7 +551,7 @@ namespace embed
         }
 
         /// @brief Applies the function to each element of the list in-place
-        /// @note This is an in-place operation and will change the list. If you want to create a new list with the transformed values, use `embed::for_each(const StaticArrayList<T, N>&, std::function<T, const T&> function)` instead
+        /// @note This is an in-place operation and will change the list. If you want to create a new list with the transformed values, use `embed::for_each(const ArrayList<T, N>&, std::function<T, const T&> function)` instead
         /// @param function the function being applied to change/transform each element
         template<class Function>
         constexpr void for_each(Function&& function){
@@ -539,9 +562,9 @@ namespace embed
     };
 
     template<class T, std::size_t N, class Function>
-    auto for_each(const StaticArrayList<T, N>& list, Function&& function){
+    auto for_each(const ArrayList<T, N>& list, Function&& function){
         using R = decltype(function(std::declval<T>()));
-        StaticArrayList<R, N> result;
+        ArrayList<R, N> result;
         for(const T& elem : list){
             result.emplace_back(function(elem));
         }
@@ -554,7 +577,7 @@ namespace embed
 
     /// @brief prints the array list to the output stream  
     template<class T, std::size_t N>
-    OStream& operator<<(OStream& stream, const StaticArrayList<T, N>& array){
+    OStream& operator<<(OStream& stream, const ArrayList<T, N>& array){
         stream << "[";
         bool is_first = true;
         for(const auto& elem : array){
@@ -648,37 +671,37 @@ namespace embed
     
     /// @brief returns `true` if both containers have the same number of and value of elements
     template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool equal(const StaticArrayList<T1, N1>& lhs, const StaticArrayList<T2, N2>& rhs){
+    inline bool equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
         return equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
     }
 
     /// @brief returns `true` if both containers do not have the same number of and value of elements
     template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool not_equal(const StaticArrayList<T1, N1>& lhs, const StaticArrayList<T2, N2>& rhs){
+    inline bool not_equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
         return not_equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
     }
 
     /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise lesser ones for all entries
     template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool less(const StaticArrayList<T1, N1>& lhs, const StaticArrayList<T2, N2>& rhs){
+    inline bool less(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
         return less<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
     }
 
     /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise greater ones for all entries
     template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool greater(const StaticArrayList<T1, N1>& lhs, const StaticArrayList<T2, N2>& rhs){
+    inline bool greater(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
         return greater<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
     }
 
     /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise lesser or equal ones for all entries
     template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool less_equal(const StaticArrayList<T1, N1>& lhs, const StaticArrayList<T2, N2>& rhs){
+    inline bool less_equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
         return less_equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
     }
 
     /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise greater or equal ones for all entries
     template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool greater_equal(const StaticArrayList<T1, N1>& lhs, const StaticArrayList<T2, N2>& rhs){
+    inline bool greater_equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
         return greater_equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
     }
 
@@ -687,11 +710,11 @@ namespace embed
     //                    pointwise comparisons for cintiguous memory
     // --------------------------------------------------------------------------------------
 
-    /// @brief performs a point wise comparison of the StaticArrayList
+    /// @brief performs a point wise comparison of the ArrayList
     /// @returns a boolean array list of the intersection of both lists with the result of the compare function
     template<class T, std::size_t N1, std::size_t N2>
-    StaticArrayList<bool, (N1 < N2) ? N1 : N2> point_wise_compare(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs, std::function<bool(const T& l, const T& r)> compare){
-        StaticArrayList<bool, (N1 < N2) ? N1 : N2> result;
+    ArrayList<bool, (N1 < N2) ? N1 : N2> point_wise_compare(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs, std::function<bool(const T& l, const T& r)> compare){
+        ArrayList<bool, (N1 < N2) ? N1 : N2> result;
         std::size_t limit = (lhs.size() < rhs.size()) ? lhs.size() : rhs.size();
         for(std::size_t i = 0; i < limit; ++i){
             result.emplace_back(compare(lhs[i], rhs[i]));
@@ -701,37 +724,37 @@ namespace embed
     
     /// @brief returns the point wise equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto point_wise_equal(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto point_wise_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_equal<T, T>);
     }
 
     /// @brief returns the point wise un-equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto point_wise_not_equal(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto point_wise_not_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_not_equal<T, T>);
     }
 
     /// @brief returns the point wise less list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto point_wise_less(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto point_wise_less(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_less<T, T>);
     }
 
     /// @brief returns the point wise greater list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto point_wise_greater(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto point_wise_greater(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_greater<T, T>);
     }
 
     /// @brief returns the point wise less equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto point_wise_less_equal(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto point_wise_less_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_less_equal<T, T>);
     }
 
     /// @brief returns the point wise greater equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto point_wise_greater_equal(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto point_wise_greater_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_greater_equal<T, T>);
     }
 
@@ -739,37 +762,37 @@ namespace embed
 
     /// @brief returns the point wise equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator==(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto operator==(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_equal<T, N1, N2>(lhs, rhs);
     }
 
     /// @brief returns the point wise un-equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator!=(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto operator!=(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_not_equal<T, N1, N2>(lhs, rhs);
     }
 
     /// @brief returns the point wise less list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator<(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto operator<(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_less<T, N1, N2>(lhs, rhs);
     }
 
     /// @brief returns the point wise greater list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator>(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto operator>(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_greater<T, N1, N2>(lhs, rhs);
     }
 
     /// @brief returns the point wise less equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator<=(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto operator<=(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_less_equal<T, N1, N2>(lhs, rhs);
     }
 
     /// @brief returns the point wise greater equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator>=(const StaticArrayList<T, N1>& lhs, const StaticArrayList<T, N2>& rhs){
+    inline auto operator>=(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
         return point_wise_greater_equal<T, N1, N2>(lhs, rhs);
     }
 
@@ -777,7 +800,7 @@ namespace embed
 
     /// @brief returns `true` if any (aka. at least one) values from the `list` (converted to bool) are `true`
     template<class T, std::size_t N1>
-    constexpr bool any(const StaticArrayList<T, N1>& list){
+    constexpr bool any(const ArrayList<T, N1>& list){
         for(const auto& elem : list){
             if(static_cast<bool>(elem)){
                 return true;
@@ -788,7 +811,7 @@ namespace embed
 
     /// @brief returns `true` if all values from the `list` (converted to bool) are `true`
     template<class T, std::size_t N1>
-    constexpr bool all(const StaticArrayList<T, N1>& lhs){
+    constexpr bool all(const ArrayList<T, N1>& lhs){
         for(const auto& elem : lhs){
             if(!static_cast<bool>(elem)){
                 return false;
@@ -799,7 +822,7 @@ namespace embed
 
     /// @brief returns `true` if no values from the `list` (converted to bool) are `true`
     template<class T, std::size_t N1>
-    constexpr bool none(const StaticArrayList<T, N1>& lhs){
+    constexpr bool none(const ArrayList<T, N1>& lhs){
         for(const auto& elem : lhs){
             if(static_cast<bool>(elem)){
                 return false;
@@ -808,7 +831,7 @@ namespace embed
         return true;
     }
 
-    void StaticArrayList_test();
+    void ArrayList_test();
 
 } // namespace embed
 
