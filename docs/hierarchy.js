@@ -62,8 +62,8 @@ var hierarchy =
     [ "embed::OStream", "da/d0a/classembed_1_1_o_stream.html", null ],
     [ "embed::OStreamRef", "d4/dd5/structembed_1_1_o_stream_ref.html", null ],
     [ "embed::Promise< T >", "de/dd8/classembed_1_1_promise.html", null ],
-    [ "embed::StaticArrayList< T, N >", "d5/def/classembed_1_1_static_array_list.html", null ],
-    [ "embed::StaticPriorityQueue< T, N, greater_priority >", "d2/d60/classembed_1_1_static_priority_queue.html", null ],
+    [ "embed::ArrayList< T, N >", "d5/def/classembed_1_1_static_array_list.html", null ],
+    [ "embed::PriorityQueue< T, N, greater_priority >", "d2/d60/classembed_1_1_static_priority_queue.html", null ],
     [ "embed::str_add_float_params", "d0/d99/structembed_1_1str__add__float__params.html", null ],
     [ "embed::str_add_uint_params", "d4/dba/structembed_1_1str__add__uint__params.html", null ],
     [ "std::true_type", null, [

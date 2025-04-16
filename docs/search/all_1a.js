@@ -8,5 +8,5 @@ var searchData=
   ['_7einterruptguard_5',['~InterruptGuard',['../d9/d19/classembed_1_1_interrupt_guard.html#ad1c5caad90b0283df5b5c790360f1e63',1,'embed::InterruptGuard']]],
   ['_7eostream_6',['~OStream',['../da/d0a/classembed_1_1_o_stream.html#a9a451357ba0b06345810dc560c51ea47',1,'embed::OStream']]],
   ['_7epromise_7',['~Promise',['../de/dd8/classembed_1_1_promise.html#a5d06ee78a8dcde15c150f9b460ec3b03',1,'embed::Promise']]],
-  ['_7estaticarraylist_8',['~StaticArrayList',['../d5/def/classembed_1_1_static_array_list.html#a7eebccfc9ac079b1b460462f6834220e',1,'embed::StaticArrayList']]]
+  ['_7eArrayList_8',['~ArrayList',['../d5/def/classembed_1_1_static_array_list.html#a7eebccfc9ac079b1b460462f6834220e',1,'embed::ArrayList']]]
 ];

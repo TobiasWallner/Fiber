@@ -7,7 +7,7 @@ var searchData=
   ['master_4',['master',['../df/dd8/classembed_1_1_coroutine_node.html#a5ba3d2740df0cdce9f3953eeda34a475',1,'embed::CoroutineNode::master()'],['../df/dd8/classembed_1_1_coroutine_node.html#a02fab0790c39ee6f0dadb72ab6c2db38',1,'embed::CoroutineNode::master() const']]],
   ['math_2ecpp_5',['math.cpp',['../dd/d2d/math_8cpp.html',1,'']]],
   ['math_2ehpp_6',['math.hpp',['../d4/d78/math_8hpp.html',1,'']]],
-  ['max_5fsize_7',['max_size',['../d5/def/classembed_1_1_static_array_list.html#a3e77f3187cab70624184cf214ef3d6e6',1,'embed::StaticArrayList::max_size()'],['../d2/d60/classembed_1_1_static_priority_queue.html#a4b3d97c14ec6f4bf2770384ea2d0e3da',1,'embed::StaticPriorityQueue::max_size()']]],
+  ['max_5fsize_7',['max_size',['../d5/def/classembed_1_1_static_array_list.html#a3e77f3187cab70624184cf214ef3d6e6',1,'embed::ArrayList::max_size()'],['../d2/d60/classembed_1_1_static_priority_queue.html#a4b3d97c14ec6f4bf2770384ea2d0e3da',1,'embed::PriorityQueue::max_size()']]],
   ['max_5ftick_8',['max_tick',['../d3/d21/classembed_1_1_clock_tick.html#a138db63b564a0be8682dbadc09b35f9d',1,'embed::ClockTick::max_tick'],['../da/d86/structembed_1_1_clock.html#a06db6c280c00615c53372d9c23a5b153',1,'embed::Clock::max_tick']]],
   ['max_5ftick_5fis_5flimit_9',['max_tick_is_limit',['../d3/d21/classembed_1_1_clock_tick.html#a231eb2ea97f80f26722cbe538ea3a852',1,'embed::ClockTick']]],
   ['maximum_20e_20g_201023_20_3a_10',['✔️ Timer that wraps at a custom maximum (e.g., 1023):',['../d4/d2b/time.html#autotoc_md26',1,'']]],

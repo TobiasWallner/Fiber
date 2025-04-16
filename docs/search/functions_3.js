@@ -1,11 +1,11 @@
 var searchData=
 [
-  ['capacity_0',['capacity',['../d5/def/classembed_1_1_static_array_list.html#a04780e4b907e1c4a81c6b1e03cde5666',1,'embed::StaticArrayList::capacity()'],['../d2/d60/classembed_1_1_static_priority_queue.html#a5e724315055f74dc15c5278a05ece950',1,'embed::StaticPriorityQueue::capacity()']]],
-  ['cbegin_1',['cbegin',['../d5/def/classembed_1_1_static_array_list.html#af5da7ca209f861179c972448dfdd60d4',1,'embed::StaticArrayList']]],
-  ['cdata_2',['cdata',['../d5/def/classembed_1_1_static_array_list.html#a129c7a2136b8bf3168f6167dbf89c897',1,'embed::StaticArrayList']]],
-  ['cend_3',['cend',['../d5/def/classembed_1_1_static_array_list.html#aada0e6a111516558a0a141a7d32a6fca',1,'embed::StaticArrayList']]],
+  ['capacity_0',['capacity',['../d5/def/classembed_1_1_static_array_list.html#a04780e4b907e1c4a81c6b1e03cde5666',1,'embed::ArrayList::capacity()'],['../d2/d60/classembed_1_1_static_priority_queue.html#a5e724315055f74dc15c5278a05ece950',1,'embed::PriorityQueue::capacity()']]],
+  ['cbegin_1',['cbegin',['../d5/def/classembed_1_1_static_array_list.html#af5da7ca209f861179c972448dfdd60d4',1,'embed::ArrayList']]],
+  ['cdata_2',['cdata',['../d5/def/classembed_1_1_static_array_list.html#a129c7a2136b8bf3168f6167dbf89c897',1,'embed::ArrayList']]],
+  ['cend_3',['cend',['../d5/def/classembed_1_1_static_array_list.html#aada0e6a111516558a0a141a7d32a6fca',1,'embed::ArrayList']]],
   ['center_4',['center',['../dc/d23/structembed_1_1_format_str.html#a891d1769f217d3f6299307bca749e5b6',1,'embed::FormatStr::center()'],['../d8/d02/structembed_1_1_format_bool.html#ac2b90c643e1c2f307f073663ae08c585',1,'embed::FormatBool::center()'],['../d7/d25/structembed_1_1_format_int.html#af8de9b24e0732b4f02da5d4ad3299b60',1,'embed::FormatInt::center()'],['../d8/d05/structembed_1_1_format_float.html#a351f27977c71c03766196dc3c56b0c4b',1,'embed::FormatFloat::center()'],['../d4/d27/structembed_1_1_format_hex.html#a7c452dfc971212e2f91b3f898d4e7fc0',1,'embed::FormatHex::center()']]],
-  ['clear_5',['clear',['../d5/def/classembed_1_1_static_array_list.html#a77845e10635e2f521e51a9ba0f75221e',1,'embed::StaticArrayList']]],
+  ['clear_5',['clear',['../d5/def/classembed_1_1_static_array_list.html#a77845e10635e2f521e51a9ba0f75221e',1,'embed::ArrayList']]],
   ['clock_5ftemplate_5finstantiation_5fand_5ftime_5fpoint_6',['Clock_template_instantiation_and_time_point',['../da/d2e/namespaceembed.html#ad520cf878a11ea91e64f6e8e8986bbf1',1,'embed']]],
   ['clocktest_5fnegation_7',['ClockTest_negation',['../da/d2e/namespaceembed.html#afd9497000d79218a63acc932c8c4426a',1,'embed']]],
   ['clocktick_8',['ClockTick',['../d3/d21/classembed_1_1_clock_tick.html#ab80f1945f5f1e597a22c213b534176e0',1,'embed::ClockTick::ClockTick()=default'],['../d3/d21/classembed_1_1_clock_tick.html#a08abf50185fe4577fd9f423e8db07a77',1,'embed::ClockTick::ClockTick(const ClockTick &amp;)=default'],['../d3/d21/classembed_1_1_clock_tick.html#ab2d817c8296dda97f706964150c020d8',1,'embed::ClockTick::ClockTick(const T v)'],['../d3/d21/classembed_1_1_clock_tick.html#ab2d817c8296dda97f706964150c020d8',1,'embed::ClockTick::ClockTick(const T v)']]],

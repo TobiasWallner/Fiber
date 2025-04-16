@@ -38,10 +38,10 @@ var annotated_dup =
       [ "OStream", "da/d0a/classembed_1_1_o_stream.html", "da/d0a/classembed_1_1_o_stream" ],
       [ "OStreamRef", "d4/dd5/structembed_1_1_o_stream_ref.html", "d4/dd5/structembed_1_1_o_stream_ref" ],
       [ "Promise", "de/dd8/classembed_1_1_promise.html", "de/dd8/classembed_1_1_promise" ],
-      [ "StaticArrayList", "d5/def/classembed_1_1_static_array_list.html", "d5/def/classembed_1_1_static_array_list" ],
+      [ "ArrayList", "d5/def/classembed_1_1_static_array_list.html", "d5/def/classembed_1_1_static_array_list" ],
       [ "StaticLinearAllocator", "d6/df6/structembed_1_1_static_linear_allocator.html", "d6/df6/structembed_1_1_static_linear_allocator" ],
       [ "StaticLinearAllocatorDebug", "d4/dab/classembed_1_1_static_linear_allocator_debug.html", "d4/dab/classembed_1_1_static_linear_allocator_debug" ],
-      [ "StaticPriorityQueue", "d2/d60/classembed_1_1_static_priority_queue.html", "d2/d60/classembed_1_1_static_priority_queue" ],
+      [ "PriorityQueue", "d2/d60/classembed_1_1_static_priority_queue.html", "d2/d60/classembed_1_1_static_priority_queue" ],
       [ "str_add_float_params", "d0/d99/structembed_1_1str__add__float__params.html", "d0/d99/structembed_1_1str__add__float__params" ],
       [ "str_add_uint_params", "d4/dba/structembed_1_1str__add__uint__params.html", "d4/dba/structembed_1_1str__add__uint__params" ]
     ] ],

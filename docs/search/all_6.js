@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['data_0',['data',['../d5/def/classembed_1_1_static_array_list.html#a113b02aef41e08a9cbf204327a6e8cdf',1,'embed::StaticArrayList::data()'],['../d5/def/classembed_1_1_static_array_list.html#af8ab8b33c9c577b913fce27225609dc9',1,'embed::StaticArrayList::data() const']]],
+  ['data_0',['data',['../d5/def/classembed_1_1_static_array_list.html#a113b02aef41e08a9cbf204327a6e8cdf',1,'embed::ArrayList::data()'],['../d5/def/classembed_1_1_static_array_list.html#af8ab8b33c9c577b913fce27225609dc9',1,'embed::ArrayList::data() const']]],
   ['data_20retrieval_1',['Use Case: Asynchronous Data Retrieval',['../d0/db8/entangled_future_promise_pairs.html#use_case',1,'']]],
   ['decimals_2',['decimals',['../d0/d99/structembed_1_1str__add__float__params.html#a6605720a83280763623148cd59db9ddc',1,'embed::str_add_float_params::decimals'],['../d8/d05/structembed_1_1_format_float.html#a1f87d534cfacf8ca2d133aab08a05771',1,'embed::FormatFloat::decimals()']]],
   ['define_3',['define',['../d9/d35/exception__and__assertions_8dox.html#afb9749cb0384d03e185624cd63f9b373',1,'exception_and_assertions.dox']]],
