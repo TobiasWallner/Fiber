@@ -42,7 +42,7 @@ target_compile_features(embed PUBLIC
 )
 
 target_compile_options(embed PUBLIC
-    -O3
+    #-O3
     -fcoroutines
 )
 
