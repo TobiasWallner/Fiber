@@ -2,7 +2,10 @@
 deploy-docs:
 	doxygen
 	git add docs --force
-	git add extern/doxygen-awesome-css --force
-	git stash commit -m "deploy docs"
-	git checkout gh-pages
-	git reset --hard
+	git stash push --staged
+	git switch gh-pages
+	git reset 9e8b3b7fb9eeb1ce85011073f4758e302230933c --hard
+	git stash pop
+	git commit -m "deploy-docs"
+	git push origin gh-pages
+	git switch main
