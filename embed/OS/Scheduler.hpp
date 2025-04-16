@@ -12,7 +12,7 @@ namespace embed
 
     template<std::size_t n_tasks>
     class StaticLinearScheduler{
-        StaticArrayList<CoTask*, n_tasks> task_list;
+        ArrayList<CoTask*, n_tasks> task_list;
 
     public:
 

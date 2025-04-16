@@ -651,7 +651,7 @@ namespace embed{
      */
     OStream& operator<<(OStream& stream, const FormatInt& fvalue);
     
-    template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
+    template <std::integral Int>
     inline OStream& operator<<(OStream& stream, const Int& value){
         return stream << FormatInt(static_cast<FormatInt::value_type>(value));
     }
@@ -1030,8 +1030,8 @@ namespace embed{
         }
 
         // hex tables
-        constexpr char hex_upper[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-        constexpr char hex_lower[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        constexpr char hex_upper[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+        constexpr char hex_lower[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
         // print hex characters
         for(; i < 8; ++i){
@@ -1077,6 +1077,15 @@ namespace embed{
 #endif
 
     // -----------------------------------------------------------------------------------------------
+    //                                    reverse_iterator overloads
+    // -----------------------------------------------------------------------------------------------
+
+    template<class T>
+    OStream& operator<<(OStream& stream, std::reverse_iterator<T> value){
+        return stream << "std::reverse_iterator<" << typeid(T).name() << ">(" << (value.base()-1) << ")";
+    }
+
+    // -----------------------------------------------------------------------------------------------
     //                           Stream References and Default Streams
     // -----------------------------------------------------------------------------------------------
 
@@ -1086,8 +1095,8 @@ namespace embed{
         constexpr OStreamRef() = default;
         
         constexpr OStreamRef(const OStreamRef&)=default;
-        constexpr OStreamRef(OStream& stream) : ptr(&stream){}
-        constexpr OStreamRef(OStream* stream) : ptr(stream){}
+        explicit constexpr OStreamRef(OStream& stream) : ptr(&stream){}
+        explicit constexpr OStreamRef(OStream* stream) : ptr(stream){}
 
         constexpr OStreamRef& operator=(const OStreamRef&)=default;
         constexpr OStreamRef& operator=(OStream& stream){this->ptr = &stream; return *this;}
@@ -1097,7 +1106,7 @@ namespace embed{
 
         constexpr operator bool() const {return this->is_open();}
 
-        inline operator OStream&(){
+        explicit inline operator OStream&(){
             if(this->ptr == nullptr){
                 while(true){/* trap */}
                 // You are trapped here, because you have not redirected the output streams:
@@ -1128,6 +1137,11 @@ namespace embed{
             }
         }
     };
+
+    template<class T>
+    inline OStream& operator<<(OStreamRef stream, const T& value){
+        return (*(stream.ptr)) << value;
+    }
 
     extern OStreamRef cout;
     extern OStreamRef cerr;
