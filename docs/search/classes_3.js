@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['exception_0',['Exception',['../d5/d2f/classembed_1_1_exception.html',1,'embed']]]
+  ['dualarraylist_0',['DualArrayList',['../d2/d0d/classembed_1_1_dual_array_list.html',1,'embed']]],
+  ['dualpriorityqueue_1',['DualPriorityQueue',['../d0/d96/classembed_1_1_dual_priority_queue.html',1,'embed']]]
 ];

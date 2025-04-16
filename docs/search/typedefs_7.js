@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['value_5ftype_0',['value_type',['../d5/def/classembed_1_1_static_array_list.html#a18e1638594f14b8e75c15aa976a7067c',1,'embed::ArrayList::value_type'],['../d2/d60/classembed_1_1_static_priority_queue.html#a112282d3eeead6a4a6f833c9a6dd486d',1,'embed::PriorityQueue::value_type'],['../da/d86/structembed_1_1_clock.html#a57faa74478946c0529b538937fe08353',1,'embed::Clock::value_type'],['../d7/d25/structembed_1_1_format_int.html#aba93e6faa9c923ded7675fa6ae624a72',1,'embed::FormatInt::value_type'],['../d8/d05/structembed_1_1_format_float.html#a6c51cea4d9058e55d21eaddb69188fb2',1,'embed::FormatFloat::value_type']]]
+  ['time_5fpoint_0',['time_point',['../da/d86/structembed_1_1_clock.html#a48e76ef3df42ff44642d9da8673b7233',1,'embed::Clock']]],
+  ['timepoint_1',['TimePoint',['../da/d2e/namespaceembed.html#af176ead949b706e7d5afcb8ddb67b543',1,'embed']]],
+  ['type_2',['type',['../d2/d53/structstd_1_1tuple__element_3_010_00_01embed_1_1_future_promise_pair_3_01_t_01_4_01_4.html#af2961e7a251d5f1b3a5e58ce78cd3b11',1,'std::tuple_element&lt; 0, embed::FuturePromisePair&lt; T &gt; &gt;::type'],['../da/d2a/structstd_1_1tuple__element_3_011_00_01embed_1_1_future_promise_pair_3_01_t_01_4_01_4.html#abfc60e385a57a0feb12700ece3af4581',1,'std::tuple_element&lt; 1, embed::FuturePromisePair&lt; T &gt; &gt;::type']]]
 ];

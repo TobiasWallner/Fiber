@@ -2,6 +2,7 @@ var hierarchy =
 [
     [ "embed::_TryAwait< T, is_rvalue_reference >", "d5/dfd/classembed_1_1___try_await.html", null ],
     [ "embed::_TryAwait< T, false >", "d8/d72/classembed_1_1___try_await_3_01_t_00_01false_01_4.html", null ],
+    [ "embed::ArrayList< T, N >", "d1/de2/classembed_1_1_array_list.html", null ],
     [ "embed::AwaitableNode", "d9/da2/classembed_1_1_awaitable_node.html", [
       [ "embed::CoTask", "d8/d46/classembed_1_1_co_task.html", null ],
       [ "embed::Future< T >", "d8/d8c/classembed_1_1_future.html", null ]
@@ -15,6 +16,8 @@ var hierarchy =
     [ "embed::CoroutinePromiseSize", "d9/d04/structembed_1_1_coroutine_promise_size.html", [
       [ "embed::CoroutinePromise< ReturnType >", "dd/d4c/classembed_1_1_coroutine_promise.html", null ]
     ] ],
+    [ "embed::DualArrayList< T, N >", "d2/d0d/classembed_1_1_dual_array_list.html", null ],
+    [ "embed::DualPriorityQueue< T, N, stage1_greater_priority, stage2_greater_priority, transition_condition >", "d0/d96/classembed_1_1_dual_priority_queue.html", null ],
     [ "std::exception", null, [
       [ "embed::Exception", "d5/d2f/classembed_1_1_exception.html", [
         [ "embed::AllocationFailure", "d6/d43/classembed_1_1_allocation_failure.html", null ],
@@ -54,6 +57,8 @@ var hierarchy =
     ] ],
     [ "embed::InterruptGuard", "d9/d19/classembed_1_1_interrupt_guard.html", null ],
     [ "embed::IScheduler", "dd/d78/classembed_1_1_i_scheduler.html", null ],
+    [ "embed::LeftDualArrayListConstRef< T, N >", "d5/da8/classembed_1_1_left_dual_array_list_const_ref.html", null ],
+    [ "embed::LeftDualArrayListRef< T, N >", "df/db1/classembed_1_1_left_dual_array_list_ref.html", null ],
     [ "std::pmr::memory_resource", null, [
       [ "embed::StaticLinearAllocator< Bytes >", "d6/df6/structembed_1_1_static_linear_allocator.html", [
         [ "embed::StaticLinearAllocatorDebug< Bytes >", "d4/dab/classembed_1_1_static_linear_allocator_debug.html", null ]
@@ -61,9 +66,10 @@ var hierarchy =
     ] ],
     [ "embed::OStream", "da/d0a/classembed_1_1_o_stream.html", null ],
     [ "embed::OStreamRef", "d4/dd5/structembed_1_1_o_stream_ref.html", null ],
+    [ "embed::PriorityQueue< T, N, greater_priority >", "d4/db1/classembed_1_1_priority_queue.html", null ],
     [ "embed::Promise< T >", "de/dd8/classembed_1_1_promise.html", null ],
-    [ "embed::ArrayList< T, N >", "d5/def/classembed_1_1_static_array_list.html", null ],
-    [ "embed::PriorityQueue< T, N, greater_priority >", "d2/d60/classembed_1_1_static_priority_queue.html", null ],
+    [ "embed::RightDualArrayListConstRef< T, N >", "dc/d3a/classembed_1_1_right_dual_array_list_const_ref.html", null ],
+    [ "embed::RightDualArrayListRef< T, N >", "dc/de8/classembed_1_1_right_dual_array_list_ref.html", null ],
     [ "embed::str_add_float_params", "d0/d99/structembed_1_1str__add__float__params.html", null ],
     [ "embed::str_add_uint_params", "d4/dba/structembed_1_1str__add__uint__params.html", null ],
     [ "std::true_type", null, [
