@@ -7,13 +7,16 @@
 #include <initializer_list>
 #include <ranges>
 #include <functional>
+#include <concepts>
 
 #include <embed/Exceptions/Exceptions.hpp>
 #include <embed/OStream/OStream.hpp>
 
 
 // TODO: use the memcpy - to potentially use dma copy
-// TODO: document all functions
+// TODO: Make a ArrayListSlice that stores pointers and feels like woring with references to the elements of another list.
+// TODO: Make a reference type (ArrayListRef) that references the whole list with a pointer to the data, a pointer to its size, an int of the capacity
+// TODO: also make a const reference version of both slice and ref
 namespace embed
 {
     /** 
@@ -45,22 +48,21 @@ namespace embed
 
     public:
 
-        
-
         /// @brief default constructor
         ArrayList() = default;
 
         /// @brief default copy constructor
-        template<size_t N1>
-        ArrayList(const ArrayList<T, N1>& other){this->assign(other);}
+        template<std::convertible_to<T> Ta, size_t N1>
+        ArrayList(const ArrayList<Ta, N1>& other){this->assign(other);}
 
         /// @brief default copy assignment 
-        template<size_t N1>
-        ArrayList& operator=(const ArrayList<T, N1>& other){this->assign(other);};
+        template<std::convertible_to<T> Ta, size_t N1>
+        ArrayList& operator=(const ArrayList<Ta, N1>& other){this->assign(other);};
 
         /// @brief construct from an initialiser list
         /// @param ilist initialiser list
-        inline ArrayList(std::initializer_list<T> ilist){this->append(ilist);}
+        template<std::convertible_to<T> Ta>
+        inline ArrayList(std::initializer_list<Ta> ilist){this->append(ilist);}
 
         /// @brief construct from an generic range that follows the concept `std::ranges::forward_range`
         /// @tparam Range templated range class that follows the concept `std::ranges::forward_range`
@@ -96,13 +98,13 @@ namespace embed
         constexpr bool full() const {return this->size() == this->capacity();}
 
         /// @brief returns a pointer to the start of the container
-        constexpr T* data() {return reinterpret_cast<T*>(this->_buffer);}
+        constexpr pointer data() {return reinterpret_cast<T*>(this->_buffer);}
 
         /// @brief returns a const-pointer to the start of the container 
-        constexpr const T* data() const {return reinterpret_cast<const T*>(this->_buffer);}
+        constexpr const_pointer data() const {return reinterpret_cast<const T*>(this->_buffer);}
 
         /// @brief returns a const-pointer to the start of the container 
-        constexpr const T* cdata() const {return reinterpret_cast<const T*>(this->_buffer);}
+        constexpr const_pointer cdata() const {return reinterpret_cast<const T*>(this->_buffer);}
 
         /// @brief returns an iterator to the start 
         constexpr iterator begin() {return reinterpret_cast<T*>(this->_buffer);}
@@ -122,60 +124,59 @@ namespace embed
         /// @brief returns a const-iterator past the end
         constexpr const_iterator cend() const {return this->cbegin() + this->size();}
 
-        /// @brief returns a reference to the first element in the buffer 
-        constexpr T& front() {
+        /// @brief returns a reference to the first element in the buffer
+        constexpr reference front() {
             EMBED_ASSERT_O1(!this->empty());
             return *this->begin();
         }
 
         /// @brief returns a const-reference to the first element int the buffer
-        constexpr const T& front() const {
+        constexpr const_reference front() const {
             EMBED_ASSERT_O1(!this->empty());
             return *this->cbegin();
         }
 
         /// @brief returns a reference to the last element in the buffer 
-        constexpr T& back() {
+        constexpr reference back() {
             EMBED_ASSERT_O1(!this->empty());
             return *(this->end()-1);
         }
 
         /// @brief returns a const reference to the last element in the buffer 
-        constexpr const T& back() const {
+        constexpr const_reference back() const {
             EMBED_ASSERT_O1(!this->empty());
             return *(this->cend()-1);
         }
 
-        /// @brief returns a reference to the element at the given position
-        template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr T& at(const UInt i){
-            EMBED_ASSERT_O1(i < this->size());    
-            return *(this->begin()+i);
+        /**
+         * @brief returns a reference to the element at the given position
+         * 
+         * For signed integer types, signed ones will wrap negatives around so -1 will access the last element
+         * Unsigned integer types will avoid the branch.
+         */
+        template<std::integral Int>
+        constexpr reference at(const Int i) {
+            if constexpr (std::is_unsigned_v<Int>){
+                EMBED_ASSERT_O1(i < this->size());  
+                return *(this->begin()+i);
+            }else{
+                EMBED_ASSERT_O1(i < this->size());
+                EMBED_ASSERT_O1(-i <= this->size());
+                return *(((i >= 0) ? this->begin() : this->end()) + i);
+            }   
         }
 
-        /// @brief returns a reference to the element at the given position
-        template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr const T& at(const UInt i) const {
-            EMBED_ASSERT_O1(i < this->size());  
-            return *(this->begin()+i);
-        }
-
-        /// @brief returns a reference to the element at the given position
-        /// @details for signed integers will wrap negatives around so -1 will access the last element
-        template<class SInt> requires std::is_signed_v<SInt>
-        constexpr T& at(SInt si){
-            EMBED_ASSERT_O1(si < this->size());
-            EMBED_ASSERT_O1(-si <= this->size());
-            return *(((si >= 0) ? this->begin() : this->end()) + si);
-        }
-
-        /// @brief returns a reference to the element at the given position
-        /// @details for signed integers will wrap negatives around so -1 will access the last element
-        template<class SInt> requires std::is_signed_v<SInt>
-        constexpr const T& at(const SInt si) const {
-            EMBED_ASSERT_O1(si < this->size());
-            EMBED_ASSERT_O1(-si <= this->size());
-            return *(((si >= 0) ? this->begin() : this->end()) + si);
+        /// @overload 
+        template<std::integral Int>
+        constexpr const_reference at(const Int i) const {
+            if constexpr (std::is_unsigned_v<Int>){
+                EMBED_ASSERT_O1(i < this->size());  
+                return *(this->begin()+i);
+            }else{
+                EMBED_ASSERT_O1(i < this->size());
+                EMBED_ASSERT_O1(-i <= this->size());
+                return *(((i >= 0) ? this->begin() : this->end()) + i);
+            }   
         }
 
 
@@ -200,8 +201,7 @@ namespace embed
         /// @tparam Int a generic integer
         /// @param indices a list of indices that should be extracted
         /// @return a ArrayList containing all the elements from this that are contained in the `indices`
-        template<class Int>
-        requires std::is_integral_v<Int>
+        template<std::integral Int>
         ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {
             ArrayList<T, N> result;
             for(const Int& index : indices){
@@ -211,19 +211,18 @@ namespace embed
         }
 
         /// @brief returns a reference to the element at the given position
-        template<class Int> requires std::is_integral_v<Int>
-        constexpr T& operator[](const Int i){return this->at(i);}
+        template<std::integral Int>
+        constexpr reference operator[](const Int i){return this->at(i);}
         
         /// @brief returns a reference to the element at the given position
-        template<class Int> requires std::is_integral_v<Int>
-        constexpr const T& operator[](const Int i) const {return this->at(i);}
+        template<std::integral Int>
+        constexpr const_reference operator[](const Int i) const {return this->at(i);}
 
         /// @brief accesses all elements where `mask` is `true` 
         ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->at(mask);}
 
         /// @brief accesses all elements at the given `indices` 
-        template<class Int>
-        requires std::is_integral_v<Int>
+        template<std::integral Int>
         ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->at(indices);}
 
         /// @brief emplaces (aka. pushes) an element to the back of the list
@@ -265,6 +264,7 @@ namespace embed
 
         /// @brief appends a range defined by foreward iterators using the closed-open principle [first, last)
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         inline void append(Itr first, Itr last){
             for(; first != last; ++first) 
                 this->emplace_back(*first);
@@ -272,18 +272,21 @@ namespace embed
 
         /// @brief assigns a range defined by foreward iterators using the closed-open principle [first, last). After the assignment the list has the size of the assigned range
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         inline void assign(Itr first, Itr last){
             this->clear();
             this->append(first, last);
         }
 
         /// @brief appens an initilizer_list
-        inline void append(std::initializer_list<T> ilist){
+        template<std::convertible_to<T> Ta>
+        inline void append(std::initializer_list<Ta> ilist){
             this->append(ilist.begin(), ilist.end());
         }
 
         /// @brief assigns an initializer_list
-        inline void assign(std::initializer_list<T> ilist){
+        template<std::convertible_to<T> Ta>
+        inline void assign(std::initializer_list<Ta> ilist){
             this->clear();
             this->append(ilist);
         }
@@ -308,48 +311,42 @@ namespace embed
         }
 
         /// @brief turns the passed unsigned integer into an iterator pointing to the same position 
-        template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr iterator to_iterator(const UInt pos){
-            EMBED_ASSERT_O1(pos < this->size());
-            return this->begin() + pos;
-        }
-
-        /// @brief turns the passed signed integer into an iterator at the same position and wraps negative number to the end. 
-        template<class SInt> requires std::is_signed_v<SInt>
-        constexpr iterator to_iterator(const SInt pos){
-            EMBED_ASSERT_O1(pos < this->size());
-            EMBED_ASSERT_O1(-pos <= this->size());
-            return ((pos >= 0) ? this->begin() : this->end()) + pos;
-        }
-
-        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
-        template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr const_iterator to_iterator(const UInt pos) const {
-            EMBED_ASSERT_O1(pos < this->size());
-            return this->begin() + pos;
-        }
-
-        /// @brief turns the passed signed integer into a const_iterator at the same position and wraps negative number to the end. 
-        template<class SInt> requires std::is_signed_v<SInt>
-        constexpr const_iterator to_iterator(const SInt pos) const {
-            EMBED_ASSERT_O1(pos < this->size());
-            EMBED_ASSERT_O1(-pos <= this->size());
-            return ((pos >= 0) ? this->begin() : this->end()) + pos;
+        template<std::integral Int>
+        constexpr iterator to_iterator(const Int pos){
+            if constexpr (std::is_unsigned_v<Int>){
+                EMBED_ASSERT_O1(pos < this->size());
+                return this->begin() + pos;
+            }else{
+                EMBED_ASSERT_O1(pos < this->size());
+                EMBED_ASSERT_O1(-pos <= this->size());
+                return ((pos >= 0) ? this->begin() : this->end()) + pos;
+            }
         }
 
         /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
-        template<class UInt> requires std::is_unsigned_v<UInt>
-        constexpr const_iterator to_const_iterator(const UInt pos) const {
-            EMBED_ASSERT_O1(pos < this->size());
-            return this->begin() + pos;
+        template<std::integral Int>
+        constexpr const_iterator to_iterator(const Int pos) const {
+            if constexpr (std::is_unsigned_v<Int>){
+                EMBED_ASSERT_O1(pos < this->size());
+                return this->begin() + pos;
+            }else{
+                EMBED_ASSERT_O1(pos < this->size());
+                EMBED_ASSERT_O1(-pos <= this->size());
+                return ((pos >= 0) ? this->begin() : this->end()) + pos;
+            }
         }
 
-        /// @brief turns the passed signed integer into a const_iterator at the same position and wraps negative number to the end. 
-        template<class SInt> requires std::is_signed_v<SInt>
-        constexpr const_iterator to_const_iterator(const SInt pos) const {
-            EMBED_ASSERT_O1(pos < this->size());
-            EMBED_ASSERT_O1(-pos <= this->size());
-            return ((pos >= 0) ? this->begin() : this->end()) + pos;
+        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
+        template<std::integral Int>
+        constexpr const_iterator to_const_iterator(const Int pos) const {
+            if constexpr (std::is_unsigned_v<Int>){
+                EMBED_ASSERT_O1(pos < this->size());
+                return this->begin() + pos;
+            }else{
+                EMBED_ASSERT_O1(pos < this->size());
+                EMBED_ASSERT_O1(-pos <= this->size());
+                return ((pos >= 0) ? this->begin() : this->end()) + pos;
+            }
         }
 
         /// @brief removes the constnes of an iterator if the user has access to the mutable (un-const) container 
@@ -360,10 +357,12 @@ namespace embed
         }
 
         /// @brief Inserts a value
+        /// @tparam Ta A type that is convertible to the `value_type` of the list
         /// @param pos the position at which the value should be inserted
         /// @param value the value that the element at that position should have after the insertion
         /// @return an iterator pointing to the inserted value
-        iterator insert(const const_iterator pos, const T& value){
+        template<std::convertible_to<T> Ta>
+        iterator insert(const const_iterator pos, const Ta& value){
             EMBED_ASSERT_O1(this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
@@ -376,7 +375,8 @@ namespace embed
         /// @param pos the position at which the value should be inserted
         /// @param value the value that the element at that position should have after the insertion
         /// @return an iterator pointing to the inserted value
-        iterator insert(const const_iterator pos, T&& value){
+        template<std::convertible_to<T> Ta>
+        iterator insert(const const_iterator pos, Ta&& value){
             EMBED_ASSERT_O1(this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
@@ -392,6 +392,7 @@ namespace embed
         /// @param last the past the end iterator to which should be inserted
         /// @return an iterator to the start of the start of the insertion
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         iterator insert(const const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
             EMBED_ASSERT_O1(dist > this->reserve());
@@ -413,27 +414,60 @@ namespace embed
         }
 
         /// @brief inserts the `value` at the `pos`ition passed as an integer that wraps if it is a signed type 
-        template<class Int> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, const T& value){
-            return this->insert(this->to_iterator(pos), value);
+        template<std::integral Int>
+        inline iterator insert(const Int index, const T& value){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->insert(this->begin() + index, value);
+            }else{
+                if(index >= 0){
+                    return this->insert(this->begin() + index, value);
+                }else{
+                    return this->insert(this->end() + index + 1, value);
+                }
+            }
         }
 
         /// @brief inserts the `value` at the `pos`ition passed as an integer that wraps if it is a signed type
-        template<class Int> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, T&& value){
-            return this->insert(this->to_iterator(pos), std::move(value));
+        template<std::integral Int, std::convertible_to<T> Ta>
+        inline iterator insert(const Int index, Ta&& value){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->insert(this->begin() + index, std::move(value));
+            }else{
+                if(index >= 0){
+                    return this->insert(this->begin() + index, std::move(value));
+                }else{
+                    return this->insert(this->end() + index + 1, std::move(value));
+                }
+            }
         }
 
         /// @brief inserts the `range` at the `pos`ition passed as an integer that wraps if it is a signed type
-        template<class Int, std::ranges::forward_range Range> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, const Range& range){
-            return this->insert(this->to_iterator(pos), range);
+        template<std::integral Int, std::ranges::forward_range Range>
+        inline iterator insert(const Int index, const Range& range){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->insert(this->begin() + index, range);
+            }else{
+                if(index >= 0){
+                    return this->insert(this->begin() + index, range);
+                }else{
+                    return this->insert(this->end() + index + 1, range);
+                }
+            }
         }
 
         /// @brief inserts the closed-open [`first`, `last`) range at the given `pos`ition
-        template<class Int, std::forward_iterator Itr> requires std::is_integral_v<Int>
-        inline iterator insert(const Int pos, Itr first, Itr last){
-            return this->insert(this->to_iterator(pos), first, last);
+        template<std::integral Int, std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
+        inline iterator insert(const Int index, Itr first, Itr last){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->insert(this->begin() + index, first, last);
+            }else{
+                if(index >= 0){
+                    return this->insert(this->begin() + index, first, last);
+                }else{
+                    return this->insert(this->end() + index + 1, first, last);
+                }
+            }
         }
 
         /// @brief erases/removes the element at the position pointed to by `cpos` 
@@ -830,8 +864,6 @@ namespace embed
         }
         return true;
     }
-
-    void ArrayList_test();
 
 } // namespace embed
 

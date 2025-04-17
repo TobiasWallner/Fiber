@@ -13,6 +13,11 @@
 // embed
 #include <embed/Containers/ArrayList.hpp>
 
+// TODO: use the memcpy - to potentially use dma copy
+// TODO: Make a ArrayListSlice that stores pointers and feels like woring with references to the elements of another list.
+// TODO: Make a reference type (ArrayListRef) that references the whole list with a pointer to the data, a pointer to its size, an int of the capacity
+// TODO: also make a const reference version of both slice and ref
+
 namespace embed
 {
 
@@ -412,68 +417,80 @@ namespace embed
         /// @brief appends `value` `count` many times to the left list
         /// @param count how often `value` should be `left_emplaced_back()`
         /// @param value the value to be created
-        inline void left_append(const size_type count, const T& value){
+        template<std::convertible_to<T> Ta>
+        inline void left_append(const size_type count, const Ta& value){
             for(size_type i = 0; i < count; ++i) this->left_emplace_back(value);
         }
 
         /// @brief appends `value` `count` many times to the right list
         /// @param count how often `value` should be `right_emplaced_back()`
         /// @param value the value to be created
-        inline void right_append(const size_type count, const T& value){
+        template<std::convertible_to<T> Ta>
+        inline void right_append(const size_type count, const Ta& value){
             for(size_type i = 0; i < count; ++i) this->right_emplace_back(value);
         }
 
         /// @brief assigns a value count many times to the left list.
-        inline void left_assign(const size_type count, const T& value){
+        template<std::convertible_to<T> Ta>
+        inline void left_assign(const size_type count, const Ta& value){
             this->left_clear();
             this->left_append(count, value);
         }
 
         /// @brief assigns a value count many times to the right list.
-        inline void right_assign(const size_type count, const T& value){
+        template<std::convertible_to<T> Ta>
+        inline void right_assign(const size_type count, const Ta& value){
             this->right_clear();
             this->right_append(count, value);
         }
 
         /// @brief appends a range of elements defined by foreward iterators using the closed-open principle [first, last) 
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         inline void left_append(Itr first, Itr last){
             for(; first != last; ++first) 
                 this->left_emplace_back(*first);
         }
 
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         inline void right_append(Itr first, Itr last){
             for(; first != last; ++first) 
                 this->right_emplace_back(*first);
         }
 
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         inline void left_assign(Itr first, Itr last){
             this->left_clear();
             this->left_append(first, last);
         }
 
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         inline void right_assign(Itr first, Itr last){
             this->right_clear();
             this->right_append(first, last);
         }
 
-        inline void left_append(std::initializer_list<T> ilist){
+        template<std::convertible_to<T> Ta>
+        inline void left_append(std::initializer_list<Ta> ilist){
             this->left_append(ilist.begin(), ilist.end());
         }
 
-        inline void right_append(std::initializer_list<T> ilist){
+        template<std::convertible_to<T> Ta>
+        inline void right_append(std::initializer_list<Ta> ilist){
             this->right_append(ilist.begin(), ilist.end());
         }
 
-        inline void left_assign(std::initializer_list<T> ilist){
+        template<std::convertible_to<T> Ta>
+        inline void left_assign(std::initializer_list<Ta> ilist){
             this->left_clear();
             this->left_append(ilist);
         }
 
-        inline void right_assign(std::initializer_list<T> ilist){
+        template<std::convertible_to<T> Ta>
+        inline void right_assign(std::initializer_list<Ta> ilist){
             this->right_clear();
             this->right_append(ilist);
         }
@@ -511,7 +528,7 @@ namespace embed
             return pos - this->left_begin();
         }
 
-        constexpr size_type right_to_index(const left_const_iterator pos) const {
+        constexpr size_type right_to_index(const right_const_iterator pos) const {
             EMBED_ASSERT_O1(this->right_begin() <= pos && pos < this->right_end());
             return pos - this->right_begin();
         }
@@ -606,7 +623,8 @@ namespace embed
             return this->right_begin() + this->right_to_index(pos);
         }
 
-        left_iterator left_insert(const left_const_iterator pos, const T& value){
+        template<std::convertible_to<T> Ta>
+        left_iterator left_insert(const left_const_iterator pos, const Ta& value){
             EMBED_ASSERT_O1(this->full());
             for(auto i = this->left_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_left_size += 1;
@@ -615,7 +633,8 @@ namespace embed
             return pos_;
         }
 
-        right_iterator right_insert(const right_const_iterator pos, const T& value){
+        template<std::convertible_to<T> Ta>
+        right_iterator right_insert(const right_const_iterator pos, const Ta& value){
             EMBED_ASSERT_O1(this->full());
             for(auto i = this->right_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_right_size += 1;
@@ -624,7 +643,8 @@ namespace embed
             return pos_;
         }
 
-        left_iterator left_insert(const left_const_iterator pos, T&& value){
+        template<std::convertible_to<T> Ta>
+        left_iterator left_insert(const left_const_iterator pos, Ta&& value){
             EMBED_ASSERT_O1(this->full());
             for(auto i = this->left_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_left_size += 1;
@@ -633,7 +653,8 @@ namespace embed
             return pos_;
         }
 
-        right_iterator right_insert(const left_const_iterator pos, T&& value){
+        template<std::convertible_to<T> Ta>
+        right_iterator right_insert(const right_const_iterator pos, Ta&& value){
             EMBED_ASSERT_O1(this->full());
             for(auto i = this->right_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_right_size += 1;
@@ -643,9 +664,10 @@ namespace embed
         }
 
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         left_iterator left_insert(const left_const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
-            EMBED_ASSERT_O1(dist > this->left_reserve());
+            EMBED_ASSERT_O1(dist > this->reserve());
             for(auto i = this->left_end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             left_iterator insertIterator = this->left_unconst(pos);
             for(; first != last; ++first, (void)++insertIterator) *insertIterator = *first;
@@ -654,9 +676,10 @@ namespace embed
         }
 
         template<std::forward_iterator Itr>
+        requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         right_iterator right_insert(const right_const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
-            EMBED_ASSERT_O1(dist > this->right_reserve());
+            EMBED_ASSERT_O1(dist > this->reserve());
             for(auto i = this->right_end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             right_iterator insertIterator = this->right_unconst(pos);
             for(; first != last; ++first, (void)++insertIterator) *insertIterator = *first;
@@ -670,48 +693,170 @@ namespace embed
         }
 
         template<std::ranges::forward_range Range>
-        inline left_iterator right_insert(const left_const_iterator pos, const Range& range){
+        inline right_iterator right_insert(const right_const_iterator pos, const Range& range){
             return this->right_insert(pos, range.begin(), range.end());
         }
 
-        template<class Int> requires std::is_integral_v<Int>
-        inline left_iterator left_insert(const Int pos, const T& value){
-            return this->left_insert(this->left_to_iterator(pos), value);
+        template<std::convertible_to<T> Ti>
+        inline left_iterator left_insert(const left_const_iterator pos, std::initializer_list<Ti> ilist){
+            return this->left_insert(pos, ilist.begin(), ilist.end());
         }
 
-        template<class Int> requires std::is_integral_v<Int>
-        inline right_iterator right_insert(const Int pos, const T& value){
-            return this->right_insert(this->right_to_iterator(pos), value);
+        template<std::convertible_to<T> Ti>
+        inline right_iterator right_insert(const right_const_iterator pos, std::initializer_list<Ti> ilist){
+            return this->right_insert(pos, ilist.begin(), ilist.end());
         }
 
-        template<class Int> requires std::is_integral_v<Int>
-        inline left_iterator left_insert(const Int pos, T&& value){
-            return this->left_insert(this->left_to_iterator(pos), std::move(value));
+        /**
+         * @brief Inserts a value into the left list at the index position
+         * 
+         * If the integer type is signed, it will check wether or not the index is negative.
+         * If the integer is negative the value will wrap around the container
+         * 
+         * > Note: positive values will insert at/before the value the index points to, 
+         * > while negative values will insert after if you view the range only in positive indices.
+         * > So an insertion at `-1` is equivalent to an insertion at the `end()` iterator
+         */
+        template<std::integral Int>
+        inline left_iterator left_insert(const Int index, const T& value){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->left_insert(this->left_begin() + index, value);
+            }else{
+                if(index >= 0){
+                    return this->left_insert(this->left_begin() + index, value);
+                }else{
+                    return this->left_insert(this->left_end() + (index + 1), value);
+                }
+            }
         }
 
-        template<class Int> requires std::is_integral_v<Int>
-        inline right_iterator right_insert(const Int pos, T&& value){
-            return this->right_insert(this->right_to_iterator(pos), std::move(value));
+        /**
+         * @brief Inserts a value into the right list at the index position
+         * 
+         * If the integer type is signed, it will check wether or not the index is negative.
+         * If the integer is negative the value will wrap around the container
+         * 
+         * > Note: positive values will insert at/before the value the index points to, 
+         * > while negative values will insert after if you view the range only in positive indices.
+         * > So an insertion at `-1` is equivalent to an insertion at the `end()` iterator
+         */
+        template<std::integral Int>
+        inline right_iterator right_insert(const Int index, const T& value){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->right_insert(this->right_begin() + index, value);
+            }else{
+                if(index >= 0){
+                    return this->right_insert(this->right_begin() + index, value);
+                }else{
+                    return this->right_insert(this->right_end() + (index + 1), value);
+                }
+            }
         }
 
-        template<class Int, std::ranges::forward_range Range> requires std::is_integral_v<Int>
-        inline left_iterator left_insert(const Int pos, const Range& range){
-            return this->left_insert(this->left_to_iterator(pos), range);
+        /// @overload 
+        template<std::integral Int>
+        inline left_iterator left_insert(const Int index, T&& value){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->left_insert(this->left_begin() + index, std::move(value));
+            }else{
+                if(index >= 0){
+                    return this->left_insert(this->left_begin() + index, std::move(value));
+                }else{
+                    return this->left_insert(this->left_end() + (index + 1), std::move(value));
+                }
+            }
         }
 
-        template<class Int, std::ranges::forward_range Range> requires std::is_integral_v<Int>
-        inline right_iterator right_insert(const Int pos, const Range& range){
-            return this->right_insert(this->right_to_iterator(pos), range);
+        /// @overload
+        template<std::integral Int>
+        inline right_iterator right_insert(const Int index, T&& value){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->right_insert(this->right_begin() + index, std::move(value));
+            }else{
+                if(index >= 0){
+                    return this->right_insert(this->right_begin() + index, std::move(value));
+                }else{
+                    return this->right_insert(this->right_end() + (index + 1), std::move(value));
+                }
+            }
         }
 
-        template<class Int, std::forward_iterator Itr> requires std::is_integral_v<Int>
-        inline left_iterator left_insert(const Int pos, Itr first, Itr last){
-            return this->left_insert(this->left_to_iterator(pos), first, last);
+        template<std::integral Int, std::ranges::forward_range Range>
+        inline left_iterator left_insert(const Int index, const Range& range){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->left_insert(this->left_begin() + index, range);
+            }else{
+                if(index >= 0){
+                    return this->left_insert(this->left_begin() + index, range);
+                }else{
+                    return this->left_insert(this->left_end() + (index + 1), range);
+                }
+            }
         }
 
-        template<class Int, std::forward_iterator Itr> requires std::is_integral_v<Int>
-        inline right_iterator right_insert(const Int pos, Itr first, Itr last){
-            return this->right_insert(this->right_to_iterator(pos), first, last);
+        template<std::integral Int, std::ranges::forward_range Range>
+        inline right_iterator right_insert(const Int index, const Range& range){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->right_insert(this->right_begin() + index, range);
+            }else{
+                if(index >= 0){
+                    return this->right_insert(this->right_begin() + index, range);
+                }else{
+                    return this->right_insert(this->right_end() + (index + 1), range);
+                }
+            }
+        }
+
+        template<std::integral Int, std::forward_iterator Itr>
+        inline left_iterator left_insert(const Int index, Itr first, Itr last){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->left_insert(this->left_begin() + index, first, last);
+            }else{
+                if(index >= 0){
+                    return this->left_insert(this->left_begin() + index, first, last);
+                }else{
+                    return this->left_insert(this->left_end() + (index + 1), first, last);
+                }
+            }
+        }
+
+        template<std::integral Int, std::forward_iterator Itr>
+        inline right_iterator right_insert(const Int index, Itr first, Itr last){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->right_insert(this->right_begin() + index, first, last);
+            }else{
+                if(index >= 0){
+                    return this->right_insert(this->right_begin() + index, first, last);
+                }else{
+                    return this->right_insert(this->right_end() + (index + 1), first, last);
+                }
+            }
+        }
+
+        template<std::integral Int, std::convertible_to<T> Ti>
+        inline left_iterator left_insert(const Int index, std::initializer_list<Ti> ilist){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->left_insert(this->left_begin() + index, ilist);
+            }else{
+                if(index >= 0){
+                    return this->left_insert(this->left_begin() + index, ilist);
+                }else{
+                    return this->left_insert(this->left_end() + (index + 1), ilist);
+                }
+            }
+        }
+
+        template<std::integral Int, std::convertible_to<T> Ti>
+        inline right_iterator right_insert(const right_const_iterator index, std::initializer_list<Ti> ilist){
+            if constexpr (std::is_unsigned_v<Int>){
+                return this->right_insert(this->right_begin() + index, ilist);
+            }else{
+                if(index >= 0){
+                    return this->right_insert(this->right_begin() + index, ilist);
+                }else{
+                    return this->right_insert(this->right_end() + (index + 1), ilist);
+                }
+            }
         }
 
         left_iterator left_erase(left_const_iterator cpos){
@@ -738,12 +883,12 @@ namespace embed
             return this->right_unconst(cpos);
         }
 
-        template<class Int> requires std::is_integral_v<Int>
+        template<std::integral Int>
         inline left_iterator left_erase(const Int pos){
             return this->left_erase(this->left_to_iterator(pos));
         }
 
-        template<class Int> requires std::is_integral_v<Int>
+        template<std::integral Int>
         inline right_iterator right_erase(const Int pos){
             return this->right_erase(this->right_to_iterator(pos));
         }
@@ -942,232 +1087,11 @@ namespace embed
     }
 
     /**
-     * @brief A const reference to the left side of a DualArrayList
-     * @see DualArrayList
-     */
-    template<class T, std::size_t N>
-    class LeftDualArrayListConstRef{
-    public:
-        using value_type = DualArrayList<T, N>::value_type;
-        using size_type = DualArrayList<T, N>::size_type;
-        using reference = DualArrayList<T, N>::reference;
-        using const_reference = DualArrayList<T, N>::const_reference;
-        using iterator = DualArrayList<T, N>::left_iterator;
-        using const_iterator = DualArrayList<T, N>::left_const_iterator;
-        using pointer = DualArrayList<T, N>::pointer;
-        using const_pointer = DualArrayList<T, N>::const_pointer;
-
-    private:
-        const DualArrayList<T, N>& _list;
-
-    public:
-        LeftDualArrayListConstRef(const DualArrayList<T, N>& list) : _list(list){}
-        
-        /// @brief returns the size/count of live elements in the container 
-        constexpr size_type size() const {return this->_list.left_size();}
-
-        /// @brief returns the capacity of the container. Since this is a statically allocated container this is also the maximal size.
-        constexpr size_type capacity() const {return this->_list.left_capacity();}
-
-        /// @brief returns the maximal number of elements that can be stored in the container 
-        constexpr size_type max_size() const {return this->_list.max_size();}
-
-        /// @brief returns the reserve - number of elements that can be stored until the container is full 
-        constexpr size_type reserve() const {return this->_list.reserve();}
-
-        /// @brief returns true if there are not elements in the container, aka. the container is empty. 
-        constexpr bool empty() const {return this->_list.left_empty();}
-
-        /// @brief returns true if the container is full and no more elements can be stored in the container 
-        constexpr bool full() const {return this->_list.full();}
-
-        /// @brief returns a const-iterator to the start 
-        constexpr const_iterator begin() const {return this->_list.left_begin();}
-
-        /// @brief returns a const-iterator to the start 
-        constexpr const_iterator cbegin() const {return this->_list.left_cbegin();}
-
-        /// @brief returns a const-iterator past the end
-        constexpr const_iterator end() const {return this->_list.left_end();}
-
-        /// @brief returns a const-iterator past the end
-        constexpr const_iterator cend() const {return this->_list.left_cend();}
-
-        /// @brief returns a const-reference to the first element int the buffer
-        constexpr const_reference front() const {return this->_list.left_front();}
-
-        /// @brief returns a const reference to the last element in the buffer 
-        constexpr const_reference back() const {return this->_list.left_back();}
-
-        /// @brief returns a reference to the element at the given position
-        template<std::integral Int>
-        constexpr const_reference at(const Int i) const {return this->_list.at(i);}
-
-
-        /// @brief Masked indexing
-        /// @param mask the mask that selects which elements to get. `true` will be included, `false` excluded
-        /// @return A ArrayList that contains all values where of this where mask is `true`
-        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.at(mask);}
-
-        /// @brief Inices list indexing
-        /// @tparam Int a generic integer
-        /// @param indices a list of indices that should be extracted
-        /// @return a ArrayList containing all the elements from this that are contained in the `indices`
-        template<std::integral Int>
-        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.at(indices);}
-        
-        /// @brief returns a reference to the element at the given position
-        template<std::integral Int>
-        constexpr const T& operator[](const Int i) const {return this->at(i);}
-
-        /// @brief accesses all elements where `mask` is `true` 
-        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->at(mask);}
-
-        /// @brief accesses all elements at the given `indices` 
-        template<std::integral Int>
-        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->at(indices);}
-
-        /// @brief turns the passed position given by an iterator into an integer 
-        constexpr size_type to_index(const const_iterator pos) const {return this->_list.left_to_index(pos);}
-
-        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
-        template<std::integral Int>
-        constexpr const_iterator to_iterator(const Int pos) const {return this->_list.left_to_iterator(pos);}
-
-        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
-        template<std::integral Int>
-        constexpr const_iterator to_const_iterator(const Int pos) const {return this->_list.left_to_const_iterator(pos);}
-
-        /// @brief Applies the negation (!) operator to all elements and returns it as a bool list 
-        ArrayList<bool, N> operator!() const {
-            ArrayList<bool, N> result;
-            for(const auto& elem : *this){
-                result.emplace_back(!elem);
-            }
-            return result;
-        }
-    };
-
-    /**
-     * @brief A const reference to the right side of a DualArrayList
-     * @see DualArrayList
-     */
-    template<class T, std::size_t N>
-    class RightDualArrayListConstRef{
-    public:
-        using value_type = DualArrayList<T, N>::value_type;
-        using size_type = DualArrayList<T, N>::size_type;
-        using reference = DualArrayList<T, N>::reference;
-        using const_reference = DualArrayList<T, N>::const_reference;
-        using iterator = DualArrayList<T, N>::right_iterator;
-        using const_iterator = DualArrayList<T, N>::right_const_iterator;
-        using pointer = DualArrayList<T, N>::pointer;
-        using const_pointer = DualArrayList<T, N>::const_pointer;
-
-    private:
-        const DualArrayList<T, N>& _list;
-
-    public:
-        
-        RightDualArrayListConstRef(const DualArrayList<T, N>& list) : _list(list){}
-        
-        /// @brief returns the size/count of live elements in the container 
-        constexpr size_type size() const {return this->_list.right_size();}
-
-        /// @brief returns the capacity of the container. Since this is a statically allocated container this is also the maximal size.
-        constexpr size_type capacity() const {return this->_list.right_capacity();}
-
-        /// @brief returns the maximal number of elements that can be stored in the container 
-        constexpr size_type max_size() const {return this->_list.max_size();}
-
-        /// @brief returns the reserve - number of elements that can be stored until the container is full 
-        constexpr size_type reserve() const {return this->_list.reserve();}
-
-        /// @brief returns true if there are not elements in the container, aka. the container is empty. 
-        constexpr bool empty() const {return this->_list.right_empty();}
-
-        /// @brief returns true if the container is full and no more elements can be stored in the container 
-        constexpr bool full() const {return this->_list.full();}
-
-        /// @brief returns an iterator to the start 
-        constexpr iterator begin() {return this->_list.right_begin();}
-
-        /// @brief returns a const-iterator to the start 
-        constexpr const_iterator begin() const {return this->_list.right_begin();}
-
-        /// @brief returns a const-iterator to the start 
-        constexpr const_iterator cbegin() const {return this->_list.right_cbegin();}
-
-        /// @brief returns an iterator past the end 
-        constexpr iterator end() {return this->_list.right_end();}
-
-        /// @brief returns a const-iterator past the end
-        constexpr const_iterator end() const {return this->_list.right_end();}
-
-        /// @brief returns a const-iterator past the end
-        constexpr const_iterator cend() const {return this->_list.right_cend();}
-
-        /// @brief returns a const-reference to the first element int the buffer
-        constexpr const_reference front() const {return this->_list.right_front();}
-
-        /// @brief returns a const reference to the last element in the buffer 
-        constexpr const_reference back() const {return this->_list.right_back();}
-
-        /// @brief returns a reference to the element at the given position
-        template<std::integral Int>
-        constexpr const_reference at(const Int i) const {return this->_list.at(i);}
-
-        /// @brief Masked indexing
-        /// @param mask the mask that selects which elements to get. `true` will be included, `false` excluded
-        /// @return A ArrayList that contains all values where of this where mask is `true`
-        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.at(mask);}
-
-        /// @brief Inices list indexing
-        /// @tparam Int a generic integer
-        /// @param indices a list of indices that should be extracted
-        /// @return a ArrayList containing all the elements from this that are contained in the `indices`
-        template<std::integral Int>
-        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.at(indices);}
-        
-        /// @brief returns a reference to the element at the given position
-        template<std::integral Int>
-        constexpr const_reference operator[](const Int i) const {return this->at(i);}
-
-        /// @brief accesses all elements where `mask` is `true` 
-        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->at(mask);}
-
-        /// @brief accesses all elements at the given `indices` 
-        template<std::integral Int>
-        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->at(indices);}
-
-        /// @brief turns the passed position given by an iterator into an integer 
-        constexpr size_type to_index(const const_iterator pos) const {return this->_list.right_to_index(pos);}
-
-        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
-        template<std::integral Int>
-        constexpr const_iterator to_iterator(const Int pos) const {return this->_list.right_to_iterator(pos);}
-
-        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
-        template<std::integral Int>
-        constexpr const_iterator to_const_iterator(const Int pos) const {return this->_list.right_to_const_iterator(pos);}
-
-        /// @brief Applies the negation (!) operator to all elements and returns it as a bool list 
-        ArrayList<bool, N> operator!() const {
-            ArrayList<bool, N> result;
-            for(const auto& elem : *this){
-                result.emplace_back(!elem);
-            }
-            return result;
-        }
-    };
-
-
-    /**
      * @brief A reference to the left side of a DualArrayList
      * @see DualArrayList
      */
     template<class T, std::size_t N>
-    class LeftDualArrayListRef{
+    class LeftDualArrayList{
     public:
         using value_type = DualArrayList<T, N>::value_type;
         using size_type = DualArrayList<T, N>::size_type;
@@ -1183,9 +1107,7 @@ namespace embed
 
     public:
         
-        LeftDualArrayListRef(DualArrayList<T, N>& list) : _list(list){}
-        
-        operator LeftDualArrayListConstRef<T, N>(){return LeftDualArrayListConstRef(this->_list);}
+        LeftDualArrayList(DualArrayList<T, N>& list) : _list(list){}
 
         /// @brief returns the size/count of live elements in the container 
         constexpr size_type size() const {return this->_list.left_size();}
@@ -1237,39 +1159,39 @@ namespace embed
 
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr T& at(const Int i){return this->_list.at(i);}
+        constexpr T& at(const Int i){return this->_list.left_at(i);}
 
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr const T& at(const Int i) const {return this->_list.at(i);}
+        constexpr const T& at(const Int i) const {return this->_list.left_at(i);}
 
 
         /// @brief Masked indexing
         /// @param mask the mask that selects which elements to get. `true` will be included, `false` excluded
         /// @return A ArrayList that contains all values where of this where mask is `true`
-        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.at(mask);}
+        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.left_at(mask);}
 
         /// @brief Inices list indexing
         /// @tparam Int a generic integer
         /// @param indices a list of indices that should be extracted
         /// @return a ArrayList containing all the elements from this that are contained in the `indices`
         template<std::integral Int>
-        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.at(indices);}
+        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.left_at(indices);}
 
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr T& operator[](const Int i){return this->at(i);}
+        constexpr T& operator[](const Int i){return this->left_at(i);}
         
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr const T& operator[](const Int i) const {return this->at(i);}
+        constexpr const T& operator[](const Int i) const {return this->left_at(i);}
 
         /// @brief accesses all elements where `mask` is `true` 
-        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->at(mask);}
+        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->left_at(mask);}
 
         /// @brief accesses all elements at the given `indices` 
         template<std::integral Int>
-        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->at(indices);}
+        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->left_at(indices);}
 
         /// @brief emplaces (aka. pushes) an element to the back of the list
         /// @details Actually constructs an element in place
@@ -1359,6 +1281,8 @@ namespace embed
         template<std::ranges::forward_range Range>
         inline iterator insert(const const_iterator pos, const Range& range){return this->_list.left_insert(pos, range);}
 
+        inline iterator insert(const const_iterator pos, const std::initializer_list<T>& ilist){return this->_list.left_insert(pos, ilist);}
+
         /// @brief inserts the `value` at the `pos`ition passed as an integer that wraps if it is a signed type 
         template<std::integral Int>
         inline iterator insert(const Int pos, const T& value){return this->_list.left_insert(pos, value);}
@@ -1370,6 +1294,9 @@ namespace embed
         /// @brief inserts the `range` at the `pos`ition passed as an integer that wraps if it is a signed type
         template<std::integral Int, std::ranges::forward_range Range>
         inline iterator insert(const Int pos, const Range& range){return this->_list.left_insert(pos, range);}
+
+        template<std::integral Int>
+        inline iterator insert(const Int pos, const std::initializer_list<T>& ilist){return this->_list.left_insert(pos, ilist);}
 
         /// @brief inserts the closed-open [`first`, `last`) range at the given `pos`ition
         template<std::integral Int, std::forward_iterator Itr>
@@ -1428,7 +1355,7 @@ namespace embed
      * @see DualArrayList
      */
     template<class T, std::size_t N>
-    class RightDualArrayListRef{
+    class RightDualArrayList{
     public:
         using value_type = DualArrayList<T, N>::value_type;
         using size_type = DualArrayList<T, N>::size_type;
@@ -1444,9 +1371,7 @@ namespace embed
 
     public:
         
-        RightDualArrayListRef(DualArrayList<T, N>& list) : _list(list){}
-        
-        operator RightDualArrayListConstRef<T, N>(){return this->_list;}
+        RightDualArrayList(DualArrayList<T, N>& list) : _list(list){}
 
         /// @brief returns the size/count of live elements in the container 
         constexpr size_type size() const {return this->_list.right_size();}
@@ -1498,39 +1423,39 @@ namespace embed
 
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr T& at(const Int i){return this->_list.at(i);}
+        constexpr T& at(const Int i){return this->_list.right_at(i);}
 
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr const T& at(const Int i) const {return this->_list.at(i);}
+        constexpr const T& at(const Int i) const {return this->_list.right_at(i);}
 
 
         /// @brief Masked indexing
         /// @param mask the mask that selects which elements to get. `true` will be included, `false` excluded
         /// @return A ArrayList that contains all values where of this where mask is `true`
-        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.at(mask);}
+        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.right_at(mask);}
 
         /// @brief Inices list indexing
         /// @tparam Int a generic integer
         /// @param indices a list of indices that should be extracted
         /// @return a ArrayList containing all the elements from this that are contained in the `indices`
         template<std::integral Int>
-        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.at(indices);}
+        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.right_at(indices);}
 
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr T& operator[](const Int i){return this->at(i);}
+        constexpr T& operator[](const Int i){return this->right_at(i);}
         
         /// @brief returns a reference to the element at the given position
         template<std::integral Int>
-        constexpr const T& operator[](const Int i) const {return this->at(i);}
+        constexpr const T& operator[](const Int i) const {return this->right_at(i);}
 
         /// @brief accesses all elements where `mask` is `true` 
-        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->at(mask);}
+        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->right_at(mask);}
 
         /// @brief accesses all elements at the given `indices` 
         template<std::integral Int>
-        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->at(indices);}
+        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->right_at(indices);}
 
         /// @brief emplaces (aka. pushes) an element to the back of the list
         /// @details Actually constructs an element in place
@@ -1620,6 +1545,9 @@ namespace embed
         template<std::ranges::forward_range Range>
         inline iterator insert(const const_iterator pos, const Range& range){return this->_list.right_insert(pos, range);}
 
+
+        inline iterator insert(const const_iterator pos, std::initializer_list<T> ilist){return this->_list.right_insert(pos, ilist);}
+
         /// @brief inserts the `value` at the `pos`ition passed as an integer that wraps if it is a signed type 
         template<std::integral Int>
         inline iterator insert(const Int pos, const T& value){return this->_list.right_insert(pos, value);}
@@ -1631,6 +1559,9 @@ namespace embed
         /// @brief inserts the `range` at the `pos`ition passed as an integer that wraps if it is a signed type
         template<std::integral Int, std::ranges::forward_range Range>
         inline iterator insert(const Int pos, const Range& range){return this->_list.right_insert(pos, range);}
+        
+        template<std::integral Int>
+        inline iterator insert(const Int pos, std::initializer_list<T> ilist){return this->_list.right_insert(pos, ilist);}
 
         /// @brief inserts the closed-open [`first`, `last`) range at the given `pos`ition
         template<std::integral Int, std::forward_iterator Itr>
