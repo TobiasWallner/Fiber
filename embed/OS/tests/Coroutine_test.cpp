@@ -184,6 +184,7 @@ namespace{
             TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::NextCycle);
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
+            TEST_FALSE(task.is_done());
         }
 
         task.resume(); // co_await embed::Delay(100ns)
@@ -193,6 +194,7 @@ namespace{
             TEST_EQUAL(signal.implicit_delay().delay, 100ns);
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
+            TEST_FALSE(task.is_done());
         }
 
         task.resume(); // embed::Delay(200ns, 2ns);
@@ -203,6 +205,7 @@ namespace{
             TEST_EQUAL(signal.explicit_delay().rel_deadline, 2ns);
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
+            TEST_FALSE(task.is_done());
         }
 
         task.resume(); // co_await this->fp_pair.future;
@@ -211,12 +214,14 @@ namespace{
             TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::Await);
             TEST_FALSE(task.is_resumable());
             TEST_TRUE(task.is_awaiting());
+            TEST_FALSE(task.is_done());
         }
 
         task.fp_pair.promise = 88;
         {
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
+            TEST_FALSE(task.is_done());
         }
 
         task.resume(); // co_return embed::Exit::Success;
@@ -225,7 +230,11 @@ namespace{
             TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::None);
             TEST_FALSE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
+            TEST_TRUE(task.is_done());
         }
+        task.destroy();
+
+        TEST_TRUE(allocator.empty()); // check for memory leaks
 
         embed::cout << "  finished: " << __func__ << embed::endl;
     }
