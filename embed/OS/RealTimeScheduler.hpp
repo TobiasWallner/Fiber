@@ -140,7 +140,7 @@ namespace embed
                         this->_await_bench.emplace_back(task);
                         if constexpr (logger) logger->log_move(Clock::now();, task->name(), task->id(), "resume", "await");
                     }break;
-                    case CoTaskSignal::Type::Cycle : {
+                    case CoTaskSignal::Type::NextCycle : {
                         task->_schedule = task->next_schedule(task->_schedule, ExecutionTime<Clock>{task->_execution_start, Clock::now()});
                         this->waiting_queue.push(task);
                         if constexpr (logger) logger->log_move(Clock::now();, task->name(), task->id(), "resume", "wait");
