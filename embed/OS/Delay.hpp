@@ -37,7 +37,7 @@ namespace embed
          * @param delay The delay by which the task will be re-scheduled
          */
         template<class Rep, CStdRatio Period>
-        constexpr Delay(std::chrono::duration<Rep, Period> delay)
+        explicit constexpr Delay(std::chrono::duration<Rep, Period> delay)
             : _delay_ready(std::chrono::duration_cast<std::chrono::nanoseconds>(delay)){}
 
         /**
@@ -60,18 +60,23 @@ namespace embed
          * @param delay
          */
         template<class Rep1, CStdRatio Period1, class Rep2, CStdRatio Period2>
-        constexpr Delay(std::chrono::duration<Rep, Period> delay, std::chrono::duration<Rep, Period> relative_deadline)
+        explicit constexpr Delay(std::chrono::duration<Rep1, Period1> delay, std::chrono::duration<Rep2, Period2> relative_deadline)
             : _delay_ready(std::chrono::duration_cast<std::chrono::nanoseconds>(delay))
-            , _delay_deadline(std::chronoduration_cast<std::chrono::nanoseconds>(relative_deadline)){}
-    
+            , _delay_deadline(std::chrono::duration_cast<std::chrono::nanoseconds>(relative_deadline)){}
             
-
-        inline bool await_ready() const noexcept override {return !(this->_ready = !this->_ready);}
+        inline bool await_ready() const noexcept override {return this->_ready;;}
 
         inline void await_resume() noexcept {}
 
     private:
-        inline CoTaskSignal await_suspend_signal() noexcept override {return CoTaskSignal();}
-    }
+        inline CoTaskSignal await_suspend_signal() noexcept override {
+            this->_ready = true;
+            if(this->_delay_deadline.has_value()){
+                return CoTaskSignal().explicit_delay(this->_delay_ready, this->_delay_deadline.value());
+            }else{
+                return CoTaskSignal().implicit_delay(this->_delay_ready);
+            }
+        }
+    };
 
 } // namespace embed
