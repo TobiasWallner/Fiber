@@ -57,7 +57,7 @@ namespace embed
 
         /// @brief default copy assignment 
         template<std::convertible_to<T> Ta, size_t N1>
-        ArrayList& operator=(const ArrayList<Ta, N1>& other){this->assign(other);};
+        ArrayList& operator=(const ArrayList<Ta, N1>& other){this->assign(other); return *this;}
 
         /// @brief construct from an initialiser list
         /// @param ilist initialiser list
