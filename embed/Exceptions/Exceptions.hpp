@@ -25,7 +25,7 @@ namespace embed{
 
     public:
         Exception();
-        Exception(const char* what) : _what(what){}
+        explicit Exception(const char* what) : _what(what){}
 
     protected:
         /// @brief Constructor for classes that derive from Exception
