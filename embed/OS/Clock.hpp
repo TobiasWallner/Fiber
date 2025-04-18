@@ -317,7 +317,7 @@ namespace embed
         
         static constexpr inline UInt max_tick = MaxTick;
         
-        static time_point now(){
+        static time_point now() noexcept {
             const UInt timer_count = GetTimerCount();
             const duration dur(timer_count);
             const time_point result(dur);
