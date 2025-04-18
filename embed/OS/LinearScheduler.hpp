@@ -1,18 +1,17 @@
 #pragma once
 
 #include <embed/OS/Coroutine.hpp>
-
+#include <embed/Containers/DualPriorityQueue.hpp>
 namespace embed
 {
 
-    class IScheduler{
-        virtual void kill(CoTask* ptr)
-    }
 
-
+    /**
+     * @brief Scheduler that circularly resumes all tasks
+     */
     template<std::size_t n_tasks>
-    class StaticLinearScheduler{
-        ArrayList<CoTask*, n_tasks> task_list;
+    class LinearScheduler{
+        embed::ArrayList<CoTask*, n_tasks> task_list;
 
     public:
 
@@ -23,6 +22,7 @@ namespace embed
             this->task_list.erase_if([](const CoTask* task){return task->is_done();});
         }
     };
+
 } // namespace embed
 
 
