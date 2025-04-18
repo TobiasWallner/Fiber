@@ -24,40 +24,7 @@ namespace embed{
 
     inline std::pmr::memory_resource* coroutine_frame_allocator = nullptr;
 
-    class CoTaskSignal{
-    public:    
-        enum class Type{None = 0, Await, Cycle, ImplicitDelay, ExplicitDelay};
-
-    private:
-        struct None{};
-        struct Await{};
-        struct Cycle{};
-        struct ImplicitDelay{std::chrono::nanoseconds delay;};
-        struct ExplicitDelay{std::chrono::nanoseconds delay; std::chrono::nanoseconds rel_deadline;};
-        
-        std::variant<None, Await, Cycle, ImplicitDelay, ExplicitDelay> _variant = None{};
-
-    public:
-        // setters 
-        inline CoTaskSignal& none(){this->_variant = None{}; return *this;}
-        inline CoTaskSignal& await(){this->_variant = Await{}; return *this;}
-        inline CoTaskSignal& cycle(){this->_variant = Cycle{}; return *this;}
-        inline CoTaskSignal& delay(std::chrono::nanoseconds delay){this->_variant = ImplicitDelay{delay}; return *this;}
-        inline CoTaskSignal& delay(std::chrono::nanoseconds delay, std::chrono::nanoseconds rel_deadline){this->_variant = ExplicitDelay{delay, rel_deadline}; return *this;}
-
-        // getters
-        inline Type type() const {return static_cast<Type>(this->_variant.index());}
-        inline ImplicitDelay implicit_delay() const {
-            EMBED_ASSERT_O1(std::holds_alternative<ImplicitDelay>(this->_variant));
-            return std::get<ImplicitDelay>(this->_variant);
-        }
-
-        inline ExplicitDelay explicit_delay() const {
-            EMBED_ASSERT_O1(std::holds_alternative<ExplicitDelay>(this->_variant));
-            return std::get<ExplicitDelay>(this->_variant);
-        }
-        
-    };
+    
 
     /**
      * @brief Interface tobe awaited via `co_await` and cooperativly works together will all other `embedOS` async infrastructure

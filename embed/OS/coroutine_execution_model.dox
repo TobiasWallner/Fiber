@@ -36,6 +36,10 @@ The list structure supports:
     - Handling exceptions
     - Destroying the coroutine chain
     - Tracking lifecycle and status
+- **CoTaskSignal**:
+  - Represents a signal that can be sent from (nested) coroutines to CoTask and thus to the Scheduler
+  - Contains information about "how" or "why" the coroutine suspended at an `co_await` point
+    - allows for different scheduling strategies
 
 This means that this coroutine architecture has a memory complexity of O[1] - stack depth does not grow with the number or nested coroutines.
 Coroutines are only logically nested but physically flat.
@@ -52,6 +56,7 @@ Coroutines are only logically nested but physically flat.
 5. If there is a parent coroutine, `CoTask` registers that as the new leaf and resumes it immediately
 6. If the chain completes, `CoTask` marks the task as `Exit::Success`
 All control flow and state transition pass through `CoTask`. The coroutine chain **never resumes itself**.
+7. A `co_await Delay` or `co_await Cycle` sends a `CoTaskSignal` signal to the CoTask that forwards it to the Scheduler allowing different scheduling strategies.
 
 ---
 
@@ -66,6 +71,7 @@ All control flow and state transition pass through `CoTask`. The coroutine chain
   - Logs diagnostic output
   - Calls `kill_chain()` to destroy all coroutine frames (from leaf to root)
   - Marks the task as `Exit::Failure`
+
 ---
 
 @section coroutine_chain_destruction Coroutine Chain Destruction
@@ -91,6 +97,7 @@ Think of the coroutine chain as a linked list:
 - `co_await` links nodes in **reverse**, so the list grows toward the leaf
 - Only `CoTask` traverses and manipulates the list
 
+@see embed::CoTaskSignal
 @see embed::Coroutine
 @see embed::CoTask
 @see embed::CoroutineNode
