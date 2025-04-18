@@ -154,6 +154,9 @@ If you still don’t know which one to pick, reach out—we’ll help you find t
 - **Portable**: Just provide a `time()` function and run `.spin()` in your main loop. Fully platform-agnostic, does not depend on any MCU architectures. 
 - **Customizeable**: Allows you to overwrite/redirect critical functions like `embed::memcpy()` or default output character streams `embed::cout()`. So you can hook in your own functions that use your on chips DMA controler or USART peripherals.
 
+> "At the crossroads of optimization and correctness, remember: optimization saves runtime — but correctness saves debug time. Choose which time you truly want to optimize."
+
+
 
 ## 🧩 Integration
 
@@ -206,3 +209,9 @@ With a commercial license, you gain:
 See [`LICENSE_COMMERCIAL`](./LICENSE_COMMERCIAL.md)
 
 👉 Contact: tobias.wallner1@gmx.com for license quotes and support plans.
+
+## Quotes:
+
+> "There comes a point where the objects begin to speak in ways you never planned. If each method was correct, their conversation will be too. That’s when your code becomes alive."  
+> - Tobias Wallner
+
