@@ -29,7 +29,7 @@ namespace embed
     public:
 
         /**
-         * @brief Overrideable: Gets called after a `co_await Cycle;` to calculate the schedule of the next cycle.
+         * @brief Overrideable: Gets called after a `co_await NextCycle;` to calculate the schedule of the next cycle.
          * @param previous_schedule the previous schedule of this task
          * @param previous_execution the previous execution time from the start of the cycle to the end of the cycle
          */
