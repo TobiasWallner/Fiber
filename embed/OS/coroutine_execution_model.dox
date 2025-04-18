@@ -56,7 +56,7 @@ Coroutines are only logically nested but physically flat.
 5. If there is a parent coroutine, `CoTask` registers that as the new leaf and resumes it immediately
 6. If the chain completes, `CoTask` marks the task as `Exit::Success`
 All control flow and state transition pass through `CoTask`. The coroutine chain **never resumes itself**.
-7. A `co_await Delay` or `co_await Cycle` sends a `CoTaskSignal` signal to the CoTask that forwards it to the Scheduler allowing different scheduling strategies.
+7. A `co_await Delay` or `co_await NextCycle` sends a `CoTaskSignal` signal to the CoTask that forwards it to the Scheduler allowing different scheduling strategies.
 
 ---
 
