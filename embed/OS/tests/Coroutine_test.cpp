@@ -34,9 +34,7 @@ namespace{
             TEST_FALSE(task.is_awaiting());
             TEST_EQUAL(task.result, 0);
         
-            bool resume_result = task.resume();
-            TEST_TRUE(resume_result);
-        
+            task.resume();
         
             TEST_FALSE(allocator.empty());
             TEST_TRUE(task.is_done());
@@ -114,13 +112,13 @@ namespace{
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
 
-            TEST_TRUE(task.resume()); // did resume -> returns true
+            task.resume();
             
             TEST_FALSE(task.is_resumable());
             TEST_FALSE(task.is_done());
             TEST_TRUE(task.is_awaiting());
 
-            TEST_FALSE(task.resume()); // did not resume -> returns false
+            // error: task.resume()
             
             TEST_FALSE(task.is_resumable());
             TEST_FALSE(task.is_done());
@@ -132,7 +130,7 @@ namespace{
             TEST_FALSE(task.is_done());
             TEST_FALSE(task.is_awaiting()); // no longer awaiting
 
-            TEST_TRUE(task.resume()); // did resume -> returns true
+            task.resume(); // did resume -> returns true
 
             TEST_FALSE(task.is_resumable()); // task is done -> no longer resumable
             TEST_TRUE(task.is_done()); // task is done
