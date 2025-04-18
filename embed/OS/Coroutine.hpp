@@ -4,6 +4,7 @@
 #include <coroutine>
 #include <variant>
 #include <memory_resource>
+#include <optional>
 
 //embed
 #include "embed/Exceptions/Exceptions.hpp"
@@ -23,6 +24,41 @@ namespace embed{
 
     inline std::pmr::memory_resource* coroutine_frame_allocator = nullptr;
 
+    class CoTaskSignal{
+    public:    
+        enum class Type{None = 0, Await, Cycle, ImplicitDelay, ExplicitDelay};
+
+    private:
+        struct None{};
+        struct Await{};
+        struct Cycle{};
+        struct ImplicitDelay{std::chrono::nanoseconds delay;};
+        struct ExplicitDelay{std::chrono::nanoseconds delay; std::chrono::nanoseconds rel_deadline;};
+        
+        std::variant<None, Await, Cycle, ImplicitDelay, ExplicitDelay> _variant = None{};
+
+    public:
+        // setters 
+        inline CoTaskSignal& none(){this->_variant = None{}; return *this;}
+        inline CoTaskSignal& await(){this->_variant = Await{}; return *this;}
+        inline CoTaskSignal& cycle(){this->_variant = Cycle{}; return *this;}
+        inline CoTaskSignal& delay(std::chrono::nanoseconds delay){this->_variant = ImplicitDelay{delay}; return *this;}
+        inline CoTaskSignal& delay(std::chrono::nanoseconds delay, std::chrono::nanoseconds rel_deadline){this->_variant = ExplicitDelay{delay, rel_deadline}; return *this;}
+
+        // getters
+        inline Type type() const {return static_cast<Type>(this->_variant.index());}
+        inline ImplicitDelay implicit_delay() const {
+            EMBED_ASSERT_O1(std::holds_alternative<ImplicitDelay>(this->_variant));
+            return std::get<ImplicitDelay>(this->_variant);
+        }
+
+        inline ExplicitDelay explicit_delay() const {
+            EMBED_ASSERT_O1(std::holds_alternative<ExplicitDelay>(this->_variant));
+            return std::get<ExplicitDelay>(this->_variant);
+        }
+        
+    };
+
     /**
      * @brief Interface tobe awaited via `co_await` and cooperativly works together will all other `embedOS` async infrastructure
      * 
@@ -39,10 +75,16 @@ namespace embed{
      * - `bool await_ready() const noexcept override { ...Code... }`
      * 
      * - `auto await_resume() noexcept { ...Code... }`
+     * 
+     * optionally also define:
+     * 
+     * - `void await_suspend_signal(CoTask* task) noexcept override { ... Code ... }`
+     * 
+     * if you want to send a signal to the task
      */
     class AwaitableNode{
     private:
-        CoTask* master = nullptr;
+        CoTask* _master = nullptr;
 
     public:
         virtual ~AwaitableNode() noexcept = default;
@@ -58,7 +100,17 @@ namespace embed{
             ```
         */
 
+        /**
+         * @brief Overridable: Returns `true` if the result of the awaitable is ready.
+         */
         virtual bool await_ready() const noexcept = 0;
+
+        /**
+         * @brief Overridable: gets called after the Awaitable node has been registered with the master.
+         * 
+         * Allows to send a signal to the master
+         */
+        virtual CoTaskSignal await_suspend_signal() noexcept {return CoTaskSignal().await();}
 
         /// @brief Appends itself to the existing linked list of coroutines and registers itself (node) as the new leaf/tail of the list by the master (container)
         /// @tparam ReturnType Generic return type for custom coroutines with custom returns
@@ -172,15 +224,16 @@ namespace embed{
 
     };
 
-
     class CoTask : public AwaitableNode{
     private:
         const char * _task_name = "";
         Coroutine<embed::Exit> _main_coroutine;
         CoroutineNode* _leaf_coroutine;
         AwaitableNode* _leaf_awaitable = nullptr;
-        std::size_t _task_id = 0;
+        CoTaskSignal _signal;
+        unsigned int _id = 0;
         bool _instant_resume = false;
+        
     public:
 
         CoTask(Coroutine<embed::Exit>&& main, const char* task_name = "") noexcept;
@@ -189,9 +242,30 @@ namespace embed{
         CoTask& operator=(const CoTask&)=delete;
         CoTask& operator=(CoTask&& other) noexcept;
 
-        inline ~CoTask(){}
+        virtual ~CoTask(){}
+
+        constexpr void id(unsigned int id){this->_id = id;} // TODO: make only visible for scheduler
+        constexpr unsigned int id() const {return this->_id;}
+
+
+        constexpr const char* name() const {return this->_task_name;}
+
+        /**
+         * @brief sets a signal
+         */
+        inline void signal(const CoTaskSignal& signal){this->_signal = signal;}
+        
+        /**
+         * @brief reads and clears the signal
+         */
+        inline const CoTaskSignal get_signal() {
+            CoTaskSignal result = this->_signal;
+            this->_signal.none(); // clear signal
+            return result;
+        }
 
         inline void destroy(){this->_main_coroutine.destroy();}
+        
 
         /// @brief Registers the leaf nested coroutine that serves as the resume point after suspensions
         /// @details Meant to be called by the Coroutine
@@ -208,10 +282,19 @@ namespace embed{
         /// @param awaitable The awaitable that will be waited on
         inline void register_leaf(AwaitableNode* awaitable) noexcept {this->_leaf_awaitable = awaitable;}
 
-        /// @brief Safely resumes the task/coroutine
-        /// @details This the only resume point for the whole coroutine chain. Every coroutine and nested coroutine suspends to here and will be executed/resumed from here by resuming the leaf/tail of the coroutine linked list.
-        /// @return `true` if the coroutine was resumed, `fals` if it is still suspended and waiting on `await_ready()` 
-        bool resume();
+        /**
+         * @brief resumes the task/coroutine
+         * 
+         * This the only resume point for the whole coroutine chain. 
+         * Every coroutine and nested coroutine suspends to here and will be executed/resumed from here 
+         * by resuming the leaf/tail of the coroutine linked list.
+         * 
+         * > Note: a task needs to be resumeable, that is `is_resumeable()` returns `true` before calling this method.
+         * > Otherwise an assertion is thrown at `ASSERTION_LEVEL_O1` or higher - if lower: Undefined behaviour UB ⚠.
+         * 
+         * @throws An AssertionFailuer if resumed while `is_resumeable()` is `false`, but only in `ASSERTION_LEVEL_O1` or higher
+         */
+        void resume();
         
         /// @brief returns `true` if the awaitable that this task is waiting on is ready and `.resume()` can be called again
         /// @details also returns `true` if there is currently no awaitable that is being waited on.
@@ -233,6 +316,10 @@ namespace embed{
 
         /// @brief exception handler - will be called if an un-catched exception in a coroutine arises
         virtual void handle_exception(std::exception_ptr except_ptr);
+
+        void kill(){
+
+        }
 
         /// @brief kills the coroutine chain.
         void kill_chain();
@@ -382,10 +469,13 @@ namespace embed{
     template<class ReturnType>
     inline void AwaitableNode::await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept {
         // store the master
-        this->master = handle.promise().master();
+        this->_master = handle.promise().master();
 
         // register leaf in master to tell it what awaitable to wait for
-        this->master->register_leaf(this);
+        this->_master->register_leaf(this);
+
+        // optionally send a signal to the master
+        this->_master->signal(await_suspend_signal());
     }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

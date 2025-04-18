@@ -22,7 +22,7 @@ namespace embed{
     {
         this->_main_coroutine.Register(this); // re-register
         other._task_name = "";
-        other._task_id = -1;
+        other._id = -1;
         other._leaf_awaitable = nullptr;
         other._instant_resume = false;
     }
@@ -30,20 +30,22 @@ namespace embed{
     CoTask& CoTask::operator=(CoTask&& other) noexcept {
         if(this != &other){
             this->_task_name = other._task_name;
-            this->_task_id = other._task_id;
+            this->_id = other._id;
             this->_main_coroutine = std::move(other._main_coroutine);
             this->_leaf_coroutine = std::move(other._leaf_coroutine);
             this->_leaf_awaitable = other._leaf_awaitable;
             this->_instant_resume = other._instant_resume;
             this->_main_coroutine.Register(this); // re-register
 
-            other._task_id = -1;
+            other._id = -1;
             other._task_name = "";
             other._leaf_awaitable = nullptr;
             other._instant_resume = false;
         }
         return *this;
     }
+
+    
 
     bool CoTask::is_resumable() const {
         if(this->_leaf_coroutine && !this->is_done()){
@@ -56,17 +58,13 @@ namespace embed{
         return false;
     }
 
-    bool CoTask::resume(){
-        if(this->is_resumable()){
-            do{
-                this->_instant_resume = false;
-                this->_leaf_awaitable = nullptr;
-                this->_leaf_coroutine->resume();
-            }while(this->_instant_resume); // instantly resume. E.g.: if a new coroutine spawned.
-            return true;
-        }else{
-            return false;
-        }
+    void CoTask::resume(){
+        EMBED_ASSERT_O1(this->is_resumable());
+        do{
+            this->_instant_resume = false;
+            this->_leaf_awaitable = nullptr;
+            this->_leaf_coroutine->resume();
+        }while(this->_instant_resume); // instantly resume. E.g.: if a new coroutine spawned.
     }
 
     void CoTask::handle_exception(std::exception_ptr except_ptr) {
@@ -80,7 +78,7 @@ namespace embed{
             embed::cerr << "[" << embed::ansi::bright_red << embed::ansi::bold << "Unknown exception" << embed::ansi::reset << "]" << embed::endl;
         }
         
-        embed::cerr << "    Unhandled exception inside task: " << this->_task_name << ", id: " << this->_task_id << embed::endl;
+        embed::cerr << "    Unhandled exception inside task: " << this->_task_name << ", id: " << this->_id << embed::endl;
         embed::cerr << "    Killing task." << embed::endl;
     
         this->kill_chain();
