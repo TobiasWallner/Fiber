@@ -10,6 +10,8 @@ target_sources(embed
 
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/CoTaskSignal.cpp
+        
 )
 
 if(EMBED_COMPILE_TESTS)
