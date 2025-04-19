@@ -55,20 +55,29 @@ namespace embed
          * next_deadline = Clock::now() + delay + relative_deadline
          * ```
          * 
+         * @tparam Rep1 The representation of the std::chrono::duration, usually an integer type
+         * @tparam Period1 The period of the std::chrono::duration. Has to be a std::ratio
+         * @tparam Rep2 The representation of the std::chrono::duration, usually an integer type
+         * @tparam Period2 The period of the std::chrono::duration. Has to be a std::ratio
+         * @param delay The delay by which this task should be delayed
+         * @param relative_deadline The added deadline after the delay
          * @see CoTaskSignal::ExplicitDelay
-         * 
-         * @param delay
          */
         template<class Rep1, CStdRatio Period1, class Rep2, CStdRatio Period2>
         explicit constexpr Delay(std::chrono::duration<Rep1, Period1> delay, std::chrono::duration<Rep2, Period2> relative_deadline)
             : _delay_ready(std::chrono::duration_cast<std::chrono::nanoseconds>(delay))
             , _delay_deadline(std::chrono::duration_cast<std::chrono::nanoseconds>(relative_deadline)){}
-            
-        inline bool await_ready() const noexcept override {return this->_ready;;}
+        
+        /// @brief return `true` if the awatiable is ready. 
+        /// @details initially returns `false` on the first read, but `true` on the second. `_ready` is set `true` in `await_suspend_signal()`
+        inline bool await_ready() const noexcept override {return this->_ready;}
 
+        /// @brief A delay does not return a value to be read -> `void`
         inline void await_resume() noexcept {}
 
     private:
+
+        /// @brief Signals a delay to the root task or scheduler and sets `_ready` to `true`.
         inline CoTaskSignal await_suspend_signal() noexcept override {
             this->_ready = true;
             if(this->_delay_deadline.has_value()){

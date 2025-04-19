@@ -539,7 +539,7 @@ namespace embed{
         }
 
         /// @brief Sets a value to the future that this promise is based on.
-        /// @param obj The value that should be set to the Future and "keep the promise".
+        /// @param value The value that should be set to the Future and "keep the promise".
         /// @throws an std::exception on double writes
         void set_value(const T& value){
             if(this->_futurePtr != nullptr){
@@ -567,7 +567,7 @@ namespace embed{
         }
 
         /// @brief Sets a value to the future that this promise is based on.
-        /// @param obj The value that should be set to the Future and "keep the promise"
+        /// @param value The value that should be set to the Future and "keep the promise"
         /// @throws an embed::Exception on double writes
         void set_value(T&& value){
             if(this->_futurePtr != nullptr){

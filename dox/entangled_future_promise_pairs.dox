@@ -1,7 +1,7 @@
 /**
-@page entangled_future_promise_pairs Entangled Future-Promise Pairs
+@page page_entangled_future_promise_pairs Entangled Future-Promise Pairs
 
-@section intro Introduction
+@section section_entangled_future_promise_pairs_introduction Introduction
 
 Imagine two quantum-entangled particles. No matter how far apart they are,
 an action on one instantaneously affects the other. Or, picture two linked portals:
@@ -14,12 +14,12 @@ becomes ready and holds that value. If the promise is destroyed before it's kept
 the future detects the broken promise.
 
 
-@section use_case Use Case: Asynchronous Data Retrieval
+@section section_entangled_future_promise_pairs_use_case Use Case: Asynchronous Data Retrieval
 
 On embedded systems, you often want to delegate work to hardware (like a DMA or CRC unit),
 then continue with other computations. When the result is ready, you read it through the future.
 
-@code{.cpp}
+```cpp
 
 auto [future, promise] = embed::make_future_promise<int>();
 // Pass the promise into some async subsystem (e.g., an interrupt or a hardware driver)
@@ -29,10 +29,10 @@ compute_something_else();
 // Later, get the result from the future
 int crc = future.get(); // blocks until ready
 
-@endcode
+```
 
 
-@section lifecycle Life Cycle
+@section section_entangled_future_promise_pairs_life_cycle Life Cycle
 
 - `make_future_promise<T>()` returns an entangled `Future<T>` and `Promise<T>` pair.
 - The promise is passed to the code responsible for eventually computing the value.
@@ -41,55 +41,49 @@ int crc = future.get(); // blocks until ready
 - If the promise is destroyed without calling `set_value`, the future detects a broken promise.
 - All operations are completely heap free and only rely on stack memory
 
-@section api API Summary
+@section section_entangled_future_promise_pairs_api_summary API Summary
 
 - `Future<T>::get()` — waits (if needed) and returns the promised value.
 - `Future<T>::is_ready()` — returns true if the promise was kept.
 - `Future<T>::is_broken_promise()` — returns true if the promise was destroyed early.
 - `Promise<T>::set_value(val)` — fulfills the promise and transfers `val` to the future.
 
-@section awaitables Coroutine Integration
+@section section_entangled_future_promise_pairs_coroutine_integration Coroutine Integration
 
 Futures are also awaitable:
 
-@code{.cpp}
-
+```cpp
 Future<int> future = do_async_thing();
 co_await future; // suspends until the value is ready or broken
+```
 
-@endcode
-
-@section teardown Teardown Safety
+@section section_entangled_future_promise_pairs_teardown_safety Teardown Safety
 
 If either the `Future` or `Promise` is destroyed before the other, they automatically and safely detach.
 If the `Promise` dies without assigning a value, the `Future` goes into a `BrokenPromise` state.
 
-@section analogy Final Analogy
+@section section_entangled_future_promise_pairs_final_analogy Final Analogy
 
 A `Promise` is a sending portal. A `Future` is the receiving portal.
 You only ever assign a value into the `Promise`:
 
-@code{.cpp}
-
+```
 promise.set_value(42); // send through portal
 int result = future.get(); // receive through other portal
-
-@endcode
+```
 
 If you never send anything through the first portal,
 the second one will throw a fit when you try to receive something.
 
-@section Optinisations
+@section section_entangled_future_promise_pairs_optimisations Optimisations
 
 If you are operating on a single core machine you may define the compiler definition `EMBED_SINGLE_CORE`, 
 or set the CMake option:
 
-@code{cmake}
-SET(EMBED_SINGLE_CORE ON)
-@endcode
-
 This will tell `embed` that it does not need to synchronise multiple cores and possibly seperated chaches, 
 which will increase performance and reduce binary size.
+
+---
 
 @see embed::make_future_promise
 @see embed::Future

@@ -1,10 +1,10 @@
 #pragma once
 
 // Compile-time toggle to disable ANSI codes
-#ifdef EMBED_DISABLE_ANSI_CODES
-  #define EMBED_ANSI_CODE(str) ""
-#else
+#ifdef EMBED_ENABLE_ANSI_CODES
   #define EMBED_ANSI_CODE(str) str
+#else
+  #define EMBED_ANSI_CODE(str) ""
 #endif
 
 namespace embed::ansi {

@@ -1,10 +1,11 @@
-@page exceptions_and_assertions Exceptions and Assertions
+/**
+@page page_exceptions_and_assertions Exceptions and Assertions
 
 embed uses `embed::Exception`, which is the base class for all exceptions in embedOS.
 This design choice has been made to allow multiple different raw-strings to be passed to exceptions
 to generate error messages without heap memory allocation.
 
-@section Exception Philosophy
+@section page_exceptions_and_assertions_philosophy Philosophy
 
 Exceptions in embedOS are used **only** to signal programmer-caused setup errors,
 such as invalid arguments, null pointers, or memory exhaustion. They are never
@@ -14,9 +15,9 @@ This design ensures deterministic behavior and simplifies safety analysis.
 
 Further no exceptions allocate memory or use the heap.
 
-@section Exception Customisation
+@section page_exceptions_and_assertions_customisation Customisation
 
-## Assertion Levels
+@subsection page_exceptions_and_assertions_assertion_levels Assertion Levels
 
 Assertions will - per default - throw exceptions if they fail.
 
@@ -28,7 +29,7 @@ The user can just add the corresponding define option their compilation.
  - `EMBED_ASSERTION_LEVEL_O1`: Tests that will complete in O[1] time but use more than 5% of performance. E.g: range bound checks at every access of a container.
  - `EMBED_ASSERTION_LEVEL_FULL`: Tests that will use more than O[1] time. E.g.: checking if the list is sorted befor doing a binary search. Basically turns your project into a test suit.
 
-### Turning Assertions into Optimisations
+@subsection page_exceptions_and_assertions_optimisations Turning Assertions into Optimisations
 
 You can turn unused assertions into optimisations. If your code is tested and you know for a fact that `EMBED_ASSERTION_LEVEL_O1` assertions will not fail, 
 then you can switch to `EMBED_ASSERTION_LEVEL_CRITICAL` and also define:
@@ -37,11 +38,11 @@ EMBED_ASSERTS_AS_ASSUME
 ```
 This will turn all unused assertions (higher layer or all if disabled) into assume statements for the compiler that can be used to further optimize the code. 
 
-#### But Be Careful!
+@subsection page_exceptions_and_assertions_be_careful But Be Careful!
 
  If the assertion is not actually `true` at runtime, this may result in undefined behavior
  
-### How to use Assertion Levels
+@section page_exceptions_and_assertions_usage How to use Assertion Levels
 
 - `EMBED_ASSERT_CRITICAL(condition == true)`: Use this for an assert that uses less than ~5% of the time compared to the rest of the function.
 - `EMBED_ASSERT_O1(condition == true)`: Use this if an assert can be done in O[1] time but would take a considerable amount of time compared to the rest of the function. (50% performance hit)
@@ -50,7 +51,7 @@ This will turn all unused assertions (higher layer or all if disabled) into assu
 *note that if exceptions are disabled the assertions will trap execution*
 
 
-## Redirect assertions from exceptions to callbacks
+@section page_exceptions_and_assertions_callbacks Redirect assertions from exceptions to callbacks
 
 If 
  - you hate exceptions go watch this talk: https://www.youtube.com/watch?v=bY2FlayomlE
@@ -68,12 +69,12 @@ instead of throwing the exception. The user can overload this function pointer w
 The default implementation of `exception_callback` will print the exception to `embed::cerr` and then trapps in a while loop.
 
 
-## Disable all checks and assertions
+@section page_exceptions_and_assertions_disable Disable all checks and assertions
 
 If you want no error checking and are 100% sure that nothing will go wrong and you need that extra bit of performance,
 then you can define the following option in your compilation to disable and remove all exceptions
 
-@section Defining Custom Exceptions
+@section page_exceptions_and_assertions_custom_exceptions Defining Custom Exceptions
 
 You can define your own exception like this:
 ```cpp
@@ -89,3 +90,5 @@ public:
 @see embed::AssertionFailureCritical
 @see embed::AssertionFailureO1
 @see embed::AssertionFailureFull
+
+*/

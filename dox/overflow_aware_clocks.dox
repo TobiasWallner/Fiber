@@ -1,7 +1,7 @@
 /**
-@page time Overflow aware: Clocks, Time-Points and Durations
+@page page_overflow_aware_clocks Overflow aware: Clocks, Time-Points and Durations
 
-@section intro Overview
+page_exceptions_and_assertions_disable Overview
 The `embed` library provides a fully overflow-aware timing system including:
 - Clocks
 - Time points
@@ -12,7 +12,7 @@ They allow safe and precise tracking of time using wraparound counters (hardware
 
 ---
 
-@section overflow Awareness of Overflow
+@section page_overflow_aware_clocks_overflow_awareness Overflow Awareness
 Unlike the standard `std::chrono` types which assume linear time, `embed`’s types are built on `ClockTick`, which wraps and tracks tick values modulo an overflow:
 
 - Overflow handling is transparent.
@@ -28,7 +28,7 @@ modulo operations, but only for constructions (can be mittigated by using `Clock
 
 ---
 
-@section chrono Integration with `<chrono>`
+@section page_overflow_aware_clocks_overflow_integration_with_stdchrono Integration with `<chrono>`
 `embed::Duration`, `embed::TimePoint`, and `embed::Clock` all follow the exact semantics and layout of their standard counterparts:
 - `embed::Duration` is a wrapper around `std::chrono::duration` using `ClockTick` as its representation type.
 - `embed::TimePoint` wraps `std::chrono::time_point` using your chosen `Clock`.
@@ -38,7 +38,7 @@ You can freely mix `embed` clocks with standard `std::chrono` durations where ap
 
 ---
 
-@section example Example: Creating Your Own Clock
+@section page_overflow_aware_clocks_overflow_awareness_example Example: Creating Your Own Clock
 Creating a custom hardware-aware overflow-safe clock is extremely simple.
 All you need to provide is:
 - the **underlying integer type** of your timer register (e.g. `uint32_t`)
@@ -72,29 +72,18 @@ rtscheduler.addTask(task);
 
 ---
 
-@section benefits Why Use This?
+@section page_overflow_aware_clocks_overflow_awareness_why Why Use This?
 - Fully portable overflow handling — just like hardware timers
 - Clean, standard-compliant chrono API
 - Backed by real unit tests with corner-case handling (`Clock_test.cpp`)
 - Integrates easily into `embedOS` or any cooperative scheduler
 - Avoids common embedded bugs with counter wraparound and time comparison
 
----
 
-@section test Testing
-The implementation is heavily unit tested:
-- Construction, addition, subtraction of `ClockTick`
-- Comparison logic across overflow windows
-- Integration with standard chrono literals
-- Realistic use cases using custom `Clock` types
-
-See `Clock_test.cpp` for examples.
-
----
-
-@section summary Summary
+@section page_overflow_aware_clocks_summary Summary
 `embed` makes working with microcontroller timers as safe and intuitive as modern C++ chrono types — without giving up performance or hardware alignment.
 You keep full control over the tick source, overflow range, and resolution, and the library guarantees that comparisons and arithmetic Just Work™.
 
 @see ClockTick, TimePoint, Duration, Clock, CClock
+
 */

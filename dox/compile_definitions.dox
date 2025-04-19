@@ -1,0 +1,58 @@
+/**
+@page page_compile_options_and_flags Compile Options & Flags
+
+The following options can be configured to control or optimize `embedOS` behavior.
+They must be set **before** the library is added via `CPM`, `FetchContent`, or `add_subdirectory`.
+
+set them in `CMake` via:
+
+```cmake
+set(<definition> [ON|OFF] CACHE BOOL "" FORCE)
+```
+and replace `<definition>` with one of the following flags, as well as `[ON|OFF]` wether you want it turned `ON` or `OFF`.
+
+The library also defines "weak `ON`". They are only `ON` as long as no other option with the same prefix is `ON`.
+This means you do not manully have to turn them `OFF`.
+
+| Definition | Description | Default value |
+|------------|-------------|---------------|
+| **Tests** | | |
+| `EMBED_COMPILE_TESTS` | If `ON` compiles the test sources | `OFF` |
+| **System Stubs** | | |
+| `EMBED_USE_EMBED_SYS_STUBS` | Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size | `OFF` |
+| **Exceptions** | | |
+| `EMBED_DISABLE_EXCEPTIONS` | Disables exceptions, will also disable assertions | `OFF` |
+| **Assertions** | | |
+| `EMBED_DISABLE_ASSERTIONS` | Disable all embedOS assertions | `OFF` |
+| `EMBED_ASSERTION_LEVEL_CRITICAL` | Enable critical level assertions | weak `ON` |
+| `EMBED_ASSERTION_LEVEL_O1` | Enable O[1] cost development assertions + critical | default: `OFF` |
+| `EMBED_ASSERTION_LEVEL_FULL` | Enable full deep validation assertions + O[1] + full | default: `OFF` |
+| `EMBED_ASSERTS_AS_ASSUME` | Use compiler intrinsics that asume values instead of unused asserts - for more optimisations (like __builtin_assume, or a different, or none - depending on the compiler used) | `OFF` |
+| `EMBED_USE_EXCEPTION_CALLBACKS` | Use user-defined callbacks for exceptions instead of throwing them | `OFF` |
+| **OStream String Formating** | | |
+| `EMBED_ENABLE_ANSI_CODES` | Enables ANSI escape codes in stream output. For example to color terminal text | `ON` |
+| `EMBED_FMT_MINIMAL` | If `ON`: uses the settings from the macros instead. This disables runtime configurability but offers more performant code and smaller binaries | `OFF` |
+| Bool Formating | | |
+| `EMBED_FMT_BOOL_TO_TEXT` | If `EMBED_FMT_MINIMAL` is `ON`: Enables bool formating as text instead of numbers. | `ON` |
+| Number Formating | | |
+| `EMBED_FMT_PAD_SIGN` | If `EMBED_FMT_MINIMAL` is `ON`: Enables sign padding. | `OFF` |
+| `EMBED_FMT_DOT_AS_COMMA` | If `EMBED_FMT_MINIMAL` is `ON`: Use dot '.' as comma and ',' as thousands. |"` ON` |
+| `EMBED_FMT_THOUSANDS` | If `EMBED_FMT_MINIMAL` is `ON`: Enables the use of thousands. Depends on `EMBED_FMT_DOT_AS_COMMA`. | `OFF` |
+| `EMBED_FMT_FORCE_SIGN` | If `EMBED_FMT_MINIMAL` is `ON`: forces a sign, even if the number is positive. | `OFF` |
+| `EMBED_FMT_FORCE_COMMA` | If `EMBED_FMT_MINIMAL` is `ON`: if set, makes sure that a comma is always printed for floating point numbers. |"` ON` |
+| `EMBED_FMT_FORCE_DECIMALS` | If `EMBED_FMT_MINIMAL` is `ON`: if set will make sure that the set ammount of decimals will always be printed, even if zero. | `OFF` |
+| `EMBED_FMT_FORCE_SIGN` | If `EMBED_FMT_MINIMAL` is `ON`: forces a sign, even if the number is positive. | `OFF` |
+| Float Formating | | |
+| `EMBED_FMT_FORCE_EXPONENT` | If `EMBED_FMT_MINIMAL` is `ON`: forces an exponent, even if the exponent is zero. | `OFF` |
+| `EMBED_FMT_FORCE_EXPONENT_SIGN` | If `EMBED_FMT_MINIMAL` is `ON`: forces a sign on the exponent, even if the exponent is positive. | `OFF` |
+| `EMBED_FMT_DECIMALS_1` | If `EMBED_FMT_MINIMAL` is `ON`: Enables 1 decimal place. | `OFF` |
+| `EMBED_FMT_DECIMALS_2` | If `EMBED_FMT_MINIMAL` is `ON`: Enables 2 decimal places. | `OFF` |
+| `EMBED_FMT_DECIMALS_3` | If `EMBED_FMT_MINIMAL` is `ON`: Enables 3 decimal places. | weak `ON` |
+| `EMBED_FMT_DECIMALS_4` | If `EMBED_FMT_MINIMAL` is `ON`: Enables 4 decimal places. | `OFF` |
+| `EMBED_FMT_DECIMALS_5` | If `EMBED_FMT_MINIMAL` is `ON`: Enables 5 decimal places. | `OFF` |
+| `EMBED_FMT_DECIMALS_6` | If `EMBED_FMT_MINIMAL` is `ON`: Enables 6 decimal places. | `OFF` |
+| `EMBED_FMT_FLOAT_REP_SCI` |  If `EMBED_FMT_MINIMAL` is `ON`: Enables scientific representation. | `OFF` |
+| `EMBED_FMT_FLOAT_REP_ENG` |  If `EMBED_FMT_MINIMAL` is `ON`: Enables engineering representation. | weak `ON` |
+| `EMBED_FMT_FLOAT_REP_FULL` | If `EMBED_FMT_MINIMAL` is `ON`: Enables floating point representation. | `OFF` |
+
+*/

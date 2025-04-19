@@ -160,14 +160,84 @@ If you still don’t know which one to pick, reach out—we’ll help you find t
 
 ## 🧩 Integration
 
+You can integrate the embedOS library in multiple ways depending on your workflow.
+The main target to link against is:
+
+- embed (link PRIVATE)
+- Optionally, embed_sys_stubs (link PUBLIC) for system call stubs
+
 ### (Preferred) [CMake](https://cmake.org/) and [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 
 - [CMake](https://cmake.org/) is a build tool generator in witch you can specify how C++ project files should be compiled.
 - [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) is a package manager - just a CMake script that you download and include - that will download, integrate, build and cache source libraries for you. I also allows to build everything always from source with the same compile options/flags, which makes this perfect for embedded.
 
+Just add the following ot your `CMakeLists.txt`:
+```cmake
+# include the CPM package manager script
+include(CPM.cmake)
+
+# Optional: Enable system call stubs for freestanding/bare-metal
+set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+
+# add/downloads the library
+CPMAddPackage("gh:TobiasWallner/embedOS#main")
+
+# link embed to your project
+target_link_libraries(my_target PRIVATE embed)
+
+# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC embed_sys_stubs)
+```
+
 ### [CMake](https://cmake.org/) with its command [`FetchContent`](https://cmake.org/cmake/help/latest/module/FetchContent.html)
 
+FetchContent, similar to CPM, already comes with CMake. So you do not have to download additional files. However, `FetchContent`
+does not support source cacheing and download the full libraries into your project every time.
+
+Add to your `CMakeLists.txt`:
+```cmake
+# optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
+set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+
+# adds/downloads the library
+include(FetchContent)
+FetchContent_Declare(
+  embedOS
+  GIT_REPOSITORY https://github.com/TobiasWallner/embedOS.git
+  GIT_TAG main
+)
+
+# make the library avaliable
+FetchContent_MakeAvailable(embedOS)
+
+# link to the emebed library
+target_link_libraries(my_target PRIVATE embed)
+
+# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC embed_sys_stubs)
+```
+
 ### [CMake](https://cmake.org/) with its command [`add_subdirectory`](https://cmake.org/cmake/help/latest/command/add_subdirectory.html)
+
+Download `embedOS` into a subdirectory of your project
+```bash
+git clone https://github.com/TobiasWallner/embedOS.git external/embedOS --depth=1
+```
+
+Add to your `CMakeLists.txt`:
+```cmake
+# optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
+set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+
+# add the library
+add_subdirectory(external/embedOS)
+
+# link to the emebed library
+target_link_libraries(my_target PRIVATE embed)
+
+# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC embed_sys_stubs) # if ON
+```
 
 ### 🛠 Don't Want to Use CMake?
 
@@ -175,9 +245,11 @@ No worries. If you're using STM32CubeIDE, Atmel Studio, or Keil:
 
 - Add all .cpp files from `embed/*` to your project.
 - Include `/embed/` to your include path.
-- Start using #include <embed/xxx.hpp> and you're good to go.
+- Start using `#include <embed/xxx.hpp>` and you're good to go.
 
-❗ But seriously, you should try [CMake](https://cmake.org/). It's awesome.
+Please refere to your IDE vendor on how to include libraries.
+
+❗ But seriously, you should try [CMake](https://cmake.org/). It automates libraries for C++.
 
 
 ## 📜 Licensing
@@ -194,7 +266,7 @@ You may use embed freely in open source projects under the following conditions:
 - Any modifications to embed must be shared publicly under the same license.
 - You must retain attribution to the original author.
 
-See [`LICENSE_OPEN_SOURCE`](./LICENSE_OPEN_SOURCE)
+See [`LICENSE_OPEN_SOURCE`](https://github.com/TobiasWallner/embedOS/blob/main/LICENSE_OPEN_SOURCE)
 
 ### 💼 Commercial License (for Closed/Proprietary Projects)
 
@@ -206,7 +278,7 @@ With a commercial license, you gain:
 - License-backed usage rights
 - Priority handling for bug reports and feature requests
 
-See [`LICENSE_COMMERCIAL`](./LICENSE_COMMERCIAL.md)
+See [`LICENSE_COMMERCIAL`](https://github.com/TobiasWallner/embedOS/blob/main/LICENSE_COMMERCIAL.md)
 
 👉 Contact: tobias.wallner1@gmx.com for license quotes and support plans.
 
