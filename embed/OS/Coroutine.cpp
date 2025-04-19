@@ -65,6 +65,11 @@ namespace embed{
             this->_leaf_awaitable = nullptr;
             this->_leaf_coroutine->resume();
         }while(this->_instant_resume); // instantly resume. E.g.: if a new coroutine spawned.
+        /*
+        `_instant_resume` guarantees temporal ownership: 
+            the task keeps the CPU until its logical atomic unit is complete. 
+            This is how priority enforcement and execution atomicity are preserved across coroutine boundaries.
+        */
     }
 
     void CoTask::handle_exception(std::exception_ptr except_ptr) {
