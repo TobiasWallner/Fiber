@@ -1,5 +1,5 @@
 /**
-@page time Overflow aware: Clocks, Time Points and Durations
+@page time Overflow aware: Clocks, Time-Points and Durations
 
 @section intro Overview
 The `embed` library provides a fully overflow-aware timing system including:
