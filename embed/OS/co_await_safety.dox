@@ -1,0 +1,72 @@
+/**
+ * @page co_await_safety co_await Safety
+ * @brief Ensuring safe suspension and resumption in embedOS using `embed_await()`.
+ * 
+ * @section motivation Motivation
+ * 
+ * The standard C++ `co_await` mechanism is flexible—but that flexibility becomes a liability for dependable systems.
+ * Any object with the right trio of methods (`await_ready`, `await_suspend`, and `await_resume`) can be `co_await`ed.
+ * 
+ * This open design makes it impossible to **enforce scheduling guarantees**, **track awaitable state**, or **register with the task manager**
+ * unless every awaited object explicitly participates in the embedOS coroutine contract.
+ * 
+ * @section the_problem The Problem
+ * 
+ * External libraries (e.g., Boost, cppcoro) may define custom awaitables that:
+ * - Do not derive from `embed::AwaitableNode`
+ * - Bypass the task registration and signaling infrastructure
+ * - Break the scheduler’s awareness of task state and readiness
+ * 
+ * This creates a correctness hazard: tasks might not resume as expected, or worse, might resume when they shouldn't.
+ * 
+ * @subsection why_not_overload_co_await Why Not Overload `co_await` Directly?
+ * 
+ * `co_await` cannot be overloaded or intercepted based on coroutine context, only on ADL (argument-dependent lookup)
+ * This means:
+ * - You can only overload the `co_await` operator for types that are already under your control. But what we need is to check the ones that are not.
+ * - You cannot detect invalid awaitables statically
+ * - You cannot intercept misuse without intrusive runtime checks
+ *
+ * @section the_solution The Solution: `embed_await()`
+ * 
+ * To mitigate this, embedOS introduces `embed_await(awaitable)` — a safe and structured replacement for `co_await`.
+ * 
+ * ```cpp
+ * embed_await(some_delay);
+ * embed_await(some_future);
+ * ```
+ * 
+ * The macro internally calls `embed::embed_awaitable_wrapper()`, which:
+ * - For valid embedOS-native awaitables (`AwaitableNode`, `CoroutineNode`): simply forwards them to `co_await`
+ * - For foreign awaitables: wraps them in an `AwaitableShim` that participates in task registration
+ * 
+
+ * 
+ * Instead, `embed_await()` provides:
+ * - A clear API entry point
+ * - Enforced integration via concepts (`AwaitableLike`)
+ * - Seamless interop with third-party libraries *without breaking safety*
+ * 
+ * ## Usage Guidelines
+ * 
+ * - ✅ Always use `embed_await()` for suspension in embedOS tasks.
+ * - ❌ Do not use raw `co_await` unless you are **100% sure** the object derives from `AwaitableNode`.
+ * - ✅ If you integrate external async libraries, just wrap their awaitables in `embed_await(...)` — no changes needed.
+ * 
+ * ## Example
+ * ```cpp
+ * embed::FuturePromisePair<int> fp = embed::make_future_promise<int>();
+ * 
+ * embed::Coroutine<embed::Exit> main() {
+ *     auto value = embed_await(fp.future); // safe
+ *     co_return embed::Exit::Success;
+ * }
+ * ```
+ * 
+ * ## Design References
+ * - @ref embed::AwaitableNode
+ * - @ref embed::AwaitableShim
+ * - @ref embed::embed_awaitable_wrapper
+ * 
+ * 
+ */

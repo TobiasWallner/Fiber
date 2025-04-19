@@ -46,6 +46,16 @@ namespace embed
     template<typename T>
     concept CStdOptional = is_std_optional<T>::value;
 
+// --------------------------------------------------------------------------------
+//                               AwaitableLike
+// --------------------------------------------------------------------------------
+
+    template<typename T>
+    concept AwaitableLike = requires(T t) {
+        { t.await_ready() } -> std::same_as<bool>;   // await_ready must return bool
+        { t.await_resume() };                        // await_resume can return anything
+    };
+
 } // namespace embed
 
 
