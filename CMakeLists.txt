@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.25)
 
 # Version Convention
 # ------------------
@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.26)
 # Minor:     Add a new function    1.0.1 → 1.1.0
 # Patch:     Fix a bug             1.0.0 → 1.0.1
 
-project(embed VERSION 0.1.0 LANGUAGES CXX C ASM)
+project(embed VERSION 0.1.0 LANGUAGES CXX)
 
 # Protect against multiple inclusions
 if(TARGET embed)
@@ -44,7 +44,25 @@ target_compile_features(embed PUBLIC
 target_compile_options(embed PUBLIC
     #-O3
     -fcoroutines
+    -Wall
+    -Wsign-compare
 )
+
+# ================================================================================
+#                                   TESTS
+# ================================================================================
+
+if(EMBED_COMPILE_TESTS)
+
+add_executable(embed_test
+    test.cpp
+)
+
+target_link_libraries(embed_test PRIVATE
+    embed
+)
+
+endif()
 
 # ================================================================================
 #                  find_package() support without installing

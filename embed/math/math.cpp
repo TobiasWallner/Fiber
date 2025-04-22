@@ -1,4 +1,4 @@
-#include <embed/Math/math.hpp>
+#include <embed/math/math.hpp>
 
 namespace embed{
 

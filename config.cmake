@@ -67,8 +67,8 @@ endif()
 # Default to EMBED_ASSERTION_LEVEL_CRITICAL if none set
 # -----------------------------------------------------
 if(_embed_assert_level_count EQUAL 0)
-    set(EMBED_ASSERTION_LEVEL_CRITICAL ON)
-    message(STATUS "embed: No assertion level set. Defaulting to EMBED_ASSERTION_LEVEL_CRITICAL = ON")
+    set(EMBED_ASSERTION_LEVEL_O1 ON)
+    message(STATUS "embed: No assertion level set. Defaulting to EMBED_ASSERTION_LEVEL_O1 = ON")
 endif()
 
 # Assertion behavior

@@ -7,8 +7,9 @@
 #include <chrono>
 
 //embed
-#include <embed/Math/math.hpp>
-#include <embed/core/concepts.hpp>
+#include <embed/math/math.hpp>
+#include <embed/Core/concepts.hpp>
+#include <embed/Exceptions/Exceptions.hpp>
 
 namespace embed{
 
@@ -1106,40 +1107,11 @@ namespace embed{
 
         constexpr operator bool() const {return this->is_open();}
 
-        explicit inline operator OStream&(){
-            if(this->ptr == nullptr){
-                while(true){/* trap */}
-                // You are trapped here, because you have not redirected the output streams:
-                //      - embed::cout
-                //      - embed::cerr
-                //      - embed::clog
-                //
-                // Solution:
-                // ---------
-                // 
-                //  ```
-                //  class MyStream : public OStream{
-                //      ...
-                //  };
-                // 
-                //  MyStream my_stream;
-                // 
-                //  int main(){
-                //      embed::cout = my_stream;    
-                //      ...
-                //      embed::cout << "hallo world" << embed::endl;
-                //  }
-                //  ```
-                //
-
-            }else{
-                return *this->ptr;
-            }
-        }
     };
 
     template<class T>
     inline OStream& operator<<(OStreamRef stream, const T& value){
+        EMBED_ASSERT_O1_MSG(stream.is_open(), "No output stream! S: Assign an output stream to `embed::cout`, `embed::cerr` or `embed::clog`.");
         return (*(stream.ptr)) << value;
     }
 

@@ -161,6 +161,11 @@ namespace embed
                 return *(this->begin()+i);
             }else{
                 EMBED_ASSERT_O1(i < this->size());
+                embed::cout << "-i: " << (-i) << embed::endl;
+                embed::cout << "this->size(): " << this->size() << embed::endl;
+                embed::cout << "-i <= this->size(): " << (-i <= this->size()) << embed::endl;
+                embed::cout << "-------------------------" << embed::endl; 
+
                 EMBED_ASSERT_O1(-i <= this->size());
                 return *(((i >= 0) ? this->begin() : this->end()) + i);
             }   
@@ -232,7 +237,7 @@ namespace embed
         /// @return a reference to the constructed list element
         template<class... Args>
         T& emplace_back(Args&&... args){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             T* construct_at_addr = this->begin() + this->size();
             new (construct_at_addr) T(std::forward<Args>(args)...);
             this->_size += 1;
@@ -363,7 +368,7 @@ namespace embed
         /// @return an iterator pointing to the inserted value
         template<std::convertible_to<T> Ta>
         iterator insert(const const_iterator pos, const Ta& value){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
             iterator pos_ = unconst(pos);
@@ -377,7 +382,7 @@ namespace embed
         /// @return an iterator pointing to the inserted value
         template<std::convertible_to<T> Ta>
         iterator insert(const const_iterator pos, Ta&& value){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
             this->_size += 1;
             iterator pos_ = unconst(pos);

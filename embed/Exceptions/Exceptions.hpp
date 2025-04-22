@@ -4,7 +4,7 @@
 #include <exception>
 
 // embed
-#include "embed/core/definitions.hpp"
+#include <embed/Core/definitions.hpp>
 
 // #include <embed/OStream/OStream.hpp> // foreward declare instead to resolve header conflicts
 namespace embed{

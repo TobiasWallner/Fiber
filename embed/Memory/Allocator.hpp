@@ -1,6 +1,10 @@
 #pragma once
 
-#include "embed/Exceptions/Exceptions.hpp"
+// std
+#include <memory_resource>
+
+// embed
+#include <embed/Exceptions/Exceptions.hpp>
 #include <embed/OStream/OStream.hpp>
 
 namespace embed
@@ -13,7 +17,7 @@ namespace embed
      * @tparam Bytes The number of bytes (rounded up to multiple of 4)
      */
     template<size_t Bytes>
-    struct StaticLinearAllocator : std::pmr::memory_resource{
+    struct StaticLinearAllocator : public std::pmr::memory_resource{
         using word = uint32_t;
         static constexpr size_t bufferSize = Bytes / sizeof(uint32_t);
         word buffer[bufferSize];

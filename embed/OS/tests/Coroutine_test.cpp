@@ -4,6 +4,7 @@
 #include <embed/OS/Coroutine.hpp>
 #include <embed/test/test.hpp>
 #include <embed/Memory/Allocator.hpp>
+#include <embed/OS/Exit.hpp>
 #include <embed/OS/Future.hpp>
 #include <embed/OS/TryAwait.hpp>
 #include <embed/OS/Delay.hpp>
@@ -169,12 +170,11 @@ namespace{
             embed::Coroutine<embed::Exit> main(){
                 using namespace std::chrono_literals;
 
-                embed_await(embed::NextCycle());       // signal to await the next cycle
-                embed_await(embed::Delay(100ns));      // signal to await a delay (implicit) of 1ms
-                embed_await(embed::Delay(200ns, 2ns)); // signal to delay (explicit)
-                embed_await(this->fp_pair.future);     // signal to await a future
-
-                co_return embed::Exit::Success; // signal should be None
+                co_await embed::NextCycle();            // signal to await the next cycle
+                co_await embed::Delay(100ns);           // signal to await a delay (implicit) of 1ms
+                co_await embed::Delay(200ns, 2ns);      // signal to delay (explicit)
+                co_await this->fp_pair.future;          // signal to await a future
+                co_return embed::Exit::Success;         // signal should be None
             }
         };
 
