@@ -46,6 +46,7 @@ target_compile_options(embed PUBLIC
     -fcoroutines
     -Wall
     -Wsign-compare
+    -fmax-errors=3
 )
 
 # ================================================================================

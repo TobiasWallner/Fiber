@@ -1,5 +1,6 @@
 #pragma once
 
+// std
 #include <cstddef>
 #include <utility>
 #include <type_traits>
@@ -9,6 +10,8 @@
 #include <functional>
 #include <concepts>
 
+// embed
+#include <embed/Core/Int.hpp>
 #include <embed/Exceptions/Exceptions.hpp>
 #include <embed/OStream/OStream.hpp>
 
@@ -157,16 +160,11 @@ namespace embed
         template<std::integral Int>
         constexpr reference at(const Int i) {
             if constexpr (std::is_unsigned_v<Int>){
-                EMBED_ASSERT_O1(i < this->size());  
+                EMBED_ASSERT_O1(embed::less(i, this->size()));  
                 return *(this->begin()+i);
             }else{
-                EMBED_ASSERT_O1(i < this->size());
-                embed::cout << "-i: " << (-i) << embed::endl;
-                embed::cout << "this->size(): " << this->size() << embed::endl;
-                embed::cout << "-i <= this->size(): " << (-i <= this->size()) << embed::endl;
-                embed::cout << "-------------------------" << embed::endl; 
-
-                EMBED_ASSERT_O1(-i <= this->size());
+                EMBED_ASSERT_O1(embed::less(i, this->size()));
+                EMBED_ASSERT_O1(embed::less_equal(-i, this->size()));
                 return *(((i >= 0) ? this->begin() : this->end()) + i);
             }   
         }
@@ -175,11 +173,11 @@ namespace embed
         template<std::integral Int>
         constexpr const_reference at(const Int i) const {
             if constexpr (std::is_unsigned_v<Int>){
-                EMBED_ASSERT_O1(i < this->size());  
+                EMBED_ASSERT_O1(embed::less(i, this->size()));  
                 return *(this->begin()+i);
             }else{
-                EMBED_ASSERT_O1(i < this->size());
-                EMBED_ASSERT_O1(-i <= this->size());
+                EMBED_ASSERT_O1(embed::less(i, this->size()));
+                EMBED_ASSERT_O1(embed::less_equal(-i, this->size()));
                 return *(((i >= 0) ? this->begin() : this->end()) + i);
             }   
         }
@@ -240,7 +238,7 @@ namespace embed
             EMBED_ASSERT_O1(!this->full());
             T* construct_at_addr = this->begin() + this->size();
             new (construct_at_addr) T(std::forward<Args>(args)...);
-            this->_size += 1;
+            ++this->_size;
             return this->back();
         }
 
@@ -311,7 +309,7 @@ namespace embed
 
         /// @brief turns the passed position given by an iterator into an integer 
         constexpr size_type to_index(const const_iterator pos) const {
-            EMBED_ASSERT_O1(this->begin() <= pos && pos < this->end());
+            EMBED_ASSERT_O1(this->begin() <= pos && pos <= this->end());
             return pos - this->begin();
         }
 
@@ -319,11 +317,11 @@ namespace embed
         template<std::integral Int>
         constexpr iterator to_iterator(const Int pos){
             if constexpr (std::is_unsigned_v<Int>){
-                EMBED_ASSERT_O1(pos < this->size());
+                EMBED_ASSERT_O1(embed::less_equal(pos, this->size()));
                 return this->begin() + pos;
             }else{
-                EMBED_ASSERT_O1(pos < this->size());
-                EMBED_ASSERT_O1(-pos <= this->size());
+                EMBED_ASSERT_O1(embed::less_equal(pos, this->size()));
+                EMBED_ASSERT_O1(embed::less_equal(-pos, this->size()));
                 return ((pos >= 0) ? this->begin() : this->end()) + pos;
             }
         }
@@ -332,11 +330,11 @@ namespace embed
         template<std::integral Int>
         constexpr const_iterator to_iterator(const Int pos) const {
             if constexpr (std::is_unsigned_v<Int>){
-                EMBED_ASSERT_O1(pos < this->size());
+                EMBED_ASSERT_O1(embed::less_equal(pos, this->size()));
                 return this->begin() + pos;
             }else{
-                EMBED_ASSERT_O1(pos < this->size());
-                EMBED_ASSERT_O1(-pos <= this->size());
+                EMBED_ASSERT_O1(embed::less(pos, this->size()));
+                EMBED_ASSERT_O1(embed::less_equal(-pos <= this->size()));
                 return ((pos >= 0) ? this->begin() : this->end()) + pos;
             }
         }
@@ -345,11 +343,11 @@ namespace embed
         template<std::integral Int>
         constexpr const_iterator to_const_iterator(const Int pos) const {
             if constexpr (std::is_unsigned_v<Int>){
-                EMBED_ASSERT_O1(pos < this->size());
+                EMBED_ASSERT_O1(embed::less(pos, this->size()));
                 return this->begin() + pos;
             }else{
-                EMBED_ASSERT_O1(pos < this->size());
-                EMBED_ASSERT_O1(-pos <= this->size());
+                EMBED_ASSERT_O1(embed::less(pos < this->size()));
+                EMBED_ASSERT_O1(embed::less_equal(-pos <= this->size()));
                 return ((pos >= 0) ? this->begin() : this->end()) + pos;
             }
         }
@@ -357,7 +355,7 @@ namespace embed
         /// @brief removes the constnes of an iterator if the user has access to the mutable (un-const) container 
         constexpr iterator unconst(const const_iterator pos) {
             EMBED_ASSERT_O1(this->begin() <= pos);
-            EMBED_ASSERT_O1(pos < this->end());
+            EMBED_ASSERT_O1(pos <= this->end());
             return this->begin() + this->to_index(pos);
         }
 
@@ -370,7 +368,7 @@ namespace embed
         iterator insert(const const_iterator pos, const Ta& value){
             EMBED_ASSERT_O1(!this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
-            this->_size += 1;
+            ++this->_size;
             iterator pos_ = unconst(pos);
             *pos_ = value;
             return pos_;
@@ -384,7 +382,7 @@ namespace embed
         iterator insert(const const_iterator pos, Ta&& value){
             EMBED_ASSERT_O1(!this->full());
             for(auto i = this->end(); i != pos; --i) *i = std::move(*(i-1));
-            this->_size += 1;
+            ++this->_size;
             iterator pos_ = unconst(pos);
             *pos_ = std::move(value);
             return pos_;
@@ -400,7 +398,7 @@ namespace embed
         requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         iterator insert(const const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
-            EMBED_ASSERT_O1(dist > this->reserve());
+            EMBED_ASSERT_O1(embed::less_equal(dist, this->reserve()));
             for(auto i = this->end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             iterator insertIterator = this->unconst(pos);
             for(; first != last; ++first, (void)++insertIterator) *insertIterator = *first;
@@ -486,7 +484,7 @@ namespace embed
             if constexpr (!std::is_trivially_destructible_v<T>){
                 this->back().~T();
             }
-            this->_size -= 1;
+            --this->_size;
             return this->unconst(cpos);
         }
 
@@ -503,9 +501,9 @@ namespace embed
         /// @returns an iterator the element after the removed ones
         iterator erase(const_iterator first, const_iterator last){
             EMBED_ASSERT_O1(this->begin() <= first);
-            EMBED_ASSERT_O1(first < this->end());
+            EMBED_ASSERT_O1(first <= this->end());
             EMBED_ASSERT_O1(this->begin() <= last);
-            EMBED_ASSERT_O1(last < this->end());
+            EMBED_ASSERT_O1(last <= this->end());
             iterator destItr = this->unconst(first);
             iterator sourceItr = this->unconst(last);
             for(; (destItr != last) && (sourceItr != this->end()); ++destItr, (void)++sourceItr) *destItr = std::move(*sourceItr);
@@ -577,7 +575,7 @@ namespace embed
             if constexpr (!std::is_trivially_destructible<T>::value){
                 this->back().~T();
             }
-            this->_size -= 1;
+            --this->_size;
         }
 
         /// @brief Applies the negation (!) operator to all elements and returns it as a bool list 
@@ -634,12 +632,54 @@ namespace embed
     //                    basic comparisons of scalar types
     // --------------------------------------------------------------------------------------
 
-    template<class T1, class T2> constexpr bool skalar_equal(const T1& l, const T2& r){return l == r;}
-    template<class T1, class T2> constexpr bool skalar_not_equal(const T1& l, const T2& r){return l != r;}
-    template<class T1, class T2> constexpr bool skalar_less(const T1& l, const T2& r){return l < r;}
-    template<class T1, class T2> constexpr bool skalar_greater(const T1& l, const T2& r){return l > r;}
-    template<class T1, class T2> constexpr bool skalar_less_equal(const T1& l, const T2& r){return l <= r;}
-    template<class T1, class T2> constexpr bool skalar_greater_equal(const T1& l, const T2& r){return l >= r;}
+    template<class T1, class T2> constexpr bool skalar_equal(const T1& l, const T2& r){
+        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
+            return embed::equal(l, r);
+        }else{
+            return l == r;
+        }
+    }
+
+    template<class T1, class T2> constexpr bool skalar_not_equal(const T1& l, const T2& r){
+        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
+            return embed::not_equal(l, r);
+        }else{
+            return l != r;
+        }
+    }
+
+    template<class T1, class T2> constexpr bool skalar_less(const T1& l, const T2& r){
+        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
+            return embed::less(l, r);
+        }else{
+            return l < r;
+        }
+    }
+
+    template<class T1, class T2> constexpr bool skalar_greater(const T1& l, const T2& r){
+        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
+            return embed::greater(l, r);
+        }else{
+            return l > r;
+        }
+    }
+
+    template<class T1, class T2> constexpr bool skalar_less_equal(const T1& l, const T2& r){
+        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
+            return embed::less_equal(l, r);
+        }else{
+            return l <= r;
+        }
+    }
+
+    template<class T1, class T2> constexpr bool skalar_greater_equal(const T1& l, const T2& r){
+        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
+            return embed::greater_equal(l, r);       
+        }else{
+            return l >= r;
+        }
+    }
+
 
     // --------------------------------------------------------------------------------------
     //                    reduction comparisons for cintiguous memory
@@ -655,8 +695,8 @@ namespace embed
     /// @param compare a function that compares them - the function returns true if `compare` is true for all elements
     /// @param Default the default value that should be returned in case the ranges do not have the same number of elements
     /// @return returns the default if the ranges do not have the same size. if they have the same size returns true if the compare function evalues true for all elements
-    template<class T1, class T2>
-    constexpr bool compare(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast, std::function<bool(const T1& l, const T2& r)> compare, bool Default=false){
+    template<class T1, class T2, class Compare>
+    constexpr bool compare(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast, Compare&& compare, bool Default=false){
         if(std::distance(afirst, alast) == std::distance(bfirst, blast)){
             for(; afirst != alast; ++afirst, (void)++bfirst){
                 if(!compare(*afirst, *bfirst)) return false;

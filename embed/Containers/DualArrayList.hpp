@@ -227,14 +227,14 @@ namespace embed
         /// @throws If the assertion level is at least `O1` throws an assertion failure on out of bounds access
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr reference left_at(const UInt i){
-            EMBED_ASSERT_O1(i < this->left_size());    
+            EMBED_ASSERT_O1(embed::less(i, this->left_size()));    
             return *(this->left_begin()+i);
         }
 
         /// @overload 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr const_reference left_at(const UInt i) const {
-            EMBED_ASSERT_O1(i < this->left_size());  
+            EMBED_ASSERT_O1(embed::less(i, this->left_size()));  
             return *(this->left_begin()+i);
         }
 
@@ -245,14 +245,14 @@ namespace embed
         /// @throws If the assertion level is at least `O1` throws an assertion failure on out of bounds access
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr reference right_at(const UInt i){
-            EMBED_ASSERT_O1(i < this->right_size());    
+            EMBED_ASSERT_O1(embed::less(i, this->right_size()));
             return *(this->right_begin()+i);
         }
 
         /// @overload 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr const_reference right_at(const UInt i) const {
-            EMBED_ASSERT_O1(i < this->right_size());  
+            EMBED_ASSERT_O1(embed::less(i, this->right_size()));
             return *(this->right_begin()+i);
         }
 
@@ -263,16 +263,16 @@ namespace embed
         /// @throws If the assertion level is at least `O1` throws an assertion failure on out of bounds access
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr reference left_at(SInt si){
-            EMBED_ASSERT_O1(si < this->left_size());
-            EMBED_ASSERT_O1(-si <= this->left_size());
+            EMBED_ASSERT_O1(embed::less(si, this->left_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-si, this->left_size()));
             return *(((si >= 0) ? this->left_begin() : this->left_end()) + si);
         }
 
         /// @overload 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr const_reference left_at(const SInt si) const {
-            EMBED_ASSERT_O1(si < this->left_size());
-            EMBED_ASSERT_O1(-si <= this->left_size());
+            EMBED_ASSERT_O1(embed::less(si, this->left_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-si, this->left_size()));
             return *(((si >= 0) ? this->left_begin() : this->left_end()) + si);
         }
 
@@ -283,16 +283,16 @@ namespace embed
         /// @throws If the assertion level is at least `O1` throws an assertion failure on out of bounds access
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr reference right_at(SInt si){
-            EMBED_ASSERT_O1(si < this->right_size());
-            EMBED_ASSERT_O1(-si <= this->right_size());
+            EMBED_ASSERT_O1(embed::less(si, this->right_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-si, this->right_size()));
             return *(((si >= 0) ? this->right_begin() : this->right_end()) + si);
         }
 
         /// @overload 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr const_reference right_at(const SInt si) const {
-            EMBED_ASSERT_O1(si < this->right_size());
-            EMBED_ASSERT_O1(-si <= this->right_size());
+            EMBED_ASSERT_O1(embed::less(si, this->right_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-si, this->right_size()));
             return *(((si >= 0) ? this->right_begin() : this->right_end()) + si);
         }
 
@@ -365,7 +365,7 @@ namespace embed
         /// @return a reference to the constructed list element
         template<class... Args>
         reference left_emplace_back(Args&&... args){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             pointer construct_at_addr = &*(this->left_begin() + this->left_size());
             new (construct_at_addr) T(std::forward<Args>(args)...);
             this->_left_size += 1;
@@ -379,7 +379,7 @@ namespace embed
         /// @return a reference to the constructed list element
         template<class... Args>
         reference right_emplace_back(Args&&... args){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             pointer construct_at_addr = &*(this->right_begin() + this->right_size());
             new (construct_at_addr) T(std::forward<Args>(args)...);
             this->_right_size += 1;
@@ -524,108 +524,108 @@ namespace embed
         }
 
         constexpr size_type left_to_index(const left_const_iterator pos) const {
-            EMBED_ASSERT_O1(this->left_begin() <= pos && pos < this->left_end());
+            EMBED_ASSERT_O1(this->left_begin() <= pos && pos <= this->left_end());
             return pos - this->left_begin();
         }
 
         constexpr size_type right_to_index(const right_const_iterator pos) const {
-            EMBED_ASSERT_O1(this->right_begin() <= pos && pos < this->right_end());
+            EMBED_ASSERT_O1(this->right_begin() <= pos && pos <= this->right_end());
             return pos - this->right_begin();
         }
 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr left_iterator left_to_iterator(const UInt pos){
-            EMBED_ASSERT_O1(pos < this->left_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->left_size()));
             return this->left_begin() + pos;
         }
 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr right_iterator right_to_iterator(const UInt pos){
-            EMBED_ASSERT_O1(pos < this->right_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->right_size()));
             return this->right_begin() + pos;
         }
 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr left_iterator left_to_iterator(const SInt pos){
-            EMBED_ASSERT_O1(pos < this->left_size());
-            EMBED_ASSERT_O1(-pos <= this->left_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->left_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-pos, this->left_size()));
             return ((pos >= 0) ? this->left_begin() : this->left_end()) + pos;
         }
 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr right_iterator right_to_iterator(const SInt pos){
-            EMBED_ASSERT_O1(pos < this->right_size());
-            EMBED_ASSERT_O1(-pos <= this->right_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->right_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-pos, this->right_size()));
             return ((pos >= 0) ? this->right_begin() : this->right_end()) + pos;
         }
 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr left_const_iterator left_to_iterator(const UInt pos) const {
-            EMBED_ASSERT_O1(pos < this->left_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->left_size()));
             return this->left_begin() + pos;
         }
 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr right_const_iterator right_to_iterator(const UInt pos) const {
-            EMBED_ASSERT_O1(pos < this->right_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->right_size()));
             return this->right_begin() + pos;
         }
 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr left_const_iterator left_to_iterator(const SInt pos) const {
-            EMBED_ASSERT_O1(pos < this->left_size());
-            EMBED_ASSERT_O1(-pos <= this->left_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->left_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-pos, this->left_size()));
             return ((pos >= 0) ? this->left_begin() : this->left_end()) + pos;
         }
 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr right_const_iterator right_to_iterator(const SInt pos) const {
-            EMBED_ASSERT_O1(pos < this->right_size());
-            EMBED_ASSERT_O1(-pos <= this->right_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->right_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-pos, this->right_size()));
             return ((pos >= 0) ? this->right_begin() : this->right_end()) + pos;
         }
 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr left_const_iterator left_to_const_iterator(const UInt pos) const {
-            EMBED_ASSERT_O1(pos < this->left_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->left_size()));
             return this->left_begin() + pos;
         }
 
         template<class UInt> requires std::is_unsigned_v<UInt>
         constexpr right_const_iterator right_to_const_iterator(const UInt pos) const {
-            EMBED_ASSERT_O1(pos < this->right_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->right_size()));
             return this->right_begin() + pos;
         }
 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr left_const_iterator left_to_const_iterator(const SInt pos) const {
-            EMBED_ASSERT_O1(pos < this->left_size());
-            EMBED_ASSERT_O1(-pos <= this->left_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->left_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-pos, this->left_size()));
             return ((pos >= 0) ? this->left_begin() : this->left_end()) + pos;
         }
 
         template<class SInt> requires std::is_signed_v<SInt>
         constexpr right_const_iterator right_to_const_iterator(const SInt pos) const {
-            EMBED_ASSERT_O1(pos < this->right_size());
-            EMBED_ASSERT_O1(-pos <= this->right_size());
+            EMBED_ASSERT_O1(embed::less_equal(pos, this->right_size()));
+            EMBED_ASSERT_O1(embed::less_equal(-pos, this->right_size()));
             return ((pos >= 0) ? this->right_begin() : this->right_end()) + pos;
         }
 
         constexpr left_iterator left_unconst(const left_const_iterator pos) {
             EMBED_ASSERT_O1(this->left_begin() <= pos);
-            EMBED_ASSERT_O1(pos < this->left_end());
+            EMBED_ASSERT_O1(pos <= this->left_end());
             return this->left_begin() + this->left_to_index(pos);
         }
 
         constexpr right_iterator right_unconst(const right_const_iterator pos) {
             EMBED_ASSERT_O1(this->right_begin() <= pos);
-            EMBED_ASSERT_O1(pos < this->right_end());
+            EMBED_ASSERT_O1(pos <= this->right_end());
             return this->right_begin() + this->right_to_index(pos);
         }
 
         template<std::convertible_to<T> Ta>
         left_iterator left_insert(const left_const_iterator pos, const Ta& value){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             for(auto i = this->left_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_left_size += 1;
             left_iterator pos_ = left_unconst(pos);
@@ -635,7 +635,7 @@ namespace embed
 
         template<std::convertible_to<T> Ta>
         right_iterator right_insert(const right_const_iterator pos, const Ta& value){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             for(auto i = this->right_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_right_size += 1;
             right_iterator pos_ = right_unconst(pos);
@@ -645,7 +645,7 @@ namespace embed
 
         template<std::convertible_to<T> Ta>
         left_iterator left_insert(const left_const_iterator pos, Ta&& value){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             for(auto i = this->left_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_left_size += 1;
             left_iterator pos_ = left_unconst(pos);
@@ -655,7 +655,7 @@ namespace embed
 
         template<std::convertible_to<T> Ta>
         right_iterator right_insert(const right_const_iterator pos, Ta&& value){
-            EMBED_ASSERT_O1(this->full());
+            EMBED_ASSERT_O1(!this->full());
             for(auto i = this->right_end(); i != pos; --i) *i = std::move(*(i-1));
             this->_right_size += 1;
             right_iterator pos_ = right_unconst(pos);
@@ -667,7 +667,7 @@ namespace embed
         requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         left_iterator left_insert(const left_const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
-            EMBED_ASSERT_O1(dist > this->reserve());
+            EMBED_ASSERT_O1(embed::less_equal(dist, this->reserve()));
             for(auto i = this->left_end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             left_iterator insertIterator = this->left_unconst(pos);
             for(; first != last; ++first, (void)++insertIterator) *insertIterator = *first;
@@ -679,7 +679,7 @@ namespace embed
         requires std::convertible_to<typename std::iterator_traits<Itr>::value_type, T>
         right_iterator right_insert(const right_const_iterator pos, Itr first, Itr last){
             size_type dist = std::distance(first, last);
-            EMBED_ASSERT_O1(dist > this->reserve());
+            EMBED_ASSERT_O1(embed::less_equal(dist, this->reserve()));
             for(auto i = this->right_end(); i != pos; --i) *(i + dist - 1) = std::move(*(i - 1));
             right_iterator insertIterator = this->right_unconst(pos);
             for(; first != last; ++first, (void)++insertIterator) *insertIterator = *first;
@@ -895,9 +895,9 @@ namespace embed
 
         left_iterator left_erase(left_const_iterator first, left_const_iterator last){
             EMBED_ASSERT_O1(this->left_begin() <= first);
-            EMBED_ASSERT_O1(first < this->left_end());
+            EMBED_ASSERT_O1(first <= this->left_end());
             EMBED_ASSERT_O1(this->left_begin() <= last);
-            EMBED_ASSERT_O1(last < this->left_end());
+            EMBED_ASSERT_O1(last <= this->left_end());
             left_iterator destItr = this->left_unconst(first);
             left_iterator sourceItr = this->left_unconst(last);
             for(; (destItr != last) && (sourceItr != this->left_end()); ++destItr, (void)++sourceItr){
@@ -916,9 +916,9 @@ namespace embed
 
         right_iterator right_erase(right_const_iterator first, right_const_iterator last){
             EMBED_ASSERT_O1(this->right_begin() <= first);
-            EMBED_ASSERT_O1(first < this->right_end());
+            EMBED_ASSERT_O1(first <= this->right_end());
             EMBED_ASSERT_O1(this->right_begin() <= last);
-            EMBED_ASSERT_O1(last < this->right_end());
+            EMBED_ASSERT_O1(last <= this->right_end());
             right_iterator destItr = this->right_unconst(first);
             right_iterator sourceItr = this->right_unconst(last);
             for(; (destItr != last) && (sourceItr != this->right_end()); ++destItr, (void)++sourceItr){

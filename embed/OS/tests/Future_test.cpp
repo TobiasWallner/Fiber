@@ -128,7 +128,7 @@ namespace embed
         }// promise dies without setting value
 
         TEST_TRUE(f.is_broken_promise());
-        TEST_THROW(auto value = f.get());
+        TEST_THROW((void)f.get());
         TEST_EQUAL(f.get_if(), nullptr);
 
         embed::cout << "  finished: " << __func__ << embed::endl;

@@ -83,7 +83,7 @@ namespace embed
             TEST_EQUAL(const_ref_arr.begin(), const_ref_arr.end());
             TEST_EQUAL(arr.cbegin(), arr.cend());
         }
-    
+        
         {
             ArrayList<int, 6> arr;
             arr.assign(/*count*/5, /*value*/188);
