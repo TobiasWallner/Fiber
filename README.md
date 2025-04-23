@@ -8,6 +8,8 @@ Version: early alpha
 
 Copyright © Tobias Wallner
 
+[![gcc-build-and-test](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_gcc.yml/badge.svg)](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_gcc.yml) [![clang-build-and-test](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_clang.yml/badge.svg)](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_clang.yml)
+
 ## ⚡ Motivation
 
 Modern embedded systems demand more than just correctness—they demand **performance**, **dependability**, **Real-Time** and **predictability**.
@@ -256,7 +258,7 @@ Please refere to your IDE vendor on how to include libraries.
 
 embed is dual-licensed under a Qt-style model:
 
-See [`LICENSE`](./LICENSE)
+See [`LICENSE`](https://github.com/TobiasWallner/embedOS/blob/main/LICENSE)
 
 ### ✅ Open Source License (MIT)
 
