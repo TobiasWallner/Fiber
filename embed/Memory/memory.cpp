@@ -11,7 +11,7 @@ namespace embed{
         }
     }
 
-    void _async_memcpy(void* dest, const void* source, size_t count, Promise<int> promise){
+    void _async_memcpy(void* dest, const void* source, size_t count, [[maybe_unused]]Promise<int> promise){
         _memcpy(dest, source, count);
     }
 
