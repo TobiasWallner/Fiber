@@ -15,12 +15,12 @@ deploy-docs:
 
 .PHONY: build-test
 build-test:
-	cmake -S . -B build -G "Ninja Multi-Config" build -DEMBED_COMPILE_TESTS=ON
+	cmake -S . -B build -G "Ninja Multi-Config" build -DEMBED_COMPILE_TESTS=ON -DEMBED_CTEST=ON
 	cmake --build build --config Release
 
 .PHONY: test
 test: build-test
-	cd build && ctest -C Release -V
+	ctest --test-dir build -C Release -V
 
 
 .PHONY: test
@@ -28,5 +28,6 @@ test-debug:
 	cmake -S . -B build -G "Ninja Multi-Config" -DEMBED_COMPILE_TESTS=ON
 	cmake --build build --config Debug
 
+.PHONY: clean
 clean:
 	cmake --build build --target clean

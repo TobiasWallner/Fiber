@@ -3,6 +3,7 @@
 #                                Compile Tests
 # ================================================================================
 
+option(EMBED_CTEST "Enables testing with ctest on local host machines" OFF)
 option(EMBED_COMPILE_TESTS "If ON compiles the test sources" OFF)
 
 # ================================================================================

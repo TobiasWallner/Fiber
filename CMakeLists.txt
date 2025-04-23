@@ -46,6 +46,7 @@ target_compile_options(embed PUBLIC
     -Os
     -fcoroutines
     -Wall
+    -Wextra
     -Wsign-compare
     -fmax-errors=3
 )
@@ -54,19 +55,20 @@ target_compile_options(embed PUBLIC
 #                                   TESTS
 # ================================================================================
 
-if(EMBED_COMPILE_TESTS)
 
-# Enable testing
-enable_testing()
+if(EMBED_CTEST)
 
-# Add test source
-add_executable(test_runner embed/test/test_main.cpp)
+    # Enable testing
+    enable_testing()
 
-# Link to your embed library (adjust as needed)
-target_link_libraries(test_runner PRIVATE embed)
+    # Add test source
+    add_executable(test_runner embed/test/test_main.cpp)
 
-# Register with CTest
-add_test(NAME embedOS_test COMMAND test_runner)
+    # Link to your embed library (adjust as needed)
+    target_link_libraries(test_runner PRIVATE embed)
+
+    # Register with CTest
+    add_test(NAME embedOS_test COMMAND test_runner)
 
 endif()
 

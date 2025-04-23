@@ -17,6 +17,7 @@ This means you do not manully have to turn them `OFF`.
 | Definition | Description | Default value |
 |------------|-------------|---------------|
 | **Tests** | | |
+| `EMBED_CTEST` | Inables testing with ctest on local host machines | `OFF` |
 | `EMBED_COMPILE_TESTS` | If `ON` compiles the test sources | `OFF` |
 | **System Stubs** | | |
 | `EMBED_USE_EMBED_SYS_STUBS` | Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size | `OFF` |

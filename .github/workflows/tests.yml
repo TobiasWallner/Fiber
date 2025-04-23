@@ -1,0 +1,49 @@
+name: build-and-test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+
+    env:
+      BUILD_TYPE: Release
+
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install ninja-build cmake
+
+        if [ "${{ matrix.compiler }}" = "clang" ]; then
+          sudo apt install clang libc++-dev libc++abi-dev
+        else
+          sudo apt install g++ # Just in case
+        fi
+
+    - name: Set up compiler
+      run: |
+        if [ "${{ matrix.compiler }}" = "clang" ]; then
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+        else
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "CXX=g++" >> $GITHUB_ENV
+        fi
+
+    - name: Configure with CMake
+      run: cmake -S . -B build -G "Ninja Multi-Config" build -DEMBED_COMPILE_TESTS=ON -DEMBED_CTEST=ON
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Run CTest
+      run: ctest --test-dir build -C Release
