@@ -300,7 +300,7 @@ namespace embed{
     };
 
     template<class ReturnType>
-    struct CoroutinePromise : public CoroutinePromiseSize, public CoroutineNode{
+    class CoroutinePromise : public CoroutinePromiseSize, public CoroutineNode{
     private:
         ReturnType _return_value;
         

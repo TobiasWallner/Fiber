@@ -43,13 +43,17 @@ target_compile_features(embed PUBLIC
 )
 
 target_compile_options(embed PUBLIC
-    -Os
-    -fcoroutines
+    -O3
     -Wall
     -Wextra
     -Wsign-compare
-    -fmax-errors=3
+    #-fmax-errors=3
 )
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(embed PUBLIC -fcoroutines)
+endif()
+
 
 # ================================================================================
 #                                   TESTS

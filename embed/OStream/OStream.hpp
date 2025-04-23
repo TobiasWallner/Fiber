@@ -571,7 +571,7 @@ namespace embed{
         constexpr FormatInt(value_type value, const FormatIntParams& params) : FormatIntParams(params), _value(value){}
 
         template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
-        constexpr FormatInt(Int value, const FormatStrParams& params) : FormatStrParams(params), _value(static_cast<value_type>(value)){}
+        constexpr FormatInt(Int value, const FormatStrParams& params) : FormatIntParams(params), _value(static_cast<value_type>(value)){}
     public:
 
         static constexpr FormatInt like(value_type value, const FormatIntParams& params){return FormatInt(value, params);}
@@ -722,10 +722,10 @@ namespace embed{
         constexpr FormatFloat(Float value, const FormatFloatParams& params) : FormatFloatParams(params), _value(static_cast<float>(value)){}
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        constexpr FormatFloat(Float value, const FormatIntParams& params) : FormatIntParams(params), _value(static_cast<float>(value)){}
+        constexpr FormatFloat(Float value, const FormatIntParams& params) : FormatFloatParams(params), _value(static_cast<float>(value)){}
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
-        constexpr FormatFloat(Float value, const FormatStrParams& params) : FormatIntParams(params), _value(static_cast<float>(value)){}
+        constexpr FormatFloat(Float value, const FormatStrParams& params) : FormatFloatParams(params), _value(static_cast<float>(value)){}
     public:
 
         template <typename Float, typename std::enable_if<std::is_floating_point<Float>::value, int>::type = 0>
