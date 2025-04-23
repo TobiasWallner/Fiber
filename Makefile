@@ -8,7 +8,6 @@ deploy-docs:
 	git stash pop
 	git commit -m "deploy-docs"
 	git push origin gh-pages --force
-	git switch main
 
 
 .PHONY: build-test
