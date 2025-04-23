@@ -37,10 +37,10 @@ This means you do not manully have to turn them `OFF`.
 | `EMBED_FMT_BOOL_TO_TEXT` | If `EMBED_FMT_MINIMAL` is `ON`: Enables bool formating as text instead of numbers. | `ON` |
 | Number Formating | | |
 | `EMBED_FMT_PAD_SIGN` | If `EMBED_FMT_MINIMAL` is `ON`: Enables sign padding. | `OFF` |
-| `EMBED_FMT_DOT_AS_COMMA` | If `EMBED_FMT_MINIMAL` is `ON`: Use dot '.' as comma and ',' as thousands. |"` ON` |
+| `EMBED_FMT_DOT_AS_COMMA` | If `EMBED_FMT_MINIMAL` is `ON`: Use dot '.' as comma and ',' as thousands. | `ON` |
 | `EMBED_FMT_THOUSANDS` | If `EMBED_FMT_MINIMAL` is `ON`: Enables the use of thousands. Depends on `EMBED_FMT_DOT_AS_COMMA`. | `OFF` |
 | `EMBED_FMT_FORCE_SIGN` | If `EMBED_FMT_MINIMAL` is `ON`: forces a sign, even if the number is positive. | `OFF` |
-| `EMBED_FMT_FORCE_COMMA` | If `EMBED_FMT_MINIMAL` is `ON`: if set, makes sure that a comma is always printed for floating point numbers. |"` ON` |
+| `EMBED_FMT_FORCE_COMMA` | If `EMBED_FMT_MINIMAL` is `ON`: if set, makes sure that a comma is always printed for floating point numbers. | `ON` |
 | `EMBED_FMT_FORCE_DECIMALS` | If `EMBED_FMT_MINIMAL` is `ON`: if set will make sure that the set ammount of decimals will always be printed, even if zero. | `OFF` |
 | `EMBED_FMT_FORCE_SIGN` | If `EMBED_FMT_MINIMAL` is `ON`: forces a sign, even if the number is positive. | `OFF` |
 | Float Formating | | |
