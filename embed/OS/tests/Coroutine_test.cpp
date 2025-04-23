@@ -2,7 +2,7 @@
 #include "Coroutine_test.hpp"
 
 #include <embed/OS/Coroutine.hpp>
-#include <embed/test/test.hpp>
+#include <embed/TestFramework/TestFramework.hpp>
 #include <embed/Memory/Allocator.hpp>
 #include <embed/OS/Exit.hpp>
 #include <embed/OS/Future.hpp>
@@ -13,7 +13,9 @@
 #include <embed/OS/embed_await.hpp>
 
 namespace{
-    void Coroutine_SimpleTask_test(){
+    embed::TestResult Coroutine_SimpleTask_test(){
+        TEST_START;
+
         embed::StaticLinearAllocatorDebug<1024> allocator;
         embed::coroutine_frame_allocator = &allocator;
 
@@ -53,10 +55,11 @@ namespace{
         TEST_EQUAL(allocator.nalloc(), allocator.nfree());
         TEST_TRUE(allocator.empty());
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
-    void Coroutine_nested_coroutine(){
+    embed::TestResult Coroutine_nested_coroutine(){
+        TEST_START;
         class CoroutineSuite{
             public:
             int result = 0;
@@ -90,11 +93,12 @@ namespace{
         TEST_EQUAL(allocator.nalloc(), allocator.nfree());
         TEST_TRUE(allocator.empty());
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
 
-    void Coroutine_waiting_on_Future_test(){
+    embed::TestResult Coroutine_waiting_on_Future_test(){
+        TEST_START;
         embed::StaticLinearAllocatorDebug<1024> allocator;
         embed::coroutine_frame_allocator = &allocator;
 
@@ -149,11 +153,12 @@ namespace{
         TEST_EQUAL(allocator.nalloc(), allocator.nfree());
         TEST_TRUE(allocator.empty());
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
-        
+        TEST_END;
     }
 
-    void Coroutine_test_signal(){
+    embed::TestResult Coroutine_test_signal(){
+        TEST_START;
+
         using namespace std::chrono_literals;
 
         embed::StaticLinearAllocatorDebug<1024> allocator;
@@ -238,17 +243,19 @@ namespace{
 
         TEST_TRUE(allocator.empty()); // check for memory leaks
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
 }// private namespace
 
-void embed::Coroutine_test(){
-    embed::cout << "started: " << __func__ << '{' << embed::endl;
-    Coroutine_SimpleTask_test();
-    Coroutine_nested_coroutine();
-    Coroutine_waiting_on_Future_test();
-    Coroutine_test_signal();
-    embed::cout << "  finished: " << __func__ << embed::endl;
-    embed::cout << '}' << embed::endl;
+namespace embed{
+    embed::TestResult Coroutine_test(){
+        TEST_GROUP;
+
+        return embed::TestResult()
+            | Coroutine_SimpleTask_test
+            | Coroutine_nested_coroutine
+            | Coroutine_waiting_on_Future_test
+            | Coroutine_test_signal;
+    }
 }

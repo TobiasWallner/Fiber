@@ -11,7 +11,7 @@
 #include <concepts>
 
 // embed
-#include <embed/Core/Int.hpp>
+#include <embed/Core/functional.hpp>
 #include <embed/Exceptions/Exceptions.hpp>
 #include <embed/OStream/OStream.hpp>
 
@@ -629,170 +629,13 @@ namespace embed
     }
 
     // --------------------------------------------------------------------------------------
-    //                    basic comparisons of scalar types
-    // --------------------------------------------------------------------------------------
-
-    template<class T1, class T2> constexpr bool skalar_equal(const T1& l, const T2& r){
-        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
-            return embed::equal(l, r);
-        }else{
-            return l == r;
-        }
-    }
-
-    template<class T1, class T2> constexpr bool skalar_not_equal(const T1& l, const T2& r){
-        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
-            return embed::not_equal(l, r);
-        }else{
-            return l != r;
-        }
-    }
-
-    template<class T1, class T2> constexpr bool skalar_less(const T1& l, const T2& r){
-        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
-            return embed::less(l, r);
-        }else{
-            return l < r;
-        }
-    }
-
-    template<class T1, class T2> constexpr bool skalar_greater(const T1& l, const T2& r){
-        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
-            return embed::greater(l, r);
-        }else{
-            return l > r;
-        }
-    }
-
-    template<class T1, class T2> constexpr bool skalar_less_equal(const T1& l, const T2& r){
-        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
-            return embed::less_equal(l, r);
-        }else{
-            return l <= r;
-        }
-    }
-
-    template<class T1, class T2> constexpr bool skalar_greater_equal(const T1& l, const T2& r){
-        if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>){
-            return embed::greater_equal(l, r);       
-        }else{
-            return l >= r;
-        }
-    }
-
-
-    // --------------------------------------------------------------------------------------
-    //                    reduction comparisons for cintiguous memory
-    // --------------------------------------------------------------------------------------
-
-    /// @brief compares the ranges given by closed-open iterators
-    /// @tparam T1 value type of the left ranges
-    /// @tparam T2 value type of the right ranges
-    /// @param afirst start iterator of the left range
-    /// @param alast end iterator of the left range
-    /// @param bfirst start iterator of the right range
-    /// @param blast end iterator of the right range
-    /// @param compare a function that compares them - the function returns true if `compare` is true for all elements
-    /// @param Default the default value that should be returned in case the ranges do not have the same number of elements
-    /// @return returns the default if the ranges do not have the same size. if they have the same size returns true if the compare function evalues true for all elements
-    template<class T1, class T2, class Compare>
-    constexpr bool compare(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast, Compare&& compare, bool Default=false){
-        if(std::distance(afirst, alast) == std::distance(bfirst, blast)){
-            for(; afirst != alast; ++afirst, (void)++bfirst){
-                if(!compare(*afirst, *bfirst)) return false;
-            }
-            return true;
-        }
-        return Default;
-    }
-
-    /// @brief returns true if both ranges are equal in value and count 
-    template<class T1, class T2>
-    constexpr bool equal(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast){
-        return compare<T1, T2>(afirst, alast, bfirst, blast, skalar_equal<T1, T2>);
-    }
-
-    /// @brief returns true if the ranges are not equal in value nor count
-    template<class T1, class T2>
-    constexpr bool not_equal(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast){
-        return compare<T1, T2>(afirst, alast, bfirst, blast, skalar_not_equal<T1, T2>, true);
-    }
-
-    /// @brief returns true if the ranges are equal in count and the left ranges value are all smaller than the right ones 
-    template<class T1, class T2>
-    constexpr bool less(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast){
-        return compare<T1, T2>(afirst, alast, bfirst, blast, skalar_less<T1, T2>);
-    }
-
-    
-    /// @brief returns true if the ranges are equal in count and the left ranges value are all greater than the right ones
-    template<class T1, class T2>
-    constexpr bool greater(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast){
-        return compare<T1, T2>(afirst, alast, bfirst, blast, skalar_greater<T1, T2>);
-    }
-
-    /// @brief returns true if the ranges are equal in count and the left ranges value are all less or equal to the right ones 
-    template<class T1, class T2>
-    constexpr bool less_equal(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast){
-        return compare<T1, T2>(afirst, alast, bfirst, blast, skalar_less_equal<T1, T2>);
-    }
-
-    
-    /// @brief returns true if the ranges are equal in count and the left ranges value are all greater or equal to the right ones 
-    template<class T1, class T2>
-    constexpr bool greater_equal(const T1* afirst, const T1* alast, const T2* bfirst, const T2* blast){
-        return compare<T1, T2>(afirst, alast, bfirst, blast, skalar_greater_equal<T1, T2>);
-    }
-
-    // --------------------------------------------------------------------------------------
-    //                        comparisons for StaticArrays
-    // --------------------------------------------------------------------------------------
-    
-    /// @brief returns `true` if both containers have the same number of and value of elements
-    template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
-        return equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
-    }
-
-    /// @brief returns `true` if both containers do not have the same number of and value of elements
-    template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool not_equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
-        return not_equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
-    }
-
-    /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise lesser ones for all entries
-    template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool less(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
-        return less<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
-    }
-
-    /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise greater ones for all entries
-    template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool greater(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
-        return greater<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
-    }
-
-    /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise lesser or equal ones for all entries
-    template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool less_equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
-        return less_equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
-    }
-
-    /// @brief returns `true` if both containers have the same number of elements and the left one has point-wise greater or equal ones for all entries
-    template<class T1, class T2, std::size_t N1, std::size_t N2>
-    inline bool greater_equal(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
-        return greater_equal<T1, T2>(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
-    }
-
-
-    // --------------------------------------------------------------------------------------
     //                    pointwise comparisons for cintiguous memory
     // --------------------------------------------------------------------------------------
 
     /// @brief performs a point wise comparison of the ArrayList
     /// @returns a boolean array list of the intersection of both lists with the result of the compare function
-    template<class T, std::size_t N1, std::size_t N2>
-    ArrayList<bool, (N1 < N2) ? N1 : N2> point_wise_compare(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs, std::function<bool(const T& l, const T& r)> compare){
+    template<class T, std::size_t N1, std::size_t N2, class F>
+    ArrayList<bool, (N1 < N2) ? N1 : N2> point_wise_compare(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs, F&& compare){
         ArrayList<bool, (N1 < N2) ? N1 : N2> result;
         std::size_t limit = (lhs.size() < rhs.size()) ? lhs.size() : rhs.size();
         for(std::size_t i = 0; i < limit; ++i){
@@ -804,75 +647,86 @@ namespace embed
     /// @brief returns the point wise equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
     inline auto point_wise_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_equal<T, T>);
+        return point_wise_compare<T, N1, N2>(lhs, rhs, std::equal_to<T>{});
     }
 
     /// @brief returns the point wise un-equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
     inline auto point_wise_not_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_not_equal<T, T>);
+        return point_wise_compare<T, N1, N2>(lhs, rhs, std::not_equal_to<T>{});
     }
 
     /// @brief returns the point wise less list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
     inline auto point_wise_less(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_less<T, T>);
+        return point_wise_compare<T, N1, N2>(lhs, rhs, std::less<T>{});
     }
 
     /// @brief returns the point wise greater list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
     inline auto point_wise_greater(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_greater<T, T>);
+        return point_wise_compare<T, N1, N2>(lhs, rhs, std::greater<T>{});
     }
 
     /// @brief returns the point wise less equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
     inline auto point_wise_less_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_less_equal<T, T>);
+        return point_wise_compare<T, N1, N2>(lhs, rhs, std::less_equal<T>{});
     }
 
     /// @brief returns the point wise greater equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
     inline auto point_wise_greater_equal(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_compare<T, N1, N2>(lhs, rhs, skalar_greater_equal<T, T>);
+        return point_wise_compare<T, N1, N2>(lhs, rhs, std::greater_equal<T>{});
     }
 
     // ---------- comparison operators -----------
 
     /// @brief returns the point wise equal list of the left and right hand side
-    template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator==(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_equal<T, N1, N2>(lhs, rhs);
+    template<class T1, class T2, std::size_t N1, std::size_t N2>
+    inline bool operator==(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
+        if(lhs.size() == rhs.size()){
+            auto lhsItr = lhs.begin();
+            auto rhsItr = rhs.begin();
+            for(; lhsItr != lhs.end() && rhsItr != rhs.end(); ++lhsItr, ++rhsItr){
+                if(embed::not_equal(*lhsItr, *rhsItr)){
+                    return false;
+                }
+            }
+            return true;
+        }else{
+            return false;
+        }
     }
 
     /// @brief returns the point wise un-equal list of the left and right hand side
     template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator!=(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_not_equal<T, N1, N2>(lhs, rhs);
+    inline bool operator!=(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
+        return !(lhs == rhs);
     }
 
     /// @brief returns the point wise less list of the left and right hand side
-    template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator<(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_less<T, N1, N2>(lhs, rhs);
+    template<class T1, class T2, std::size_t N1, std::size_t N2>
+    inline bool operator<(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
+        return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), embed::less<T1, T2>);
     }
 
     /// @brief returns the point wise greater list of the left and right hand side
-    template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator>(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_greater<T, N1, N2>(lhs, rhs);
+    template<class T1, class T2, std::size_t N1, std::size_t N2>
+    inline bool operator>(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
+        return (rhs < lhs);
     }
 
     /// @brief returns the point wise less equal list of the left and right hand side
-    template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator<=(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_less_equal<T, N1, N2>(lhs, rhs);
+    template<class T1, class T2, std::size_t N1, std::size_t N2>
+    inline bool operator<=(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
+        return !(lhs > rhs);
     }
 
     /// @brief returns the point wise greater equal list of the left and right hand side
-    template<class T, std::size_t N1, std::size_t N2>
-    inline auto operator>=(const ArrayList<T, N1>& lhs, const ArrayList<T, N2>& rhs){
-        return point_wise_greater_equal<T, N1, N2>(lhs, rhs);
+    template<class T1, class T2, std::size_t N1, std::size_t N2>
+    inline bool operator>=(const ArrayList<T1, N1>& lhs, const ArrayList<T2, N2>& rhs){
+        return !(lhs < rhs);
     }
 
     // --------------- reduction operations ---------------

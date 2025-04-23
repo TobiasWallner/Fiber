@@ -5,14 +5,16 @@
 
 //embed
 #include <embed/OS/Clock.hpp>
-#include <embed/test/test.hpp>
+#include <embed/TestFramework/TestFramework.hpp>
 #include "Clock_test.hpp"
 
 
 
 namespace embed{
 
-    static void ClockTick_test_construction(){
+    static embed::TestResult ClockTick_test_construction(){
+        TEST_START;
+
         {// natural construction
             ClockTick<uint16_t> tick(uint8_t(100));
             TEST_EQUAL(tick.value, 100);
@@ -42,9 +44,13 @@ namespace embed{
             ClockTick<uint32_t, 1000-1> tick(-1);
             TEST_EQUAL(tick.value, 999);
         }
+
+        TEST_END;
     }
 
-    static void ClockTick_test_addition(){
+    static embed::TestResult ClockTick_test_addition(){
+        TEST_START;
+
         {// natural overflow
             ClockTick<uint32_t> a(455UL);
             ClockTick<uint32_t> b(32165UL);
@@ -77,9 +83,13 @@ namespace embed{
             ClockTick<uint32_t, 987-1> b(800UL);
             TEST_EQUAL(a + b, (455UL + 800UL) % 987);
         }
+
+        TEST_END;
     }
 
-    static void ClockTick_test_subtraction(){
+    static embed::TestResult ClockTick_test_subtraction(){
+        TEST_START;
+
         {// natural overflow subtraction
             ClockTick<uint8_t> a(50UL);
             ClockTick<uint8_t> b(18UL);
@@ -106,9 +116,12 @@ namespace embed{
             expected += 100;
             TEST_EQUAL(b - a, expected);
         }
+
+        TEST_END;
     }
 
-    static void ClockTest_negation(){
+    static embed::TestResult ClockTest_negation(){
+        TEST_START;
         {
             ClockTick<uint16_t, 1024-1> v(577UL);
             TEST_EQUAL(-v, 1024UL - 577UL);
@@ -125,9 +138,11 @@ namespace embed{
             ClockTick<uint8_t> v(56UL);
             TEST_EQUAL(-v, 256UL - 56UL);
         }
+        TEST_END;
     }
 
-    static void ClockTick_test_comparison(){
+    static embed::TestResult ClockTick_test_comparison(){
+        TEST_START;
         // test <=
         for(unsigned int i : std::views::iota(0, 256)){
             for(unsigned int j : std::views::iota(i, i+127)){
@@ -172,23 +187,28 @@ namespace embed{
         TEST_NOT_SMALLER((ClockTick<uint32_t, 1000-1>(0UL)), (ClockTick<uint32_t, 1000-1>(0UL)));
         TEST_NOT_SMALLER((ClockTick<uint32_t, 1000-1>(1UL)), (ClockTick<uint32_t, 1000-1>(0UL)));
         TEST_NOT_SMALLER((ClockTick<uint32_t, 1000-1>(999UL)), (ClockTick<uint32_t, 1000-1>(510UL)));
-        
+        TEST_END
     }
 
-    static void Duration_test_construction(){
+    static embed::TestResult Duration_test_construction(){
+        TEST_START;
         embed::Duration<uint32_t, std::nano, 1024> d;
+        TEST_END;
     }
 
-    static void Duration_test_std_integration(){
+    static embed::TestResult Duration_test_std_integration(){
+        TEST_START;
         embed::Duration<uint32_t, std::nano, 1024> d(5);
         const auto a = d + 1ns; // TODO: integrate std::numeric_literal into embed::Duration operators.
         TEST_EQUAL(a.count(), 6);
+        TEST_END;
     }
 
 
     uint32_t get_timer_count(){return 1UL;}
 
-    static void Clock_template_instantiation_and_time_point(){
+    static embed::TestResult Clock_template_instantiation_and_time_point(){
+        TEST_START;
 
         using MyClock = Clock<uint32_t, std::micro, get_timer_count>;
 
@@ -198,26 +218,22 @@ namespace embed{
         TimePoint t2(33us);
 
         TEST_SMALLER(t1, t2);
+        
+        TEST_END;
     }
 
-    void ClockTick_test(){
+    embed::TestResult ClockTick_test(){
+        TEST_GROUP;
         
-        ClockTick_test_construction();
-        ClockTick_test_addition();
-        ClockTick_test_subtraction();
-        ClockTest_negation();
-        ClockTick_test_comparison();
-
-        embed::cout << "============= finished ClockTicks test =============" << embed::endl;
-
-        Duration_test_construction();
-        Duration_test_std_integration();
-
-        embed::cout << "============= finished Duration test =============" << embed::endl;
-
-        Clock_template_instantiation_and_time_point();
-
-        embed::cout << "============= finished Clock/Timepoint test =============" << embed::endl;
+        return embed::TestResult()
+            | ClockTick_test_construction
+            | ClockTick_test_addition
+            | ClockTick_test_subtraction
+            | ClockTest_negation
+            | ClockTick_test_comparison
+            | Duration_test_construction
+            | Duration_test_std_integration
+            | Clock_template_instantiation_and_time_point;
 
     }
 

@@ -1067,7 +1067,7 @@ EXCLUDE_SYMLINKS       = NO
 # certain files from those directories.
 #
 # Note that the wildcards are matched against the file with absolute path, so to
-# exclude all test directories for example use the pattern */test/*
+# exclude all test directories for example use the pattern */TestFramework/*
 
 EXCLUDE_PATTERNS       =
 

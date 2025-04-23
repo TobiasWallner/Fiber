@@ -1,6 +1,8 @@
 #pragma once
 
+#include <embed/TestFramework/TestFramework.hpp>
+
 namespace embed
 {
-    void Coroutine_test();    
+    embed::TestResult Coroutine_test();    
 } // namespace embed

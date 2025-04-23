@@ -1,6 +1,8 @@
 #pragma once
 
+#include <embed/TestFramework/TestFramework.hpp>
+
 namespace embed
 {
-    void ArrayList_test();
+    embed::TestResult ArrayList_test();
 } // namespace embed

@@ -2,12 +2,14 @@
 
 #include <embed/OS/Future.hpp>
 #include <embed/OStream/OStream.hpp>
-#include <embed/test/test.hpp>
+#include <embed/TestFramework/TestFramework.hpp>
 
 namespace embed
 {
 
-    static void make_future_promise_test(){
+    static embed::TestResult make_future_promise_test(){
+        TEST_START;
+
         auto [future, promise] = embed::make_future_promise<int>();
 
         TEST_TRUE(future.is_waiting());
@@ -18,11 +20,12 @@ namespace embed
         TEST_TRUE(promise.is_connected_to(future));
         TEST_TRUE(future.is_connected_to(promise));
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
-    static void promise_set_value_test(){
-        
+    static embed::TestResult promise_set_value_test(){
+        TEST_START;
+
         auto [future, promise] = embed::make_future_promise<int>();
 
         TEST_TRUE(future.is_waiting());
@@ -41,11 +44,12 @@ namespace embed
         TEST_EQUAL(future.get(), 5);
         TEST_EQUAL(future.await_resume().value(), 5);
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
-    static void promise_assign_value_test(){
-        
+    static embed::TestResult promise_assign_value_test(){
+        TEST_START;
+
         auto [future, promise] = embed::make_future_promise<int>();
 
         TEST_TRUE(future.is_waiting());
@@ -64,11 +68,12 @@ namespace embed
         TEST_EQUAL(future.get(), 5);
         TEST_EQUAL(future.await_resume().value(), 5);
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
-    static void handover_test(){
-        
+    static embed::TestResult handover_test(){
+        TEST_START;
+
         // volatile to prevent the compiler from folding variables
         volatile Future<int> fut;
         volatile Promise<int> pro;
@@ -109,10 +114,11 @@ namespace embed
         TEST_FALSE(p.is_connected_to(future));
         TEST_TRUE(p.is_connected_to(f));
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
-    static void broken_promise_test(){
+    static embed::TestResult broken_promise_test(){
+        TEST_START;
 
         embed::Future<int> f;
         TEST_TRUE(f.is_broken_promise());
@@ -131,18 +137,17 @@ namespace embed
         TEST_THROW((void)f.get());
         TEST_EQUAL(f.get_if(), nullptr);
 
-        embed::cout << "  finished: " << __func__ << embed::endl;
+        TEST_END;
     }
 
-    void Future_test(){
-        embed::cout << "start: " << __func__ << embed::endl;
+    embed::TestResult Future_test(){
+        TEST_GROUP;
 
-        make_future_promise_test();
-        promise_set_value_test();
-        promise_assign_value_test();
-        handover_test();
-        broken_promise_test();
-
-        embed::cout << "  finished: " <<  __func__ << embed::endl;
+        return TestResult()
+            | make_future_promise_test
+            | promise_set_value_test
+            | promise_assign_value_test
+            | handover_test
+            | broken_promise_test;
     }
 } // namespace embed

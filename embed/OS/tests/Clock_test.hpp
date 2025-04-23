@@ -1,5 +1,7 @@
 #pragma once
 
+#include <embed/TestFramework/TestFramework.hpp>
+
 namespace embed{
 
     /**
@@ -7,6 +9,6 @@ namespace embed{
      * 
      * Depends on `OStream`, `embed::cerr` and `embed::cout`.
      */
-    void ClockTick_test();
+    embed::TestResult ClockTick_test();
     
 } // namespace embed

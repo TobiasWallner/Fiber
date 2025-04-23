@@ -20,7 +20,7 @@ build-test:
 
 .PHONY: test
 test: build-test
-	./build/Release/embed_test
+	cd build && ctest -C Release -V
 
 
 .PHONY: test

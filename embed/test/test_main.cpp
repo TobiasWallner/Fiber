@@ -3,10 +3,8 @@
 #include <iostream>
 
 // embed
+#include "test.hpp"
 #include <embed/OStream/OStream.hpp>
-#include <embed/Containers/tests/ArrayList_test.hpp>
-#include <embed/Containers/tests/DualArrayList_test.hpp>
-
 
 class StdOut : public embed::OStream{
     public:
@@ -22,24 +20,13 @@ class StdErr : public embed::OStream{
     inline void write(const char* str, size_t len) override{std::cerr.write(str, len);}
 };
 
-
 int main(){
-
     // redirect embed output streams
     StdOut cout;
     StdErr cerr;
     embed::cout = cout;
     embed::cerr = cerr;
 
+    return test_all();
     
-    std::cout << "test start: " << std::endl;
-    try{
-        embed::ArrayList_test();
-        embed::DualArrayList_test();
-
-    }catch(embed::Exception& e){
-        embed::cout << e << embed::endl;
-    }
-
-    return 0;
 }

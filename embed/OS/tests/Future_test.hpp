@@ -1,6 +1,8 @@
 #pragma once
 
+#include <embed/TestFramework/TestFramework.hpp>
+
 namespace embed
 {
-    void Future_test();
+    embed::TestResult Future_test();
 } // namespace embed

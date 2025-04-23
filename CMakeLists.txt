@@ -28,6 +28,7 @@ include(embed/math/sources.cmake)
 include(embed/Memory/sources.cmake)
 include(embed/OS/sources.cmake)
 include(embed/OStream/sources.cmake)
+include(embed/TestFramework/sources.cmake)
 include(embed/test/sources.cmake)
 
 include(embed/sys_stubs/sources.cmake)
@@ -42,7 +43,7 @@ target_compile_features(embed PUBLIC
 )
 
 target_compile_options(embed PUBLIC
-    #-O3
+    -Os
     -fcoroutines
     -Wall
     -Wsign-compare
@@ -55,13 +56,17 @@ target_compile_options(embed PUBLIC
 
 if(EMBED_COMPILE_TESTS)
 
-add_executable(embed_test
-    test.cpp
-)
+# Enable testing
+enable_testing()
 
-target_link_libraries(embed_test PRIVATE
-    embed
-)
+# Add test source
+add_executable(test_runner embed/test/test_main.cpp)
+
+# Link to your embed library (adjust as needed)
+target_link_libraries(test_runner PRIVATE embed)
+
+# Register with CTest
+add_test(NAME embedOS_test COMMAND test_runner)
 
 endif()
 

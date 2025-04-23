@@ -2,12 +2,13 @@
 
 #include <embed/Containers/DualArrayList.hpp>
 #include <embed/OStream/OStream.hpp>
-#include <embed/test/test.hpp>
+#include <embed/TestFramework/TestFramework.hpp>
 
 namespace embed{
 
     namespace{
-        void construction(){
+        embed::TestResult construction(){
+            TEST_START;
 
             DualArrayList<int, 5> a;
 
@@ -34,10 +35,12 @@ namespace embed{
             TEST_NOT_EQUAL(a.left_begin(), a.right_begin().base()-1);
             TEST_EQUAL(a.reserve(), 5);
 
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
-        void emplace_back(){
+        embed::TestResult emplace_back(){
+            TEST_START;
+
             DualArrayList<int, 4> a;
             LeftDualArrayList la = a;
             RightDualArrayList ra = a;
@@ -182,9 +185,12 @@ namespace embed{
             TEST_EQUAL(ra.capacity(), 2);
             TEST_EQUAL(la.reserve(), 0);
             TEST_EQUAL(la.reserve(), 0);
+
+            TEST_END;
         }
 
-        void clear(){
+        embed::TestResult clear(){
+            TEST_START;
 
             {// clear original left
                 DualArrayList<int, 10> a;
@@ -290,10 +296,12 @@ namespace embed{
                 TEST_TRUE(la.empty());
                 TEST_TRUE(ra.empty());
             }
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
-        void pop(){
+        embed::TestResult pop(){
+            TEST_START;
+
             {// pop left original
                 DualArrayList<int, 10> a;
 
@@ -434,10 +442,12 @@ namespace embed{
                 TEST_EQUAL(ra.size(), 0);
                 TEST_EQUAL(la.size(), 2);
             }
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
-        void insert_value(){
+        embed::TestResult insert_value(){
+            TEST_START;
+
             DualArrayList<int, 100> a;
 
             // insert single value into empty list
@@ -527,10 +537,12 @@ namespace embed{
             TEST_EQUAL(a.right_at(2), 101);
             TEST_EQUAL(a.right_at(3), 103);
 
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
-        void insert_value_by_proxy(){
+        embed::TestResult insert_value_by_proxy(){
+            TEST_START;
+
             DualArrayList<int, 100> a;
             LeftDualArrayList l = a;
             RightDualArrayList r = a;
@@ -621,10 +633,12 @@ namespace embed{
             TEST_EQUAL(r.at(2), 101);
             TEST_EQUAL(r.at(3), 103);
 
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
-        void insert_range(){
+        embed::TestResult insert_range(){
+            TEST_START;
+
             DualArrayList<uint16_t, 100> a;
 
             // insert into empty list
@@ -755,10 +769,12 @@ namespace embed{
             TEST_EQUAL(a.right_at(6), 105);
             TEST_EQUAL(a.right_at(7), 106);
 
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
-        void insert_range_by_proxy(){
+        embed::TestResult insert_range_by_proxy(){
+            TEST_START;
+
             DualArrayList<uint16_t, 100> a;
             LeftDualArrayList l = a;
             RightDualArrayList r = a;
@@ -890,10 +906,12 @@ namespace embed{
             TEST_EQUAL(r.at(6), 105);
             TEST_EQUAL(r.at(7), 106);
 
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
-        void erase(){
+        embed::TestResult erase(){
+            TEST_START;
+
             DualArrayList<int, 100> a;
 
             a.left_assign({0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -962,24 +980,24 @@ namespace embed{
             TEST_EQUAL(a.right_at(1), 17);
             TEST_EQUAL(a.right_at(2), 18);
 
-            embed::cout << "  finished: " << __func__ << embed::endl;
+            TEST_END;
         }
 
     } // private namespace
      
-    void DualArrayList_test(){
-        embed::cout << "starting: " << __func__ << '{' << embed::endl;
+    embed::TestResult DualArrayList_test(){
+        TEST_GROUP;
 
-        construction();
-        emplace_back();
-        clear();
-        pop();
-        insert_value();
-        insert_value_by_proxy();
-        insert_range();
-        insert_range_by_proxy();
-        erase();
-
-        embed::cout << '}' << embed::endl;
+        return embed::TestResult()
+            | construction
+            | emplace_back
+            | clear
+            | pop
+            | insert_value
+            | insert_value_by_proxy
+            | insert_range
+            | insert_range_by_proxy
+            | erase
+            ;
     }
 }

@@ -1,16 +1,17 @@
 
 #include "embed/Containers/ArrayList.hpp"
-#include <embed/test/test.hpp>
+#include <embed/TestFramework/TestFramework.hpp>
 
 namespace embed
 {
-    void ArrayList_test(){
-        embed::cout << "start: ArrayList_test()" << embed::endl; 
-    
-        using namespace embed;
-    
-        {
-    
+
+    namespace{
+
+        embed::TestResult construct_emplace_back_overflow_clear(){
+            TEST_START;
+
+            using namespace embed;
+
             ArrayList<int, 3> arr;
             const ArrayList<int, 3>& const_ref_arr = arr;
     
@@ -82,9 +83,15 @@ namespace embed
             TEST_EQUAL(arr.begin(), arr.end());
             TEST_EQUAL(const_ref_arr.begin(), const_ref_arr.end());
             TEST_EQUAL(arr.cbegin(), arr.cend());
+
+            TEST_END;
         }
-        
-        {
+
+        embed::TestResult assign_insert_clear(){
+            TEST_START;
+
+            using namespace embed;
+
             ArrayList<int, 6> arr;
             arr.assign(/*count*/5, /*value*/188);
             TEST_EQUAL(arr.size(), 5);
@@ -143,9 +150,13 @@ namespace embed
             TEST_EQUAL(arr.size(), 1);
             TEST_FALSE(arr.empty());
             TEST_EQUAL(arr.front(), 456);
+
+            TEST_END;
         }
-        {
-    
+
+        embed::TestResult append_insert_erase(){
+            TEST_START;
+
             ArrayList<unsigned int, 10> a({1, 2, 3, 4});
             TEST_EQUAL(a.size(), 4);
             TEST_EQUAL(a[0], 1);
@@ -256,51 +267,71 @@ namespace embed
             c.pop_back();
             TEST_TRUE(c.empty());
             TEST_EQUAL(c.size(), 0);
+
+            TEST_END;
         }
-    
-        {
+
+
+        embed::TestResult comparisons(){
+            TEST_START;
+
+            using namespace embed;
+
             ArrayList<unsigned int, 10> a({1, 2, 3, 4});
             ArrayList<unsigned int, 10> b({1, 2, 3, 4, 5});
             ArrayList<unsigned int, 10> c({0, 1, 2, 3});
             ArrayList<unsigned int, 10> d({0, 1, 3, 3});
     
-            TEST_TRUE(equal(a, a));
-            TEST_FALSE(equal(a, b));
-            TEST_FALSE(equal(a, c));
+            TEST_TRUE(a == a);
+            TEST_FALSE(a == b);
+            TEST_FALSE(a == c);
     
-            TEST_FALSE(not_equal(a, a));
-            TEST_TRUE(not_equal(a, b));
-            TEST_TRUE(not_equal(a, c));
+            TEST_FALSE(a != a);
+            TEST_TRUE(a != b);
+            TEST_TRUE(a != c);
     
-            TEST_TRUE(less(c, a))
-            TEST_FALSE(less(a, c))
-            TEST_TRUE(greater(a, c))
-            TEST_FALSE(greater(c, a))
+            TEST_TRUE(c < a);
+            TEST_FALSE(a < c);
+            TEST_TRUE(a > c);
+            TEST_FALSE(c > a);
     
-            TEST_TRUE(less_equal(d, a))
-            TEST_FALSE(less_equal(a, d))
-            TEST_TRUE(greater_equal(a, d))
-            TEST_FALSE(greater_equal(d, a))
+            TEST_TRUE(d <= a);
+            TEST_FALSE(a <= d);
+            TEST_TRUE(a >= d);
+            TEST_FALSE(d >= a);
+
+            TEST_END;
         }
-    
-        {
+
+        embed::TestResult masks(){
+            TEST_START;
+
+            using namespace embed;
+
             ArrayList<unsigned int, 10> a({1, 2, 3, 4, 5, 6});
             ArrayList<unsigned int, 10> b({1, 2, 0, 10, 5, 11});
             ArrayList<bool, 10> expected_equal({true, true, false, false, true, false});
     
-            TEST_FUNC2(equal, a == b, expected_equal);
+            TEST_EQUAL(point_wise_equal(a, b), expected_equal);
     
             ArrayList<bool, 10> mask({true, true, false, false, true, false});
             ArrayList<int, 10> expected_masked({1, 2, 5});
             auto masked = a[mask];
-            TEST_FUNC2(equal, masked, expected_masked);
+            TEST_EQUAL(masked, expected_masked);
     
             ArrayList<long, 10> indices({1, 3, 5, 2});
             ArrayList<int, 10> expected_indexed({2, 10, 11, 0});
             auto indexed = b[indices];
-            TEST_FUNC2(equal, indexed, expected_indexed);
+            TEST_TRUE(indexed == expected_indexed);
+
+            TEST_END;
         }
-        {
+
+        embed::TestResult any_all_none(){
+            TEST_START;
+
+            using namespace embed;
+
             ArrayList<bool, 5> a({true, true, false});
             ArrayList<bool, 5> b({true, true, true});
             ArrayList<bool, 5> c({false, false, false});
@@ -316,29 +347,57 @@ namespace embed
             TEST_FALSE(none(a));
             TEST_FALSE(none(b));
             TEST_TRUE(none(c));
+
+            TEST_END;
         }
-    
-        {
+
+        embed::TestResult negation(){
+            TEST_START;
+
+            using namespace embed;
+
             ArrayList<int, 5> a({1, 0, 10});
             ArrayList<bool, 5> expected_not_a({false, true, false});
-            TEST_FUNC2(equal, !a, expected_not_a);
+            TEST_EQUAL(!a, expected_not_a);
             
             ArrayList<int, 5> b({true, true, false});
             ArrayList<bool, 5> expected_not_b({false, false, true});
-            TEST_FUNC2(equal, !b, expected_not_b);
+            TEST_EQUAL(!b, expected_not_b);
+
+            TEST_END;
         }
-    
-        {
+
+        embed::TestResult for_each_loop(){
+            TEST_START;
+            using namespace embed;
+
             ArrayList<int, 6> a{0, 1, 2, 3, 4, 5};
     
             auto square_result = for_each(a, [](const int& i){return i*i;});
             ArrayList<int, 6> expected_square_result{0, 1, 4, 9, 16, 25};
-            TEST_FUNC2(equal, square_result, expected_square_result);
+            TEST_TRUE(square_result == expected_square_result);
     
             a.for_each([](const int& i){return i*i;});
-            TEST_FUNC2(equal, a, expected_square_result);
+            TEST_TRUE(a == expected_square_result);
+
+            TEST_END;
         }
-        embed::cout << "finished: ArrayList_test()" << embed::endl; 
+    }// private namespace
+
+    embed::TestResult ArrayList_test(){
+        TEST_GROUP;
+
+        return embed::TestResult()
+            | construct_emplace_back_overflow_clear
+            | assign_insert_clear
+            | append_insert_erase
+            | comparisons
+            | masks
+            | any_all_none
+            | negation
+            | for_each_loop
+            ;
+
     }
     
 } // namespace embed

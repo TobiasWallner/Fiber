@@ -1,7 +1,9 @@
 #pragma once
 
+#include <embed/TestFramework/TestFramework.hpp>
+
 namespace embed
 {
     
-    void DualArrayList_test();
+    embed::TestResult DualArrayList_test();
 } // namespace embed
