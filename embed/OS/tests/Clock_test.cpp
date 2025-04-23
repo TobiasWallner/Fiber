@@ -192,7 +192,7 @@ namespace embed{
 
     static embed::TestResult Duration_test_construction(){
         TEST_START;
-        embed::Duration<uint32_t, std::nano, 1024> d;
+        [[maybe_unused]] embed::Duration<uint32_t, std::nano, 1024> d;
         TEST_END;
     }
 
