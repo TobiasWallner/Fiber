@@ -51,9 +51,6 @@ namespace embed{
      * if you want to send a signal to the task
      */
     class AwaitableNode{
-    private:
-        CoTask* _master = nullptr;
-
     public:
         virtual ~AwaitableNode() noexcept = default;
         /*
@@ -436,14 +433,11 @@ namespace embed{
     /// @param handle A handle that has to be an `embed::CoroutinePromise` but can have any return type. 
     template<class ReturnType>
     inline void AwaitableNode::await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept {
-        // store the master
-        this->_master = handle.promise().master();
-
         // register leaf in master to tell it what awaitable to wait for
-        this->_master->register_leaf(this);
+        handle.promise().master()->register_leaf(this);
 
         // optionally send a signal to the master
-        this->_master->signal(await_suspend_signal());
+        handle.promise().master()->signal(await_suspend_signal());
     }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

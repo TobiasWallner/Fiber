@@ -172,7 +172,6 @@ namespace embed
                 return ClockTick::reinterpret(static_cast<UInt>((lhs.value * rhs.value) & max_tick));
             }else {
                 // do the modulo and pray that the compiler can optimize it away
-                const auto result = lhs.value - rhs.value;
                 return ClockTick::reinterpret(static_cast<UInt>((lhs.value * rhs.value) % modulo));
             }
         }
