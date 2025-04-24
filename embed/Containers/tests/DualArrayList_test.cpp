@@ -12,8 +12,8 @@ namespace embed{
 
             DualArrayList<int, 5> a;
 
-            LeftDualArrayList la = a;
-            RightDualArrayList ra = a;
+            LeftDualArrayListRef la = a;
+            RightDualArrayListRef ra = a;
 
             TEST_TRUE(a.empty());
             TEST_FALSE(a.full());
@@ -42,8 +42,8 @@ namespace embed{
             TEST_START;
 
             DualArrayList<int, 4> a;
-            LeftDualArrayList la = a;
-            RightDualArrayList ra = a;
+            LeftDualArrayListRef la = a;
+            RightDualArrayListRef ra = a;
 
             // insertion into a-left
             a.left_emplace_back(5);
@@ -202,8 +202,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
     
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
     
                 a.left_clear();
     
@@ -223,8 +223,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
     
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
     
                 a.right_clear();
     
@@ -244,8 +244,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
     
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
     
                 la.clear();
     
@@ -265,8 +265,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
     
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
     
                 ra.clear();
     
@@ -286,8 +286,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
     
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
     
                 a.clear();
     
@@ -310,8 +310,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
 
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
 
                 a.left_pop_back();
 
@@ -345,8 +345,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
 
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
 
                 a.right_pop_back();
 
@@ -380,8 +380,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
 
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
 
                 la.pop_back();
 
@@ -415,8 +415,8 @@ namespace embed{
                 a.right_emplace_back(5); 
                 a.right_emplace_back(6); 
 
-                LeftDualArrayList la = a;
-                RightDualArrayList ra = a;
+                LeftDualArrayListRef la = a;
+                RightDualArrayListRef ra = a;
 
                 ra.pop_back();
 
@@ -544,8 +544,8 @@ namespace embed{
             TEST_START;
 
             DualArrayList<int, 100> a;
-            LeftDualArrayList l = a;
-            RightDualArrayList r = a;
+            LeftDualArrayListRef l = a;
+            RightDualArrayListRef r = a;
             // insert single value into empty list
 
             l.insert(l.end(), 1);
@@ -776,8 +776,8 @@ namespace embed{
             TEST_START;
 
             DualArrayList<uint16_t, 100> a;
-            LeftDualArrayList l = a;
-            RightDualArrayList r = a;
+            LeftDualArrayListRef l = a;
+            RightDualArrayListRef r = a;
             // insert into empty list
             
             l.insert(/* position */0, /* values */ {1, 2});

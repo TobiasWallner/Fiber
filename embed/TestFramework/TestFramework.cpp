@@ -5,7 +5,7 @@ namespace embed{
 
     int evaluate(TestResult result){
         // Test Summary: [PASS/FAIL]
-        embed::cout << embed::newl << embed::cout << "Test Summary: " << embed::ansi::bold;
+        embed::cout << embed::newl << "Test Summary: " << embed::ansi::bold;
         if(result.failed == 0){
             embed::cout << embed::ansi::bright_green << "PASS";
         }else{

@@ -306,7 +306,7 @@ namespace embed
      * @tparam Period The ratio for 1s
      * @tparam GetTimerCount A function to the hardware timer that returns the timer count as an (preferably) unsigned integral
      */
-    template<std::unsigned_integral UInt, CStdRatio Period, uint32_t (*GetTimerCount)(void), UInt MaxTick = std::numeric_limits<UInt>::max()>
+    template<std::unsigned_integral UInt, CStdRatio Period, UInt (*GetTimerCount)(void), UInt MaxTick = std::numeric_limits<UInt>::max()>
     struct Clock{
         using value_type = UInt;
         using rep = ClockTick<UInt, MaxTick>;

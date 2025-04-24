@@ -3,8 +3,12 @@ target_sources(embed
         ${CMAKE_CURRENT_LIST_DIR}/Clock_test.hpp
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine_test.hpp
         ${CMAKE_CURRENT_LIST_DIR}/Future_test.hpp
-        PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}/RealTimeScheduler_test.hpp
+        
+        
+    PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/Clock_test.cpp
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine_test.cpp
         ${CMAKE_CURRENT_LIST_DIR}/Future_test.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/RealTimeScheduler_test.cpp
 )

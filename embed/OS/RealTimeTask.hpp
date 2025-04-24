@@ -6,6 +6,8 @@
 
 namespace embed
 {
+
+
     template<CClock Clock>
     struct RealTimeSchedule{
         Clock::time_point ready;
@@ -21,12 +23,40 @@ namespace embed
     template<CClock Clock>
     class RealTimeTask : public CoTask{
     private:
+    public:
 
-        // TODO: store schedules in the scheduler - keep cache misses short.
+        // TODO: store schedules in the scheduler - keep cache misses short - remove from user perspective
         RealTimeSchedule<Clock> _schedule;
         Clock::time_point _execution_start;
     
-    public:
+
+        using clock = Clock;
+        using duration = Clock::duration;
+        using time_point = Clock::time_point;
+
+        /**
+         * @brief sets the ready time relative from now and the deadline relative from the start time
+         */
+        RealTimeTask(Coroutine<embed::Exit>&& main, const char* name, duration ready, duration deadline) : CoTask(std::move(main), name){
+            this->_schedule.ready = Clock::now() + ready;
+            this->_schedule.deadline = this->_schedule.ready + deadline;
+        }
+
+        /**
+         * @brief sets the ready time to the absolute time point and the deadline relative from the start time
+         */
+        RealTimeTask(Coroutine<embed::Exit>&& main, const char* name, time_point ready, duration deadline) : CoTask(std::move(main), name){
+            this->_schedule.ready = ready;
+            this->_schedule.deadline = this->_schedule.ready + deadline;
+        }
+
+        /**
+         * @brief sets the ready and deadline time to the absolute time points
+         */
+        RealTimeTask(Coroutine<embed::Exit>&& main, const char* name, time_point ready, time_point deadline) : CoTask(std::move(main), name){
+            this->_schedule.ready = ready;
+            this->_schedule.deadline = deadline;
+        }
 
         /**
          * @brief Overrideable: Gets called after a `co_await NextCycle;` to calculate the schedule of the next cycle.
@@ -51,22 +81,30 @@ namespace embed
         inline time_point ready_time() const {return this->_schedule.ready;}
         inline time_point deadline() const {return this->_schedule.deadline;}
 
-        friend inline bool smaller_ready_time(const RealTimeTask& lhs, const RealTimeTask& rhs){
-            return lhs.ready_time() < rhs.ready_time();
-        }
-    
-        friend inline bool smaller_ready_time(const RealTimeTask& lhs, const time_point& rhs){
-            return lhs.ready_time() < rhs;
-        }
-
-        friend inline bool smaller_deadline(const RealTimeTask& lhs, const RealTimeTask& rhs){
-            return lhs.deadline() < rhs.deadline();
-        }
-    
-        friend inline bool ready(const RealTimeTask& task){
-            return task.ready_time() <= Clock::now();
-        }
+        
     };
+
+    template<CClock Clock>
+    struct smaller_ready_time{
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.ready_time() < rhs.ready_time();}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->ready_time() < rhs->ready_time();}
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.ready_time() < rhs;}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->ready_time() < rhs;}
+    };
+
+    template<CClock Clock>
+    struct smaller_deadline{
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.deadline() < rhs.deadline();}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->deadline() < rhs->deadline();}
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.deadline() < rhs;}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->deadline() < rhs;}
+    };
+
+    template<CClock Clock>
+    inline bool is_ready(const RealTimeTask<Clock>& task){return task.ready_time() <= Clock::now();}
+
+    template<CClock Clock>
+    inline bool is_ready(const RealTimeTask<Clock>* task){return task->ready_time() <= Clock::now();}
 
 } // namespace embed
 

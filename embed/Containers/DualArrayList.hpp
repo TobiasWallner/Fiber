@@ -1086,12 +1086,121 @@ namespace embed
         return stream;
     }
 
+/**
+     * @brief A reference to the left side of a DualArrayList
+     * @see DualArrayList
+     */
+    template<class T, std::size_t N>
+    class LeftDualArrayListConstRef{
+    public:
+        using value_type = DualArrayList<T, N>::value_type;
+        using size_type = DualArrayList<T, N>::size_type;
+        using reference = DualArrayList<T, N>::reference;
+        using const_reference = DualArrayList<T, N>::const_reference;
+        using iterator = DualArrayList<T, N>::left_iterator;
+        using const_iterator = DualArrayList<T, N>::left_const_iterator;
+        using pointer = DualArrayList<T, N>::pointer;
+        using const_pointer = DualArrayList<T, N>::const_pointer;
+
+    private:
+        const DualArrayList<T, N>& _list;
+
+    public:
+        
+        LeftDualArrayListConstRef(const DualArrayList<T, N>& list) : _list(list){}
+
+        /// @brief returns the size/count of live elements in the container 
+        constexpr size_type size() const {return this->_list.left_size();}
+
+        /// @brief returns the capacity of the container. Since this is a statically allocated container this is also the maximal size.
+        constexpr size_type capacity() const {return this->_list.left_capacity();}
+
+        /// @brief returns the maximal number of elements that can be stored in the container 
+        constexpr size_type max_size() const {return this->_list.max_size();}
+
+        /// @brief returns the reserve - number of elements that can be stored until the container is full 
+        constexpr size_type reserve() const {return this->_list.reserve();}
+
+        /// @brief returns true if there are not elements in the container, aka. the container is empty. 
+        constexpr bool empty() const {return this->_list.left_empty();}
+
+        /// @brief returns true if the container is full and no more elements can be stored in the container 
+        constexpr bool full() const {return this->_list.full();}
+
+        /// @brief returns a const-iterator to the start 
+        constexpr const_iterator begin() const {return this->_list.left_begin();}
+
+        /// @brief returns a const-iterator to the start 
+        constexpr const_iterator cbegin() const {return this->_list.left_cbegin();}
+
+        /// @brief returns a const-iterator past the end
+        constexpr const_iterator end() const {return this->_list.left_end();}
+
+        /// @brief returns a const-iterator past the end
+        constexpr const_iterator cend() const {return this->_list.left_cend();}
+
+        /// @brief returns a const-reference to the first element int the buffer
+        constexpr const T& front() const {return this->_list.left_front();}
+
+        /// @brief returns a const reference to the last element in the buffer 
+        constexpr const T& back() const {return this->_list.left_back();}
+
+        /// @brief returns a reference to the element at the given position
+        template<std::integral Int>
+        constexpr const T& at(const Int i) const {return this->_list.left_at(i);}
+
+
+        /// @brief Masked indexing
+        /// @param mask the mask that selects which elements to get. `true` will be included, `false` excluded
+        /// @return A ArrayList that contains all values where of this where mask is `true`
+        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.left_at(mask);}
+
+        /// @brief Inices list indexing
+        /// @tparam Int a generic integer
+        /// @param indices a list of indices that should be extracted
+        /// @return a ArrayList containing all the elements from this that are contained in the `indices`
+        template<std::integral Int>
+        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.left_at(indices);}
+        
+        /// @brief returns a reference to the element at the given position
+        template<std::integral Int>
+        constexpr const T& operator[](const Int i) const {return this->left_at(i);}
+
+        /// @brief accesses all elements where `mask` is `true` 
+        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->left_at(mask);}
+
+        /// @brief accesses all elements at the given `indices` 
+        template<std::integral Int>
+        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->left_at(indices);}
+
+        /// @brief turns the passed position given by an iterator into an integer 
+        constexpr size_type to_index(const const_iterator pos) const {return this->_list.left_to_index(pos);}
+
+        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
+        template<std::integral Int>
+        constexpr const_iterator to_iterator(const Int pos) const {return this->_list.left_to_iterator(pos);}
+
+        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
+        template<std::integral Int>
+        constexpr const_iterator to_const_iterator(const Int pos) const {return this->_list.left_to_const_iterator(pos);}
+
+        /// @brief Applies the negation (!) operator to all elements and returns it as a bool list 
+        ArrayList<bool, N> operator!() const {
+            ArrayList<bool, N> result;
+            for(const auto& elem : *this){
+                result.emplace_back(!elem);
+            }
+            return result;
+        }
+    };
+
+
     /**
      * @brief A reference to the left side of a DualArrayList
      * @see DualArrayList
      */
     template<class T, std::size_t N>
-    class LeftDualArrayList{
+    class LeftDualArrayListRef{
     public:
         using value_type = DualArrayList<T, N>::value_type;
         using size_type = DualArrayList<T, N>::size_type;
@@ -1107,7 +1216,7 @@ namespace embed
 
     public:
         
-        LeftDualArrayList(DualArrayList<T, N>& list) : _list(list){}
+        LeftDualArrayListRef(DualArrayList<T, N>& list) : _list(list){}
 
         /// @brief returns the size/count of live elements in the container 
         constexpr size_type size() const {return this->_list.left_size();}
@@ -1355,7 +1464,116 @@ namespace embed
      * @see DualArrayList
      */
     template<class T, std::size_t N>
-    class RightDualArrayList{
+    class RightDualArrayListConstRef{
+    public:
+        using value_type = DualArrayList<T, N>::value_type;
+        using size_type = DualArrayList<T, N>::size_type;
+        using reference = DualArrayList<T, N>::reference;
+        using const_reference = DualArrayList<T, N>::const_reference;
+        using iterator = DualArrayList<T, N>::right_iterator;
+        using const_iterator = DualArrayList<T, N>::right_const_iterator;
+        using pointer = DualArrayList<T, N>::pointer;
+        using const_pointer = DualArrayList<T, N>::const_pointer;
+
+    private:
+        const DualArrayList<T, N>& _list;
+
+    public:
+        
+        RightDualArrayListConstRef(const DualArrayList<T, N>& list) : _list(list){}
+
+        /// @brief returns the size/count of live elements in the container 
+        constexpr size_type size() const {return this->_list.right_size();}
+
+        /// @brief returns the capacity of the container. Since this is a statically allocated container this is also the maximal size.
+        constexpr size_type capacity() const {return this->_list.right_capacity();}
+
+        /// @brief returns the maximal number of elements that can be stored in the container 
+        constexpr size_type max_size() const {return this->_list.max_size();}
+
+        /// @brief returns the reserve - number of elements that can be stored until the container is full 
+        constexpr size_type reserve() const {return this->_list.reserve();}
+
+        /// @brief returns true if there are not elements in the container, aka. the container is empty. 
+        constexpr bool empty() const {return this->_list.right_empty();}
+
+        /// @brief returns true if the container is full and no more elements can be stored in the container 
+        constexpr bool full() const {return this->_list.full();}
+
+        /// @brief returns a const-iterator to the start 
+        constexpr const_iterator begin() const {return this->_list.right_begin();}
+
+        /// @brief returns a const-iterator to the start 
+        constexpr const_iterator cbegin() const {return this->_list.right_cbegin();}
+
+        /// @brief returns a const-iterator past the end
+        constexpr const_iterator end() const {return this->_list.right_end();}
+
+        /// @brief returns a const-iterator past the end
+        constexpr const_iterator cend() const {return this->_list.right_cend();}
+
+        /// @brief returns a const-reference to the first element int the buffer
+        constexpr const T& front() const {return this->_list.right_front();}
+
+        /// @brief returns a const reference to the last element in the buffer 
+        constexpr const T& back() const {return this->_list.right_back();}
+
+        /// @brief returns a reference to the element at the given position
+        template<std::integral Int>
+        constexpr const T& at(const Int i) const {return this->_list.right_at(i);}
+
+
+        /// @brief Masked indexing
+        /// @param mask the mask that selects which elements to get. `true` will be included, `false` excluded
+        /// @return A ArrayList that contains all values where of this where mask is `true`
+        ArrayList<T, N> at(const ArrayList<bool, N>& mask) const {return this->_list.right_at(mask);}
+
+        /// @brief Inices list indexing
+        /// @tparam Int a generic integer
+        /// @param indices a list of indices that should be extracted
+        /// @return a ArrayList containing all the elements from this that are contained in the `indices`
+        template<std::integral Int>
+        ArrayList<T, N> at(const ArrayList<Int, N>& indices) const {return this->_list.right_at(indices);}
+        
+        /// @brief returns a reference to the element at the given position
+        template<std::integral Int>
+        constexpr const T& operator[](const Int i) const {return this->right_at(i);}
+
+        /// @brief accesses all elements where `mask` is `true` 
+        ArrayList<T, N> operator[](const ArrayList<bool, N>& mask) const {return this->right_at(mask);}
+
+        /// @brief accesses all elements at the given `indices` 
+        template<std::integral Int>
+        ArrayList<T, N> operator[](const ArrayList<Int, N>& indices) const {return this->right_at(indices);}
+
+        /// @brief turns the passed position given by an iterator into an integer 
+        constexpr size_type to_index(const const_iterator pos) const {return this->_list.right_to_index(pos);}
+
+        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
+        template<std::integral Int>
+        constexpr const_iterator to_iterator(const Int pos) const {return this->_list.right_to_iterator(pos);}
+
+        /// @brief turns the passed unsigned integer into a cosnt_iterator pointing to the same position 
+        template<std::integral Int>
+        constexpr const_iterator to_const_iterator(const Int pos) const {return this->_list.right_to_const_iterator(pos);}
+
+        /// @brief Applies the negation (!) operator to all elements and returns it as a bool list 
+        ArrayList<bool, N> operator!() const {
+            ArrayList<bool, N> result;
+            for(const auto& elem : *this){
+                result.emplace_back(!elem);
+            }
+            return result;
+        }
+    };
+
+
+    /**
+     * @brief A reference to the right side of a DualArrayList
+     * @see DualArrayList
+     */
+    template<class T, std::size_t N>
+    class RightDualArrayListRef{
     public:
         using value_type = DualArrayList<T, N>::value_type;
         using size_type = DualArrayList<T, N>::size_type;
@@ -1371,7 +1589,7 @@ namespace embed
 
     public:
         
-        RightDualArrayList(DualArrayList<T, N>& list) : _list(list){}
+        RightDualArrayListRef(DualArrayList<T, N>& list) : _list(list){}
 
         /// @brief returns the size/count of live elements in the container 
         constexpr size_type size() const {return this->_list.right_size();}

@@ -6,6 +6,7 @@
 #include <embed/OS/tests/Clock_test.hpp>
 #include <embed/OS/tests/Future_test.hpp>
 #include <embed/OS/tests/Coroutine_test.hpp>
+#include <embed/OS/tests/RealTimeScheduler_test.hpp>
 
 int test_all(){
     try{
@@ -15,6 +16,7 @@ int test_all(){
             | embed::ClockTick_test
             | embed::Future_test
             | embed::Coroutine_test
+            | embed::RealTimeScheduler_test
             | embed::evaluate
             ;
 
