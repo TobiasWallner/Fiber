@@ -46,6 +46,7 @@ target_compile_options(embed PUBLIC
     -O3
     -Wall
     -Wextra
+    -Werror
     -Wsign-compare
     #-fmax-errors=3
 )
