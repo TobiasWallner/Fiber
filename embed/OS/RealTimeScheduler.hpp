@@ -1,5 +1,9 @@
 #pragma once
 
+// std
+#include <variant>
+
+// embed
 #include <embed/OS/Clock.hpp>
 #include <embed/Containers/ArrayList.hpp>
 #include <embed/Containers/DualPriorityQueue.hpp>
@@ -72,7 +76,7 @@ namespace embed
             // do not record the same sleep command multiple times.
             if(this->_event_list.empty()){
                 this->_event_list.emplace_back(Sleep{time, sleep_until});
-            }else(std::has_variant<Sleep>(this->_event_list.back())){
+            }else(std::holds_alternative<Sleep>(this->_event_list.back())){
                 if(std::get<Sleep>(this->_event_list.back()).sleep_until != sleep_until){
                     this->_event_list.emplace_back(Sleep{time, sleep_until});
                 }
