@@ -9,21 +9,18 @@ deploy-docs:
 	git commit -m "deploy-docs"
 	git push origin gh-pages --force
 
+config = Release
+CC = gcc 
+CXX = g++
 
 .PHONY: build-test
 build-test:
-	cmake -S . -B build -G "Ninja Multi-Config" build -DEMBED_COMPILE_TESTS=ON -DEMBED_CTEST=ON
-	cmake --build build --config Release
+	cmake -S . -B build -G "Ninja Multi-Config" build -DEMBED_COMPILE_TESTS=ON -DEMBED_CTEST=ON -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+	cmake --build build --config $(config)
 
 .PHONY: test
 test: build-test
-	ctest --test-dir build -C Release -V
-
-
-.PHONY: test
-test-debug:
-	cmake -S . -B build -G "Ninja Multi-Config" -DEMBED_COMPILE_TESTS=ON
-	cmake --build build --config Debug
+	ctest --test-dir build -C $(config) -V
 
 .PHONY: clean
 clean:
