@@ -152,12 +152,15 @@ namespace embed
     /**
      * @brief A real time scheduler that starts tasks once they are ready and schedules them by earliest deadline first
      * 
+     * Manages three lists of tasks:
+     * - waiting: a priority list, sorted by the earliest ready times.
+     * - running: a priority list, sorted by the earliest deadlines.
+     * - awaiting: a list containing all tasks that are waiting on an awaitable or future.
      * 
      * @tparam Clock The `embed::CClock` like clock that the scheduler should use. Defines the tick type, timer overflow, duration, time point and `now()` function.
      * @tparam n_tasks The maximum number of thats that will be pre-allocated for this scheduler.
      * @tparam FSleepUntil A function in the form `void sleep_until(Clock::time_point time)` that will be called if there is nothing to do and the MCU can enter sleep mode.
      * @tparam logger A logger that implements the functions defined by `embed::CRealTimeSchedulerLogger`
-     * 
      */
     template<
         CClock Clock, size_t n_tasks, 
@@ -171,14 +174,14 @@ namespace embed
 
     private:
         using RTTask = RealTimeTask<Clock>;
-        using dual_priority_queue_type = DualPriorityQueue<RTTask*, n_tasks, smaller_ready_time<Clock>, smaller_deadline<Clock>>;
+        using dual_priority_queue_type = DualPriorityQueue<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
         using dual_array_list_type = DualArrayList<RTTask*, n_tasks>;
 
-        using waiting_queue_ref = Stage1DualPriorityQueueRef<RTTask*, n_tasks, smaller_ready_time<Clock>, smaller_deadline<Clock>>;
-        using running_queue_ref = Stage2DualPriorityQueueRef<RTTask*, n_tasks, smaller_ready_time<Clock>, smaller_deadline<Clock>>;
+        using waiting_queue_ref = Stage1DualPriorityQueueRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
+        using running_queue_ref = Stage2DualPriorityQueueRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
 
-        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<RTTask*, n_tasks, smaller_ready_time<Clock>, smaller_deadline<Clock>>;
-        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<RTTask*, n_tasks, smaller_ready_time<Clock>, smaller_deadline<Clock>>;
+        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
+        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
 
         // TODO: dual priority queue with an unordered list to save more memory
         //       [stage 2 priority queue][reserve][unordered list][reserve][stage 1 priority list]
@@ -207,21 +210,17 @@ namespace embed
             this->_await_bench.erase_if([](const RTTask* task){return !task->is_awaiting();});
 
             // promote waiting queue into running queue
-            if(!this->waiting_queue().empty()){
-                while(!this->waiting_queue().empty()){
-                    RTTask* task = this->waiting_queue().top();
-                    const time_point now = Clock::now();
-                    if(task->ready_time() <= now){
-                        logger::log_move(now, task->name(), task->id(), "wait", "run");
-                        this->waiting_queue().pop();
-                        this->running_queue().push(task);
-                    }else{
-                        return;
-                    }
+            while(!this->waiting_queue().empty()){
+                RTTask* task = this->waiting_queue().top();
+                const time_point now = Clock::now();
+                if(task->ready_time() <= now){
+                    logger::log_move(now, task->name(), task->id(), "wait", "run");
+                    this->waiting_queue().pop();
+                    this->running_queue().push(task);
+                }else{
+                    return;
                 }
             }
-
-            // do not check hibernation - hibernation will have to wake up by itself / external triggers
         }
 
         void run_next(){
@@ -280,9 +279,16 @@ namespace embed
 
     public:
 
+        /**
+         * @brief Adds a tasks to the scheduler
+         * 
+         * Assigns an unique-ID to the task and adds it either to the 'running' or 'waiting' queue.
+         * 
+         * @throws Throws an `AssertionFailureO1` if `EMBED_ASSERTION_LEVEL_O1` or higher is enabled, if the task could not be added and the scheduler is already full.
+         */
         void add(RealTimeTask<Clock>* task){
             task->id(this->_next_task_id++);
-
+            EMBED_ASSERT_O1_MSG(!this->is_full(), "Scheduler is full and cannot handle more tasks safely. S: Increase the storage capacity for the number of tasks in the template parameter `n_taks`.");
             const time_point now = Clock::now();
             if(task->ready_time() <= now){
                 logger::log_add(now, task->name(), task->id(), "run");
@@ -293,10 +299,33 @@ namespace embed
             }
         }
 
+        /**
+         * @brief Checks the state of Tasks and executes one if ready
+         * 
+         * First promotes tasks from the \em waiting-queue or the \em awaiting-queue to the \em running-queue if they are ready.
+         * Then runs the next task with the earliest deadline
+         */
         void spin(){
             this->promote();
             this->run_next();
         }
+
+        /**
+         * @brief returns the capacity of the scheduler
+         * 
+         * The capacity represents the number of total tasks that can be added without reallocation.
+         * For static schedulers (like this one) `.capacity()` is equivalent to `.max_size()`.
+         * 
+         * To increase the capacity increase the template parameter `n_tasks`.
+         */ 
+        constexpr size_t capacity() const {return n_tasks;}
+
+        /**
+         * @brief returns the maximal number of tasks that this scheduler can manage.
+         * 
+         * To increase the `max_size()` increase the template parameter `n_tasks`.
+         */
+        constexpr size_t max_size() const {return n_tasks;}
 
         /**
          * @brief returns the number of tasks currently in the waiting queue
@@ -304,9 +333,7 @@ namespace embed
          * Tasks that are in the waiting queue are waiting for time to pass until `Clock::now()`
          * is larger than the ready time of a task.
          */
-        inline size_t n_waiting() const {
-            return this->waiting_queue().size();
-        }
+        constexpr size_t n_waiting() const {return this->waiting_queue().size();}
 
         /**
          * @brief returns the number of tasks currently in the running queue
@@ -314,45 +341,84 @@ namespace embed
          * Tasks that are in the ready queue are all tasks that have a ready time that is larger
          * than `Clock::now()`.
          */
-        inline size_t n_running() const {
-            return this->running_queue().size();
-        }
+        constexpr size_t n_running() const {return this->running_queue().size();}
 
         /**
          * @brief returns the number of tasks currently in the awaiting queue
          * 
          * Tasks that are in the awaiting queue are waiting for a future or awaitable to become ready.
          */
-        inline size_t n_awaiting() const {
-            return this->_await_bench.size();
-        }
+        constexpr size_t n_awaiting() const {return this->_await_bench.size();}
+
+        /**
+         * @brief returns the current number of tasks that this scheduler manages.
+         */
+        constexpr size_t size() const {return this->n_waiting() + this->n_running() + this->n_awaiting();}
+
+        /**
+         * @brief returns the remaining number of tasks that can still added to the scheduler
+         */
+        constexpr size_t reserve() const {return this->capacity() - this->size();}
+
+        
 
         /**
          * @brief returns `true` if there are no tasks in its running queue
          */
-        inline bool is_waiting() const {
+        constexpr bool is_waiting() const {
             return this->running_queue().empty();
         }
 
         /**
          * @brief returns `true` if there are tasks in its running queue and `false` if the scheduler is waiting.
          */
-        inline bool is_bussy() const {
+        constexpr bool is_busy() const {
             return !this->running_queue().empty();
         }
 
         /**
          * @brief returns `true` if there are no tasks in any queue
          */
-        inline bool is_empty() const {
+        constexpr bool is_empty() const {
             return this->_priority_queue.empty() && this->_await_bench.empty();
         }
 
         /**
+         * @brief returns `true` if the scheduler is full, the scheduler cannot handle more tasks, no more tasks can be added to the scheduler safely.
+         */
+        constexpr bool is_full() const {return this->reserve() == 0;}
+
+        /**
          * @brief returns `true` if there are no tasks in the sheduler
          */
-        inline bool is_done() const {
+        constexpr bool is_done() const {
             return this->_priority_queue.empty() && this->_await_bench.empty();
+        }
+
+
+        friend OStream& operator<<(OStream& stream, const RealTimeScheduler& scheduler){
+            const time_point now = Clock::now();
+            stream << "@" << now << " Running: " << embed::newl;
+            stream << "name | id | ready time | deadline" << embed::newl;
+            stream << "------------------------------------------" << embed::newl;
+            for(const RTTask* task : scheduler.running_queue()){
+                stream << task->name() << " | " << task->id() << " | " << task->ready_time() << " | " << task->deadline() << embed::newl;
+            }
+            stream << embed::newl;
+            stream << "@" << now << " Waiting: " << embed::newl;
+            stream << "name | id | ready time | deadline" << embed::newl;
+            stream << "------------------------------------------" << embed::newl;
+            for(const RTTask* task : scheduler.waiting_queue()){
+                stream << task->name() << " | " << task->id() << " | " << task->ready_time() << " | " << task->deadline() << embed::newl;
+            }
+            stream << embed::newl;
+            stream << "@" << now << " Awaiting: " << embed::newl;
+            stream << "name | id | ready time | deadline" << embed::newl;
+            stream << "------------------------------------------" << embed::newl;
+            for(const RTTask* task : scheduler._await_bench){
+                stream << task->name() << " | " << task->id() << " | " << task->ready_time() << " | " << task->deadline() << embed::newl;
+            }
+            return stream;
         }
     };
     
