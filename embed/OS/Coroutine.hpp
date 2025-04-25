@@ -457,7 +457,7 @@ namespace embed{
 
     inline std::suspend_always CoroutineNode::final_suspend() noexcept {
         // unregister self and re-register the parent, so next time the master will resume the parent
-        if(this->_parent){
+        if(this->_parent != nullptr){
             this->_master->register_leaf(this->_parent);
         }
         return std::suspend_always{};
