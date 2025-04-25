@@ -93,11 +93,27 @@ namespace embed
     };
 
     template<CClock Clock>
+    struct larger_ready_time{
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.ready_time() > rhs.ready_time();}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->ready_time() > rhs->ready_time();}
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.ready_time() > rhs;}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->ready_time() > rhs;}
+    };
+
+    template<CClock Clock>
     struct smaller_deadline{
         inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.deadline() < rhs.deadline();}
         inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->deadline() < rhs->deadline();}
         inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.deadline() < rhs;}
         inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->deadline() < rhs;}
+    };
+
+    template<CClock Clock>
+    struct larger_deadline{
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.deadline() > rhs.deadline();}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->deadline() > rhs->deadline();}
+        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.deadline() > rhs;}
+        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->deadline() > rhs;}
     };
 
     template<CClock Clock>
