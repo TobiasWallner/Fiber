@@ -42,13 +42,12 @@ target_compile_features(embed PUBLIC
     cxx_std_20
 )
 
-target_compile_options(embed PUBLIC
+target_compile_options(embed PRIVATE
     -O3
     -Wall
     -Wextra
     -Werror
     -Wsign-compare
-    #-fmax-errors=3
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -68,6 +67,14 @@ if(EMBED_CTEST)
 
     # Add test source
     add_executable(test_runner embed/test/test_main.cpp)
+
+
+    target_compile_options(test_runner PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wsign-compare
+    )
 
     # Link to your embed library (adjust as needed)
     target_link_libraries(test_runner PRIVATE embed)
