@@ -253,13 +253,13 @@ namespace embed{
         public:
 
             /// \brief returns true if the value is ready to read 
-            [[nodiscard]]inline bool is_ready() const {return this->get_state() == State::HasValue;}
+            [[nodiscard]]constexpr bool is_ready() const {return this->get_state() == State::HasValue;}
 
             /// \brief converts to a boolean. same as calling `is_ready()`.
-            [[nodiscard]]inline operator bool() const {return this->is_ready();}
+            [[nodiscard]]constexpr operator bool() const {return this->is_ready();}
 
             /// @brief returns true if the result is not finished yet and one has to wait
-            [[nodiscard]]inline bool is_waiting() const {return this->get_state() == State::Busy;}
+            [[nodiscard]]constexpr bool is_waiting() const {return this->get_state() == State::Busy;}
     
             /**
              * \brief return true if the promise was not kept
@@ -267,7 +267,7 @@ namespace embed{
              * This happens when no value was assigned to the promise before deconstruction.
              * If this happens an Exception (Derived from std::exception) will be thrown.
              */
-            [[nodiscard]]inline bool is_broken_promise() const {return this->get_state() == State::BrokenPromise;}
+            [[nodiscard]]constexpr bool is_broken_promise() const {return this->get_state() == State::BrokenPromise;}
     
             /**
              * @brief `co_await` interoperability, returns true, if the future is no longer waiting.
@@ -278,7 +278,7 @@ namespace embed{
              * 
              * @return `true` if the Future is no longer waiting on the Promise
              */
-            inline bool await_ready() const noexcept override {
+            constexpr bool await_ready() const noexcept override {
                 return !this->is_waiting();
             }
             
