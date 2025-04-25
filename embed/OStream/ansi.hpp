@@ -21,15 +21,27 @@ constexpr const char* inverse       = EMBED_ANSI_CODE("\x1b[7m");
 constexpr const char* hidden        = EMBED_ANSI_CODE("\x1b[8m");
 constexpr const char* strikethrough = EMBED_ANSI_CODE("\x1b[9m");
 
-// Foreground colors (standard)
+// Foreground colors
 constexpr const char* black         = EMBED_ANSI_CODE("\x1b[30m");
 constexpr const char* red           = EMBED_ANSI_CODE("\x1b[31m");
 constexpr const char* green         = EMBED_ANSI_CODE("\x1b[32m");
 constexpr const char* yellow        = EMBED_ANSI_CODE("\x1b[33m");
+constexpr const char* orange        = EMBED_ANSI_CODE("\x1b[38;2;255;165;0m");
 constexpr const char* blue          = EMBED_ANSI_CODE("\x1b[34m");
 constexpr const char* magenta       = EMBED_ANSI_CODE("\x1b[35m");
 constexpr const char* cyan          = EMBED_ANSI_CODE("\x1b[36m");
 constexpr const char* white         = EMBED_ANSI_CODE("\x1b[37m");
+
+// Foreground colors light
+constexpr const char* light_black         = EMBED_ANSI_CODE("\x1b[38;2;80;80;80m");
+constexpr const char* light_red           = EMBED_ANSI_CODE("\x1b[38;2;255;85;85m");
+constexpr const char* light_green         = EMBED_ANSI_CODE("\x1b[38;2;144;238;144m");
+constexpr const char* light_yellow        = EMBED_ANSI_CODE("\x1b[38;2;255;255;145m");
+constexpr const char* light_orange        = EMBED_ANSI_CODE("\x1b[38;2;255;190;20m");
+constexpr const char* light_blue          = EMBED_ANSI_CODE("\x1b[38;2;173;216;230m");
+constexpr const char* light_magenta       = EMBED_ANSI_CODE("\x1b[38;2;240;140;240m");
+constexpr const char* light_cyan          = EMBED_ANSI_CODE("\x1b[38;2;128;255;255m");
+constexpr const char* light_grey          = EMBED_ANSI_CODE("\x1b[38;2;200;200;200m");
 
 // Foreground colors (bright)
 constexpr const char* bright_black  = EMBED_ANSI_CODE("\x1b[90m");
