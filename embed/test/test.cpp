@@ -7,8 +7,10 @@
 #include <embed/OS/tests/Future_test.hpp>
 #include <embed/OS/tests/Coroutine_test.hpp>
 #include <embed/OS/tests/RealTimeScheduler_test.hpp>
+#include <embed/OStream/tests/OStream_test.hpp>
 
 int test_all(){
+
     try{
         return embed::TestResult()
             | embed::ArrayList_test

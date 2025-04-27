@@ -227,8 +227,8 @@ namespace embed
             }
         };
 
-        Task task1("Task1", 1us, 4us);
-        Task task2("Task2", 2us, 2us);
+        Task task1("Task 1", 1us, 4us);
+        Task task2("Task two", 2us, 2us);
 
         // OutputLogger<MockClock>::stream = embed::cout;
         // RealTimeScheduler<MockClock, 2, embed::default_sleep_until<MockClock>, OutputLogger<MockClock>> scheduler;
