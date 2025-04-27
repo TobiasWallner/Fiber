@@ -1,0 +1,190 @@
+/**
+\page page_output_streams_and_formating Output Streams and Formating
+
+\section section_output_stream_and_formating_overview Overview
+
+`embed::OStream` provides a lightweight and flexible output streaming interface, optimized for embedded systems with limited resources.
+It offers:
+
+- Minimal FLASH memory usage compared to alternatives like std::ostream or {fmt}.
+- Formatted output for various types: strings, integers, floating points, booleans, pointers, and chrono durations.
+- Extendable and customizable formatting.
+
+\section section_output_stream_and_formating_getting_started Getting Started
+
+### Basic example:
+\code{.cpp}
+
+embed::cout << "Hello World!" << embed::endl;
+
+\endcode
+
+### Predefined default output streams:
+
+- embed::cout — Standard output
+- embed::cerr — Error output
+
+These must be initialized by the user to point to a concrete OStream implementation.
+Creating a Custom Output Stream.
+
+\code{.cpp}
+class MyCout : public OStream {/*...*/};
+class MyCerr : public OStream {/*...*/};
+
+MyCout my_cout;
+MyCerr my_cerr;
+
+int main(){
+    embed::cout = my_cout;
+    embed::cerr = my_cerr;
+}
+\endcode
+
+To create your own output stream (e.g., UART, USB), derive from embed::OStream:
+
+\code{.cpp}
+class MyStream : public embed::OStream {
+public:
+    void put(char c) override {
+        // Output one character
+    }
+
+    void flush() override {
+        // Flush buffer if necessary
+    }
+
+    void write(const char* str, size_t len) override {
+        // (Optional) Optimized multi-character output
+    }
+};
+\endcode
+
+Mandatory methods to override:
+
+- `void put(char c)`
+- `void flush()`
+
+Recommended for performance:
+
+- `void write(const char* str, size_t len)`
+
+Optional: 
+
+- `void newl()` define how to end a line (default: `\n`)
+- `void endl()` default: newline + flush
+
+\section section_output_stream_and_formating_capabilities Formating and Streaming Capabilities
+
+Stream the following types naturally with `operator<<`:
+
+- Characters and strings (char, const char*)
+- Booleans (bool) — configurable textual/numeric output
+- Integers and unsigned integers (all standard sizes + units)
+- Floating point numbers (float, double, long double)
+- Pointers and nullptr
+
+Example:
+
+\code{.cpp}
+embed::cout << "Answer: " << 42 << embed::newl;
+embed::cout << "Result: " << true << embed::endl;
+embed::cout << "Address: " << myPtr << embed::endl;
+\endcode
+
+\section section_output_stream_and_formating_sepecial_functions Special Stream Functions
+
+You can use the following functions inside streaming expressions:
+
+- `embed::newl(stream)`: Write newline (`\n`) - may be overridden by the user by overrideing `OStream::newl()`
+- `embed::flush(stream)`: Flush the stream
+- `embed::endl(stream)`: Write newline and flush
+
+\section section_output_stream_and_formating_FormatStr String Formatting (FormatStr)
+
+Format strings with padding, minimum width, alignment:
+
+\code{.cpp}
+embed::cout << "[" << embed::FormatStr("OK").mwidth(6).left() << "]" << embed::endl;
+// Output: [OK    ]
+\endcode
+
+All following formating types use and provide the functionalities of embed::FormatStr.
+
+@see embed::FormatStr
+
+\section section_output_stream_and_formating_FormatBool Boolean Formatting (FormatBool)
+
+Configure booleans to print as `true`/`false` or `1`/`0`:
+
+\code{.cpp}
+embed::cout << FormatBool(true).text() << embed::endl; // "true"
+embed::cout << FormatBool(false).num() << embed::endl; // "0"
+\endcode
+
+\see embed::FormatBool
+
+\section section_output_stream_and_formating_FormatInt Integer Formatting (FormatInt)
+
+Enhanced integer output, with thousands, alignment, and sign padding
+
+\code{.cpp}
+embed::cout << FormatInt(123456).use_thousands().thousands('.') << embed::endl; // "123.456"
+embed::cout << FormatInt(42).fsign().mwidth(6) << embed::endl; // "  +42"
+\endcode
+
+\see embed::FormatInt
+
+\section section_output_stream_and_formating_FormatIntSuffix Integer with Suffix (FormatIntSuffix)
+
+Allows to add a suffix to integers that will be aligned with the integer.
+
+\code{.cpp}
+embed::cout << FormatIntSuffix(64, "kB").left().mwidth(6) << embed::endl; // "64kB  "
+\endcode
+
+\see FormatIntSuffix
+
+\section section_output_stream_and_formating_FormatFloat Floating-Point Formatting (FormatFloat)
+
+Flexible floating-point output in scientific, engineering and full formating:
+
+\code{.cpp}
+embed::cout << FormatFloat(3.14f).decimals(2).full() << embed::endl; // "3.14"
+embed::cout << FormatFloat(12345.6).sci() << embed::endl; // "1.2356e4"
+embed::cout << FormatFloat(12345.6).eng() << embed::endl; // "12.356e3"
+\endcode
+
+\see embed::FormatFloat
+
+\section section_output_stream_and_formating_FormatHex Hexadecimal Formatting (FormatHex)
+
+
+Custom FormatHex options allows including or excluding the hex header `0x` as well as upper/lower case and optional 
+leading zeros or compact notation.
+
+\code{.cpp}
+int a;
+embed::cout << FormatHex(&a).upper << embed::endl; // possible output: 0x21F56D
+\endcode
+
+\see embed::FormatHex
+
+> Note: Pointers are automatically formatted as hexadecimal.
+
+\section section_output_stream_and_formating_format_chrono Chrono Durations
+
+Using `format_chrono(duration)` you can create an `embed::FormatIntSuffix` from 
+`std::chrono::duration` types with automatically appropriate units (determined at compile time).
+
+\see embed::format_chrono
+\see embed::FormatIntSuffix
+
+\section section_output_stream_and_formating_customisations Customization with Compiler Flags
+
+You can customize the formatting behavior at compile time by defining multiple compiler macros or CMake options.
+
+For a complete overview of available compile options and their effect on formatting, 
+refer to the page: \ref page_compile_options_and_flags "Compile Options & Flags", 
+specifically section \ref section_compile_options_formating "Formatting"
+
+*/
