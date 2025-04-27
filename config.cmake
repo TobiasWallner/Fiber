@@ -85,7 +85,7 @@ option(EMBED_USE_EXCEPTION_CALLBACKS "Use user-defined callbacks for exceptions 
 
 # Encoding
 # --------------
-option(EMBED_DISABLE_ANSI_CODES "Enables ANSI color escape codes in output" ON)
+option(EMBED_DISABLE_ANSI_CODES "Enables ANSI color escape codes in output" OFF)
 option(EMBED_DISABLE_UTF8_CODES "If `OFF` enables UTF8 codes, for exampample lines and borders. If `ON`, uses ASCII alternatives" OFF)
 
 # General Number Formating
