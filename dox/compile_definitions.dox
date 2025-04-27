@@ -14,24 +14,42 @@ and replace `<definition>` with one of the following flags, as well as `[ON|OFF]
 The library also defines "weak `ON`". They are only `ON` as long as no other option with the same prefix is `ON`.
 This means you do not manully have to turn them `OFF`.
 
+@section section_compile_options_tests Tests
+
 | Definition | Description | Default value |
 |------------|-------------|---------------|
-| **Tests** | | |
 | `EMBED_CTEST` | Inables testing with ctest on local host machines | `OFF` |
 | `EMBED_COMPILE_TESTS` | If `ON` compiles the test sources | `OFF` |
-| **System Stubs** | | |
+
+@section section_compile_options_sys_stubs System Stubs
+
+| Definition | Description | Default value |
+|------------|-------------|---------------|
 | `EMBED_USE_EMBED_SYS_STUBS` | Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size | `OFF` |
-| **Exceptions** | | |
+
+@section section_compile_options_exceptions_assertions Exceptions and Assertions
+
+| Definition | Description | Default value |
+|------------|-------------|---------------|
 | `EMBED_DISABLE_EXCEPTIONS` | Disables exceptions, will also disable assertions | `OFF` |
-| **Assertions** | | |
 | `EMBED_DISABLE_ASSERTIONS` | Disable all embedOS assertions | `OFF` |
 | `EMBED_ASSERTION_LEVEL_CRITICAL` | Enable critical level assertions | weak `ON` |
 | `EMBED_ASSERTION_LEVEL_O1` | Enable O[1] cost development assertions + critical | default: `OFF` |
 | `EMBED_ASSERTION_LEVEL_FULL` | Enable full deep validation assertions + O[1] + full | default: `OFF` |
 | `EMBED_ASSERTS_AS_ASSUME` | Use compiler intrinsics that asume values instead of unused asserts - for more optimisations (like __builtin_assume, or a different, or none - depending on the compiler used) | `OFF` |
 | `EMBED_USE_EXCEPTION_CALLBACKS` | Use user-defined callbacks for exceptions instead of throwing them | `OFF` |
-| **OStream String Formating** | | |
-| `EMBED_ENABLE_ANSI_CODES` | Enables ANSI escape codes in stream output. For example to color terminal text | `ON` |
+
+@section section_compile_options_encodings Encodings
+
+| Definition | Description | Default value |
+|------------|-------------|---------------|
+| `EMBED_DISABLE_ANSI_CODES` | Enables ANSI escape codes in stream output. For example to color terminal text | `OFF` |
+| `EMBED_DISABLE_UTF8_CODES` | Enables UTF8 codes, for exampample lines and borders, if `OFF`, uses ASCII alternatives | `OFF` |
+
+@section section_compile_options_formating Formating
+
+| Definition | Description | Default value |
+|------------|-------------|---------------|
 | `EMBED_FMT_MINIMAL` | If `ON`: uses the settings from the macros instead. This disables runtime configurability but offers more performant code and smaller binaries | `OFF` |
 | Bool Formating | | |
 | `EMBED_FMT_BOOL_TO_TEXT` | If `EMBED_FMT_MINIMAL` is `ON`: Enables bool formating as text instead of numbers. | `ON` |
