@@ -1,6 +1,8 @@
 #include <embed/OStream/OStream.hpp>
 
 #include <limits>
+#include <ratio>
+#include <chrono>
 
 namespace embed{
 
@@ -94,93 +96,14 @@ namespace embed{
     //                                       Integer Formating
     // -----------------------------------------------------------------------------------------------
 
-    char* str_add_uint(char * first, char const * last, std::make_unsigned_t<FormatInt::value_type> value, const str_add_uint_params& params){
-        char * itr = first; 
 
-        if(value == 0){
-            *itr++ = '0';
-            return itr;
-        }
-
-        // convert to string ... but it is in reverse
-        for(size_t i = 0; value != 0 && itr != last; ++i){
-            const auto mod = value % 10;
-            value = value / 10;
-            if(EMBED_FMT_MEMBER(str_add_uint_params, params, use_thousands) && (i != 0) && (i % 3 == 0)) *itr++ = EMBED_FMT_MEMBER(str_add_uint_params, params, thousands_char);
-            *itr++ = '0' + static_cast<char>(mod);
-        }
-
-        // reverse the string
-        {
-            char * fwd_itr = first;
-            char * bwd_itr = itr-1;
-            for(; fwd_itr < bwd_itr; ++fwd_itr, --bwd_itr){
-                const auto temp = *fwd_itr;
-                *fwd_itr = *bwd_itr;
-                *bwd_itr = temp;
-            }
-        }
-
-        return itr;
-    }
-
-    char* str_add_sint(char * first, char const * last, FormatInt::value_type value, const str_add_uint_params& params){
-        const bool sign = value < 0;
-        const FormatInt::value_type abs_value = sign ? -value : value;
-        const std::make_unsigned_t<FormatInt::value_type> uvalue = static_cast<std::make_unsigned_t<FormatInt::value_type>>(abs_value);
-
-        if(sign){
-            char * itr = first;
-            *itr++ = '-';
-            str_add_uint_params u_params = params;
-            u_params.force_sign = false;
-            return str_add_uint(itr, last, uvalue, u_params);
-        }else{
-            return str_add_uint(first, last, uvalue, params);
-        }
-    }
-
-    OStream& operator<<(OStream& stream, const FormatInt& fvalue){
-        bool sign = fvalue._value < 0;
-        const FormatInt::value_type abs_value = sign ? -fvalue._value : fvalue._value;
-        const std::make_unsigned_t<FormatInt::value_type> uvalue = static_cast<std::make_unsigned_t<FormatInt::value_type>>(abs_value);
-        const char sign_char = (sign ? '-' : '+');
-        
-        char buffer[24];
-        
-        char const * const buffer_begin = &buffer[0];
-        char const * const buffer_end = buffer_begin + sizeof(buffer);
-        char * itr = buffer;
-
-        const bool show_sign = sign || EMBED_FMT_MEMBER(FormatInt, fvalue, _force_sign);
-
-        int mwidth = fvalue._mwidth;
-        if(show_sign){
-            if(EMBED_FMT_MEMBER(FormatInt, fvalue, _pad_sign)){
-                // add sign first to the stream and then align the number string
-                stream << sign_char;
-                mwidth -= 1;
-            }else{
-                // add sign to the number and then align the number string in the stream
-                *itr++ = sign_char;
-            }
-        }
-
-        str_add_uint_params params;
-        #ifndef EMBED_FMT_MINIMAL
-            params.use_thousands = fvalue._use_thousands;
-            params.thousands_char = fvalue._thousands_char;
-        #endif
-        itr = str_add_uint(itr, buffer_end, uvalue, params);
-
-        return stream << FormatStr::like(buffer_begin, itr, fvalue).mwidth(mwidth);
-    }
+    
 
     // -----------------------------------------------------------------------------------------------
     //                                       Float Formating
     // -----------------------------------------------------------------------------------------------
 
-    char* str_add_float(char* first, const char* last, const FormatFloat& value){
+    char* str_add_float(char* first, char* last, const FormatFloat& value){
         char* itr = first;
 
         // get unsigned float and print sign
@@ -213,14 +136,10 @@ namespace embed{
         const unsigned long long fractions = fixpoint - digits * pow_10_p_decimals;
 
         // convert digits to text
-        {
-            
-            str_add_uint_params ui_params;
-            #ifndef EMBED_FMT_MINIMAL
-                ui_params.thousands_char = value._thousands_char;
-                ui_params.use_thousands = value._use_thousands;
-            #endif
-            itr = str_add_uint(itr, last, digits, ui_params);
+        char buffer[32];
+        const std::string_view digit_str = uint_to_string(&buffer[0], &buffer[32], digits, value._use_thousands, value._thousands_char);
+        for(char c : digit_str){
+            *itr++ = c;
         }
 
         // convert fractions to text
@@ -243,12 +162,21 @@ namespace embed{
         // convert exponent to string
         if((exponent10 != 0) || EMBED_FMT_MEMBER(FormatFloat, value, _force_exponent)){
             *itr++ = 'e';
-            str_add_uint_params ui_params;
-            #ifndef EMBED_FMT_MINIMAL
-                ui_params.use_thousands = false;
-                ui_params.force_sign = EMBED_FMT_MEMBER(FormatFloat, value, _force_exponent_sign);
-            #endif
-            itr = str_add_sint(itr, last, exponent10, ui_params);
+            if(exponent10 >= 0){
+                if(value._force_exponent_sign){
+                    *itr++ = '+';
+                }
+                std::string_view exp_str = uint_to_string(itr, last, static_cast<unsigned int>(exponent10));
+                for(char c : exp_str){
+                    *itr++ = c;
+                }
+            }else{
+                *itr++ = '-';
+                std::string_view exp_str = uint_to_string(itr, last, static_cast<unsigned int>(-exponent10));
+                for(char c : exp_str){
+                    *itr++ = c;
+                }
+            }
         }
 
         return itr;
@@ -261,8 +189,8 @@ namespace embed{
             return stream << FormatStr::like("nan", 3, value);
         }else{
             char buffer[64];
-            char const * const beginItr = buffer;
-            char const * const endItr = buffer + sizeof(buffer);
+            char* beginItr = buffer;
+            char* endItr = buffer + sizeof(buffer);
             char * itr = buffer;
 
 
@@ -293,122 +221,5 @@ namespace embed{
         }
     }
 
-    
-
-    // -----------------------------------------------------------------------------------------------
-    //                                    chrono overloads
-    // -----------------------------------------------------------------------------------------------
-
-    OStream& operator<<(OStream& stream, std::chrono::nanoseconds value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'n';
-        *itr++ = 's';
-        return stream << FormatStr(first, itr);
-    }
-
-    OStream& operator<<(OStream& stream, std::chrono::microseconds value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'u';
-        *itr++ = 's';
-        return stream << FormatStr(first, itr);
-    }
-
-    OStream& operator<<(OStream& stream, std::chrono::milliseconds value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'm';
-        *itr++ = 's';
-        return stream << FormatStr(first, itr);
-    }
-
-    OStream& operator<<(OStream& stream, std::chrono::seconds value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 's';
-        return stream << FormatStr(first, itr);
-    }
-
-    OStream& operator<<(OStream& stream, std::chrono::minutes value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'h';
-        return stream << FormatStr(first, itr);
-    }
-
-#if __cplusplus >= 202002L
-
-    OStream& operator<<(OStream& stream, std::chrono::days value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'd';
-        return stream << FormatStr(first, itr);
-    }
-
-    OStream& operator<<(OStream& stream, std::chrono::weeks value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'w';
-        return stream << FormatStr(first, itr);
-    }
-
-    OStream& operator<<(OStream& stream, std::chrono::months value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'M';
-        return stream << FormatStr(first, itr);
-    }
-
-    OStream& operator<<(OStream& stream, std::chrono::years value){
-        char buffer[24];
-        const char* first = &buffer[0];
-        char* itr = &buffer[0];
-        const char* last = &buffer[24];
-        const str_add_uint_params params;
-        itr = str_add_sint(itr, last, value.count(), params);
-        *itr++ = 'y';
-        return stream << FormatStr(first, itr);
-    }
-
-#endif
-
-    // -----------------------------------------------------------------------------------------------
-    //                                          Tests
-    // -----------------------------------------------------------------------------------------------
-
-    
 
 }// namespace embed

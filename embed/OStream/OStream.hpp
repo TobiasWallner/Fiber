@@ -5,10 +5,12 @@
 #include <type_traits>
 #include <cmath>
 #include <chrono>
+#include <string_view>
 
 //embed
-#include <embed/math/math.hpp>
 #include <embed/Core/concepts.hpp>
+#include <embed/Core/type_traits.hpp>
+#include <embed/math/math.hpp>
 #include <embed/Exceptions/Exceptions.hpp>
 
 namespace embed{
@@ -242,7 +244,7 @@ namespace embed{
 
     struct FormatStrParams{
         AlignmentLRC _alignment = AlignmentLRC::Right;
-        int _mwidth = -1;
+        int _mwidth = 0;
         char _fill = ' ';
     };
 
@@ -462,7 +464,7 @@ namespace embed{
         constexpr static FormatBool like(bool value, const FormatBoolParam& params){return FormatBool(value, params);}
 
         /**
-         * \brief enables formating to text
+         * \brief enables formating to text (default)
          * \details prints the bool as text: "true"/"false" (default if not calling the function)
          */
         constexpr FormatBool& text(){
@@ -526,17 +528,27 @@ namespace embed{
         return stream << FormatBool(value);
     }
 
-    struct FormatIntParams : public FormatStrParams{
+// -----------------------------------------------------------------------------------------------
+//                                    integer formating
+// -----------------------------------------------------------------------------------------------
+
+    struct _FormatUIntParams{
         #ifndef EMBED_FMT_MINIMAL
             char _thousands_char = ',';
-            bool _force_sign = false;
-            bool _pad_sign = false;
             bool _use_thousands = false;
         #else
             static constexpr char _thousands_char = EMBED_FMT_THOUSANDS_CHAR;
+            static constexpr bool _use_thousands = EMBED_FMT_THOUSANDS_VALUE;
+        #endif
+    };
+
+    struct FormatIntParams : public FormatStrParams, public _FormatUIntParams{
+        #ifndef EMBED_FMT_MINIMAL
+            bool _force_sign = false;
+            bool _pad_sign = false;
+        #else
             static constexpr bool _force_sign = EMBED_FMT_FORCE_SIGN_VALUE;
             static constexpr bool _pad_sign = EMBED_FMT_PAD_SIGN_VALUE;
-            static constexpr bool _use_thousands = EMBED_FMT_THOUSANDS_VALUE;
         #endif
 
         constexpr FormatIntParams()=default;
@@ -553,31 +565,29 @@ namespace embed{
     /**
      * \brief Formats an unsigned integer (of any size) for use with OStream
      */
-    struct FormatInt : FormatIntParams{
-        using value_type = int_fast32_t;
-        
+    template<std::integral Int>
+    struct FormatInt : public FormatIntParams{
+    public:
+        using value_type = typename embed::make_fast<Int>::type;
         value_type _value = 0;
 
         constexpr FormatInt() = default;
         constexpr FormatInt(const FormatInt&) = default;
         constexpr FormatInt& operator=(const FormatInt&) = default;
 
-        constexpr FormatInt(value_type value) : _value(value){}
-
-        template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
-        constexpr explicit FormatInt(Int value) : _value(static_cast<value_type>(value)){}
+        constexpr FormatInt(Int value) : _value(static_cast<value_type>(value)){}
     private:
         // private constructors
         constexpr FormatInt(value_type value, const FormatIntParams& params) : FormatIntParams(params), _value(value){}
 
-        template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
-        constexpr FormatInt(Int value, const FormatStrParams& params) : FormatIntParams(params), _value(static_cast<value_type>(value)){}
+        template <std::integral Int1>
+        constexpr FormatInt(Int1 value, const FormatStrParams& params) : FormatIntParams(params), _value(static_cast<value_type>(value)){}
     public:
 
         static constexpr FormatInt like(value_type value, const FormatIntParams& params){return FormatInt(value, params);}
 
-        template <typename Int, typename std::enable_if<std::is_integral<Int>::value, int>::type = 0>
-        static constexpr FormatInt like(Int value, const FormatStrParams& params){return FormatInt(value, params);}
+        template <std::integral Int1>
+        static constexpr FormatInt like(Int1 value, const FormatStrParams& params){return FormatInt(value, params);}
 
         /**
          * \brief enables thousand characters
@@ -633,29 +643,274 @@ namespace embed{
         constexpr FormatInt& center(){this->_alignment = AlignmentLRC::Center; return *this;}
     };
 
-    struct str_add_uint_params{
-        #ifndef EMBED_FMT_MINIMAL
-            char thousands_char = ',';
-            bool use_thousands = false;
-        #else
-            static constexpr char thousands_char = EMBED_FMT_THOUSANDS_CHAR;
-            static constexpr bool use_thousands = EMBED_FMT_THOUSANDS_VALUE;
-        #endif
-        bool force_sign = false;
-    };
+    template<std::unsigned_integral UInt>
+    std::string_view uint_to_string(char* buffer_first, char* buffer_last, UInt value, bool use_thousands_char = false, char thousands_char = ','){
+        char * itr = buffer_last;
 
-    char* str_add_uint(char * first, char const * last, std::make_unsigned_t<FormatInt::value_type> value, const str_add_uint_params& params);
-    char* str_add_sint(char * first, char const * last, FormatInt::value_type value, const str_add_uint_params& params);
+        if(value == 0){
+            *--itr = '0';
+            return std::string_view(itr, buffer_last);
+        }
 
-    /**
-     * \brief Prints integers to streams with a certain format
-     */
-    OStream& operator<<(OStream& stream, const FormatInt& fvalue);
+        // convert to string
+        for(size_t i = 0; value != 0 && itr != buffer_first; ++i){
+            const auto mod = value % 10;
+            value = value / 10;
+            if((use_thousands_char!='\0') && (i != 0) && (i % 3 == 0)) {*--itr = thousands_char;};
+            *--itr = '0' + static_cast<char>(mod);
+        }
+
+        return std::string_view(itr, buffer_last);
+    }
+
+    template<std::integral Int>
+    void print(OStream& stream, const Int& value, const FormatIntParams& params){
+        using namespace std::string_view_literals;
+        using UInt = typename std::make_unsigned<Int>::type;
+        
+        std::string_view sign_str = ""sv;
+
+        UInt unsigned_value = 0;
+
+        if(value >= 0){
+            unsigned_value = value;
+            if(params._force_sign){
+                sign_str = "+"sv;
+            }
+        }else{
+            unsigned_value = static_cast<std::make_unsigned<Int>::type>(-value);
+            sign_str = "-"sv;
+        }
+
+        char buffer[32];
+        const std::string_view num_str = uint_to_string(&buffer[0], &buffer[32], unsigned_value, params._use_thousands, params._thousands_char);
+
+        const int padding_count = params._mwidth - static_cast<int>(sign_str.size()) - static_cast<int>(num_str.size());
+        const int left_padding_count = padding_count / 2;
+        const int right_padding_count = padding_count - left_padding_count;
+        const FormatStr padding = FormatStr("").fill(params._fill).mwidth(padding_count);
+        const FormatStr left_padding = FormatStr("").fill(params._fill).mwidth(left_padding_count);
+        const FormatStr right_padding = FormatStr("").fill(params._fill).mwidth(right_padding_count);
+
+        switch(params._alignment){
+            case AlignmentLRC::Left : {
+                // padding after sign
+                stream << sign_str << num_str << padding;
+            }break;
+            case AlignmentLRC::Center : {
+                if(params._pad_sign){
+                    // padding between sign and number and after number
+                    stream << sign_str << left_padding << num_str << right_padding;
+                }else{
+                    // padding before sign and after number
+                    stream << left_padding << sign_str << num_str << right_padding;
+                }
+            }break;
+            default: //fallthrough
+            case AlignmentLRC::Right : {
+                if(params._pad_sign){
+                    // padding between sign and number
+                    stream << sign_str << padding << num_str;
+                }else{
+                    // padding before sign
+                    stream << padding << sign_str << num_str;
+                }
+            }break;
+        }
+    }
+
+    template<std::integral Int>
+    inline OStream& operator<<(OStream& stream, const FormatInt<Int>& fvalue){
+        print(stream, fvalue._value, static_cast<const FormatIntParams&>(fvalue));
+        return stream;
+    }
     
     template <std::integral Int>
     inline OStream& operator<<(OStream& stream, const Int& value){
-        return stream << FormatInt(static_cast<FormatInt::value_type>(value));
+        return stream << FormatInt<Int>(value);
     }
+
+// -----------------------------------------------------------------------------------------------
+//                                    integer suffix formating
+// -----------------------------------------------------------------------------------------------
+
+    struct FormatIntSuffixParams : public FormatIntParams{
+        bool _pad_suffix = false;
+
+        constexpr FormatIntSuffixParams()=default;
+        constexpr FormatIntSuffixParams(const FormatIntSuffixParams&)=default;
+        constexpr FormatIntSuffixParams& operator=(const FormatIntSuffixParams&)=default;
+
+        constexpr FormatIntSuffixParams(const FormatStrParams& params) : FormatIntParams(params){}
+        constexpr FormatIntSuffixParams& operator=(const FormatStrParams& params){this->FormatStrParams::operator=(params);return *this;}
+
+        constexpr FormatIntSuffixParams(const FormatIntParams& params) : FormatIntParams(params){}
+        constexpr FormatIntSuffixParams& operator=(const FormatIntParams& params){this->FormatIntParams::operator=(params);return *this;}
+    };
+
+    template<std::integral Int>
+    struct FormatIntSuffix : public FormatIntSuffixParams{
+    public:
+        using value_type = typename embed::make_fast<Int>::type;
+        value_type _value = 0;
+        std::string_view _suffix = "";
+
+        constexpr FormatIntSuffix() = default;
+        constexpr FormatIntSuffix(const FormatIntSuffix&) = default;
+        constexpr FormatIntSuffix& operator=(const FormatIntSuffix&) = default;
+
+        constexpr FormatIntSuffix(Int value, std::string_view suffix) : _value(static_cast<value_type>(value)), _suffix(suffix){}
+    private:
+        // private constructors
+        constexpr FormatIntSuffix(Int value, std::string_view suffix, const FormatStrParams& params) : FormatIntSuffixParams(params), _value(value), _suffix(suffix){}
+        constexpr FormatIntSuffix(Int value, std::string_view suffix, const FormatIntParams& params) : FormatIntSuffixParams(params), _value(value), _suffix(suffix){}
+        constexpr FormatIntSuffix(Int value, std::string_view suffix, const FormatIntSuffixParams& params) : FormatIntSuffixParams(params), _value(static_cast<value_type>(value)), _suffix(suffix){}
+    public:
+
+        static constexpr FormatIntSuffix like(Int value, std::string_view suffix, const FormatIntParams& params){return FormatIntSuffix(value, suffix, params);}
+        static constexpr FormatIntSuffix like(Int value, std::string_view suffix, const FormatStrParams& params){return FormatIntSuffix(value, suffix, params);}
+        static constexpr FormatIntSuffix like(Int value, std::string_view suffix, const FormatIntSuffixParams& params){return FormatIntSuffix(value, suffix, params);}
+
+        /**
+         * \brief adds padding between the number and the suffix
+         */
+        constexpr FormatIntSuffix& pad_suffix(bool b = true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_pad_suffix = b;
+            #endif
+            return *this;
+        }
+
+        /**
+         * \brief enables thousand characters
+         * 
+         * Example:
+         * ```C++
+         * stream << FormatIntSuffix(4203).use_thousands(); //Outputs 4,203
+         * stream << FormatIntSuffix(4203).use_thousands(true); //Outputs 4,203
+         * stream << FormatIntSuffix(4203).use_thousands(false); //Outputs 4203
+         * ```
+         */
+        constexpr FormatIntSuffix& use_thousands([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_use_thousands = b; 
+            #endif
+            return *this;
+        }
+
+        /**
+         * \brief enables thousand characters
+         * 
+         * Example:
+         * ```C++
+         * stream << FormatIntSuffix(4203).thousands('.'); //Outputs 4.203
+         * stream << FormatIntSuffix(4203).thousands(','); //Outputs 4,203
+         * ```
+         */
+        constexpr FormatIntSuffix& thousands([[maybe_unused]]char c=','){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_thousands_char = c; 
+                this->_use_thousands = true; 
+            #endif
+            return *this;
+        }
+
+        /// @brief force the printing of the sign, even if it is positive. 
+        constexpr FormatIntSuffix& fsign([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_force_sign = b; 
+            #endif
+            return *this;
+        }
+        constexpr FormatIntSuffix& mwidth(int mw){this->_mwidth = mw; return *this;}
+        constexpr FormatIntSuffix& fill(char c){this->_fill = c; return *this;}
+        constexpr FormatIntSuffix& pad_sign([[maybe_unused]]bool b=true){
+            #ifndef EMBED_FMT_MINIMAL
+                this->_pad_sign = b; 
+            #endif
+            return *this;
+        }
+        constexpr FormatIntSuffix& left(){this->_alignment = AlignmentLRC::Left; return *this;}
+        constexpr FormatIntSuffix& right(){this->_alignment = AlignmentLRC::Right; return *this;}
+        constexpr FormatIntSuffix& center(){this->_alignment = AlignmentLRC::Center; return *this;}
+    };
+
+    template<std::integral Int>
+    void print(OStream& stream, const Int& value, std::string_view suffix, const FormatIntSuffixParams& params){
+        using namespace std::string_view_literals;
+        using UInt = typename std::make_unsigned<Int>::type;
+
+        std::string_view sign_str = ""sv;
+
+        UInt unsigned_value = 0;
+
+        if(value >= 0){
+            unsigned_value = value;
+            if(params._force_sign){
+                sign_str = "+"sv;
+            }
+        }else{
+            unsigned_value = static_cast<std::make_unsigned<Int>::type>(-value);
+            sign_str = "-"sv;
+        }
+
+        char buffer[32];
+        const std::string_view num_str = uint_to_string(&buffer[0], &buffer[32], unsigned_value, params._use_thousands, params._thousands_char);
+
+        const int padding_count = params._mwidth - static_cast<int>(sign_str.size()) - static_cast<int>(num_str.size()) - static_cast<int>(suffix.size());
+        const int left_padding_count = padding_count / 2;
+        const int right_padding_count = padding_count - left_padding_count;
+        const FormatStr padding = FormatStr("").fill(params._fill).mwidth(padding_count);
+        const FormatStr left_padding = FormatStr("").fill(params._fill).mwidth(left_padding_count);
+        const FormatStr right_padding = FormatStr("").fill(params._fill).mwidth(right_padding_count);
+
+        switch(params._alignment){
+            case AlignmentLRC::Left : {
+                if(params._pad_suffix){
+                    // padding between number and suffix
+                    stream << sign_str << num_str << padding << suffix;
+                }else{
+                    // padding after suffix
+                    stream << sign_str << num_str  << suffix << padding;
+                }
+            }break;
+            case AlignmentLRC::Center : {
+                if(!params._pad_sign && !params._pad_suffix){
+                    // padding before sign and after suffix
+                    stream << left_padding << sign_str << num_str << suffix << right_padding;
+                }else if(params._pad_sign && !params._pad_suffix){
+                    // padding between sign and number and after suffix
+                    stream << sign_str << left_padding << num_str << suffix << right_padding;
+                }else if(!params._pad_sign && params._pad_suffix){
+                    // padding before sighn and between number and suffix
+                    stream << left_padding << sign_str << num_str << right_padding << suffix;
+                }else /* (params._pad_sign && params._pad_suffix) */ {
+                    // padding between sign and number and between number and suffix
+                    stream << sign_str << left_padding << num_str << right_padding << suffix;
+                }
+            }break;
+            default: // fall through
+            case AlignmentLRC::Right : {
+                if(params._pad_sign){
+                    // padding between sign and number
+                    stream << sign_str << padding << num_str << suffix;
+                }else{
+                    // padding before sign
+                    stream << padding << sign_str << num_str << suffix;
+                }
+            }break;
+        }
+    }
+
+    template<std::integral Int>
+    OStream& operator<<(OStream& stream, const FormatIntSuffix<Int>& value){
+        print(stream, value._value, value._suffix, static_cast<const FormatIntSuffixParams&>(value));
+        return stream;
+    }
+
+// -----------------------------------------------------------------------------------------------
+//                                    fload formating
+// -----------------------------------------------------------------------------------------------
 
 
     /// @brief Enum to specify the formating of floating point numbers
@@ -1058,24 +1313,39 @@ namespace embed{
         return stream << "nullptr";
     }
 
-    // -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
     //                                    chrono overloads
     // -----------------------------------------------------------------------------------------------
 
-    OStream& operator<<(OStream& stream, std::chrono::nanoseconds value);
-    OStream& operator<<(OStream& stream, std::chrono::microseconds value);
-    OStream& operator<<(OStream& stream, std::chrono::milliseconds value);
-    OStream& operator<<(OStream& stream, std::chrono::seconds value);
-    OStream& operator<<(OStream& stream, std::chrono::minutes value);
+    template<class Rep, class Period = std::ratio<1, 1>>
+    auto format_chrono(std::chrono::duration<Rep, Period> duration){
+        if constexpr (std::ratio_greater_equal<Period, typename std::chrono::years::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::years>(duration).count(), "Y");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::months::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::months>(duration).count(), "M");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::weeks::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::weeks>(duration).count(), "W");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::days::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::day>(duration).count(), "D");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::hours::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::hours>(duration).count(), "h");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::minutes::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::minutes>(duration).count(), "m");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::seconds::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::seconds>(duration).count(), "s");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::milliseconds::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count(), "ms");
+        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::microseconds::period>::value){
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::microseconds>(duration).count(), "us");
+        }else /* if constexpr (std::ratio_greater_equal<Period, typename std::chrono::nanoseconds::period>::value) */ {
+            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count(), "ns");
+        }
+    }
 
-#if __cplusplus >= 202002L
-
-    OStream& operator<<(OStream& stream, std::chrono::days value);
-    OStream& operator<<(OStream& stream, std::chrono::weeks value);
-    OStream& operator<<(OStream& stream, std::chrono::months value);
-    OStream& operator<<(OStream& stream, std::chrono::years value);
-
-#endif
+    template<class Rep, class Period = std::ratio<1, 1>>
+    OStream& operator<<(OStream& stream, std::chrono::duration<Rep, Period> duration){
+        return stream << format_chrono(duration);
+    }
 
     // -----------------------------------------------------------------------------------------------
     //                                    reverse_iterator overloads
