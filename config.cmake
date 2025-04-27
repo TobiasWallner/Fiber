@@ -83,10 +83,10 @@ option(EMBED_USE_EXCEPTION_CALLBACKS "Use user-defined callbacks for exceptions 
 #                           Output and String Formating
 # ================================================================================
 
-# ANSI Formating
+# Encoding
 # --------------
-# TODO: change to: `option(EMBED_ENABLE_ANSI_CODES "Disable ANSI color escape codes in output" ON)`
-option(EMBED_ENABLE_ANSI_CODES "Enables ANSI color escape codes in output" ON)
+option(EMBED_DISABLE_ANSI_CODES "Enables ANSI color escape codes in output" ON)
+option(EMBED_DISABLE_UTF8_CODES "If `OFF` enables UTF8 codes, for exampample lines and borders. If `ON`, uses ASCII alternatives" OFF)
 
 # General Number Formating
 # ------------------------
@@ -207,7 +207,8 @@ set(embed_main_flags
     EMBED_ASSERTION_LEVEL_FULL
     EMBED_ASSERTS_AS_ASSUME
     EMBED_USE_EXCEPTION_CALLBACKS
-    EMBED_ENABLE_ANSI_CODES
+    EMBED_DISABLE_ANSI_CODES
+    EMBED_DISABLE_UTF8_CODES
     EMBED_FMT_MINIMAL
 )
 

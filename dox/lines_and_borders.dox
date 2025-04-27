@@ -1,0 +1,375 @@
+/**
+@page lines_and_borders Lines and Borders
+
+
+The namespace `embed::utf8_lines` offers beautiful UTF-8 lines and borders.
+
+Lines are defined as:
+```cpp
+constexpr std::string_view xxx = "<line>";
+```
+where `xxx` is one of the following descriptions.
+
+If you are using CMake, UTF8 codes are enabled by default. If your terminal does not support
+UTF-8 characters you can disable them by stting the following CMake or equally named compiler definition:
+
+```cmake
+set(EMBED_DISABLE_UTF8_CODES=ON)
+```
+
+@section single_lines Single Line Drawing Characters
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>UTF-8 Code</th>
+      <th>ASCII Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>single_vertical</code></td>
+      <td><code>"│"</code></td>
+      <td><code>"|"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_horizontal</code></td>
+      <td><code>"─"</code></td>
+      <td><code>"-"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_corner_topleft</code></td>
+      <td><code>"┌"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_corner_topright</code></td>
+      <td><code>"┐"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_corner_botleft</code></td>
+      <td><code>"└"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_corner_botright</code></td>
+      <td><code>"┘"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_t_up</code></td>
+      <td><code>"┬"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_t_down</code></td>
+      <td><code>"┴"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_t_left</code></td>
+      <td><code>"├"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_t_right</code></td>
+      <td><code>"┤"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>single_cross</code></td>
+      <td><code>"┼"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+@section double_lines Double Line Drawing Characters
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>UTF-8 Code</th>
+      <th>ASCII Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>double_horizontal</code></td>
+      <td><code>"═"</code></td>
+      <td><code>"-"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_vertical</code></td>
+      <td><code>"║"</code></td>
+      <td><code>"|"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_corner_topleft</code></td>
+      <td><code>"╔"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_corner_topright</code></td>
+      <td><code>"╗"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_corner_botleft</code></td>
+      <td><code>"╚"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_corner_botright</code></td>
+      <td><code>"╝"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_t_up</code></td>
+      <td><code>"╦"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_t_down</code></td>
+      <td><code>"╩"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_t_left</code></td>
+      <td><code>"╠"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_t_right</code></td>
+      <td><code>"╣"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>double_cross</code></td>
+      <td><code>"╬"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+@section mixed_lines Mixed Single/Double Line Characters
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>UTF-8 Code</th>
+      <th>ASCII Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>mixed_corner_topleft</code></td>
+      <td><code>"╒"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_corner_topright</code></td>
+      <td><code>"╕"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_corner_botleft</code></td>
+      <td><code>"╘"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_corner_botright</code></td>
+      <td><code>"╛"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_t_up</code></td>
+      <td><code>"╤"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_t_down</code></td>
+      <td><code>"╧"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_t_left</code></td>
+      <td><code>"╞"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_t_right</code></td>
+      <td><code>"╡"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>mixed_cross</code></td>
+      <td><code>"╪"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+@section light_lines Light Line Variants 
+
+similar to single, but sometimes spaced differently
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>UTF-8 Code</th>
+      <th>ASCII Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>light_horizontal</code></td>
+      <td><code>"─"</code></td>
+      <td><code>"-"</code></td>
+    </tr>
+    <tr>
+      <td><code>light_vertical</code></td>
+      <td><code>"│"</code></td>
+      <td><code>"-"</code></td>
+    </tr>
+    <tr>
+      <td><code>light_corner_topleft</code></td>
+      <td><code>"┌"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>light_corner_topright</code></td>
+      <td><code>"┐"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>light_corner_botleft</code></td>
+      <td><code>"└"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>light_corner_botright</code></td>
+      <td><code>"┘"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+@section heavy_lines Heavy Line Drawing Characters
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>UTF-8 Code</th>
+      <th>ASCII Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>heavy_horizontal</code></td>
+      <td><code>"━"</code></td>
+      <td><code>"-"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_vertical</code></td>
+      <td><code>"┃"</code></td>
+      <td><code>"|"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_corner_topleft</code></td>
+      <td><code>"┏"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_corner_topright</code></td>
+      <td><code>"┓"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_corner_botleft</code></td>
+      <td><code>"┗"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_corner_botright</code></td>
+      <td><code>"┛"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_t_up</code></td>
+      <td><code>"┳"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_t_down</code></td>
+      <td><code>"┻"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_t_left</code></td>
+      <td><code>"┣"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_t_right</code></td>
+      <td><code>"┫"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>heavy_cross</code></td>
+      <td><code>"╋"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+@section rounded_corners Rounded Corners 
+
+usually used with light lines
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>UTF-8 Code</th>
+      <th>ASCII Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>rounded_corner_topleft</code></td>
+      <td><code>"╭"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>rounded_corner_topright</code></td>
+      <td><code>"╮"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>rounded_corner_botleft</code></td>
+      <td><code>"╰"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+    <tr>
+      <td><code>rounded_corner_botright</code></td>
+      <td><code>"╯"</code></td>
+      <td><code>"+"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+*/
