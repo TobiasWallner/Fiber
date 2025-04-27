@@ -43,7 +43,6 @@ target_compile_features(embed PUBLIC
 )
 
 target_compile_options(embed PRIVATE
-    -O3
     -Wall
     -Wextra
     -Werror
