@@ -5,6 +5,7 @@
 #include <variant>
 #include <memory_resource>
 #include <optional>
+#include <string_view>
 
 //embed
 #include <embed/Exceptions/Exceptions.hpp>
@@ -191,7 +192,7 @@ namespace embed{
 
     class CoTask : public AwaitableNode{
     private:
-        const char * _task_name = "";
+        std::string_view _task_name = "";
         Coroutine<embed::Exit> _main_coroutine;
         CoroutineNode* _leaf_coroutine;
         AwaitableNode* _leaf_awaitable = nullptr;
@@ -213,7 +214,7 @@ namespace embed{
         constexpr unsigned int id() const {return this->_id;}
 
 
-        constexpr const char* name() const {return this->_task_name;}
+        constexpr std::string_view name() const {return this->_task_name;}
 
         /**
          * @brief sets a signal
