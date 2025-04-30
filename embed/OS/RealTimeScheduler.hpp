@@ -265,14 +265,14 @@ namespace embed
          * @brief Runs the next task and decides to which queue it belongs after running.
          * 
          * Runs the task with the highest priority (= lowest deadline) from the running queue. 
-         * The task may send a signal using `embed::CoTaskSignal` from an `embed::AwaitableNode`.
+         * The task may send a signal using `embed::CoSignal` from an `embed::AwaitableNode`.
          * If the task sent a: 
          * - <b><code>NextCycle</code> signal</b>: the scheduler will call the tasks `.next_schedule()` method to calculate its next schedule and puts it back into the waiting priority list.
          * - <b><code>Await</code> signal</b>: the task will be put on the `await queue` until the awaitable signals `true` on `.await_ready()`.
          * - <b><code>Implicit/ExplicitDelay</code> signal</b>: the scheduler will calculate the next schedule of the task using the given delay.
          * - <b><code>None</code></b>: (happens when the task ends) the task will be removed from the scheduler and not put back into any queue.
          * 
-         * @see embed::CoTaskSignal
+         * @see embed::CoSignal
          * @see embed::AwaitableNode
          */
         void run_next(){
@@ -285,31 +285,31 @@ namespace embed
                 logger::log_resume(task->_execution_start, Clock::now(), task->name(), task->id());
                 // re-schedule
                 
-                const CoTaskSignal signal = task->get_signal();
+                const CoSignal signal = task->get_signal();
                 switch(signal.type()){
-                    case CoTaskSignal::Type::Await : {
+                    case CoSignal::Type::Await : {
                         // clear signal
                         this->_await_bench.emplace_back(task);
                         logger::log_move(Clock::now(), task->name(), task->id(), "resume", "await");
                     }break;
-                    case CoTaskSignal::Type::NextCycle : {
+                    case CoSignal::Type::NextCycle : {
                         task->_schedule = task->next_schedule(task->_schedule, ExecutionTime<Clock>{task->_execution_start, Clock::now()});
                         this->waiting_queue().push(task);
                         logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
                     }break;
-                    case CoTaskSignal::Type::ImplicitDelay : {
+                    case CoSignal::Type::ImplicitDelay : {
                         const duration rel_deadline = task->_schedule.deadline - task->_schedule.ready;
                         task->_schedule.ready = Clock::now() + std::chrono::duration_cast<duration>(signal.implicit_delay().delay);
                         task->_schedule.deadline = task->_schedule.ready + rel_deadline;
                         this->waiting_queue().push(task);
                         logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
                     }break;
-                    case CoTaskSignal::Type::ExplicitDelay : {
+                    case CoSignal::Type::ExplicitDelay : {
                         task->_schedule.ready = Clock::now() + std::chrono::duration_cast<duration>(signal.explicit_delay().delay);
                         task->_schedule.deadline = task->_schedule.ready + std::chrono::duration_cast<duration>(signal.explicit_delay().rel_deadline);
                         logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
                     }break;
-                    case CoTaskSignal::Type::None : {
+                    case CoSignal::Type::None : {
                         /* 
                         - Nothing to do 
                         - task probably finished 
