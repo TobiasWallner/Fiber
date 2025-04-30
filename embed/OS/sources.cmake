@@ -1,7 +1,7 @@
 target_sources(embed
     PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/Clock.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/CoTaskSignal.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/CoSignal.hpp
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine.hpp
         ${CMAKE_CURRENT_LIST_DIR}/Future.hpp
         ${CMAKE_CURRENT_LIST_DIR}/LinearScheduler.hpp
@@ -10,7 +10,7 @@ target_sources(embed
 
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/CoTaskSignal.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/CoSignal.cpp
         
 )
 
