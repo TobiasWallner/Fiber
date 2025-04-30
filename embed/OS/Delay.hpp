@@ -12,7 +12,7 @@ namespace embed
 {
     
     class Delay : public AwaitableNode{
-        std::chrono::nanoseconds _delay_ready;
+        std::chrono::nanoseconds _delay_ready = std::chrono::nanoseconds(0);
         std::optional<std::chrono::nanoseconds> _delay_deadline = std::nullopt;
         bool _ready = false;
     public:
@@ -32,7 +32,7 @@ namespace embed
          * next_deadline = Clock::now() + delay + (previous_deadline - previous_ready)
          * ```
          * 
-         * @see CoTaskSignal::ImplicitDelay
+         * @see CoSignal::ImplicitDelay
          * 
          * @param delay The delay by which the task will be re-scheduled
          */
@@ -61,7 +61,7 @@ namespace embed
          * @tparam Period2 The period of the std::chrono::duration. Has to be a std::ratio
          * @param delay The delay by which this task should be delayed
          * @param relative_deadline The added deadline after the delay
-         * @see CoTaskSignal::ExplicitDelay
+         * @see CoSignal::ExplicitDelay
          */
         template<class Rep1, CStdRatio Period1, class Rep2, CStdRatio Period2>
         explicit constexpr Delay(std::chrono::duration<Rep1, Period1> delay, std::chrono::duration<Rep2, Period2> relative_deadline)
@@ -78,13 +78,15 @@ namespace embed
     private:
 
         /// @brief Signals a delay to the root task or scheduler and sets `_ready` to `true`.
-        inline CoTaskSignal await_suspend_signal() noexcept override {
+        inline CoSignal await_suspend_signal() noexcept override {
             this->_ready = true;
+            CoSignal signal;
             if(this->_delay_deadline.has_value()){
-                return CoTaskSignal().explicit_delay(this->_delay_ready, this->_delay_deadline.value());
+                signal.explicit_delay(this->_delay_ready, this->_delay_deadline.value());
             }else{
-                return CoTaskSignal().implicit_delay(this->_delay_ready);
+                signal.implicit_delay(this->_delay_ready);
             }
+            return signal;
         }
     };
 
