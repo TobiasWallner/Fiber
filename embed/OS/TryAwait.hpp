@@ -116,8 +116,12 @@ namespace embed
          * @brief Forwards the suspend call to the real awaitable
          */
         template<class ReturnType>
-        inline void await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept{
-            this->_awaitable.await_suspend(handle);
+        inline auto await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept{
+            if constexpr (requires {this->_awaitable.await_suspend(handle);} ){
+                return this->_awaitable.await_suspend(handle);
+            }else{
+                return void();
+            }
         }
     };
     
