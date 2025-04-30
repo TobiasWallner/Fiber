@@ -20,8 +20,43 @@ namespace embed
         Clock::time_point end;
     };
 
+    /**
+     * \brief A real time task is time aware. It has an assigned clock, a ready time and a deadline.
+     * 
+     * Real-time tasks can be used in real-time schedulers
+     * The real-time schedulers derives from `Task` and additionally provides a ready-time.
+     * The RealTimeScheduler will only start the task after the ready time.
+     * Further, it provides a deadline. A real-time scheduler will prioritise task with sooner deadlines.
+     * 
+     * In case you like to create your own real-time task and derive from this one, it provides the following customisations:
+     * 
+     * - Overload the following to calculate the next schedule from the last schedule and/or execution times.
+     *   ```cpp
+     *   virtual RealTimeSchedule<Clock> next_schedule(RealTimeSchedule<Clock> previous_schedule, ExecutionTime<Clock> previous_execution)
+     *   ``` 
+     *   
+     * - Overload the following to decide weather or not a missed deadline should or should not resume the task, given the duration that passed since the deadline.
+     *   ```
+     *   virtual bool missed_deadline(Clock::duration d)
+     *   ```
+     *   
+     * Methods that you might like to overload from `Task`
+     * 
+     * - Overload the following to decide what happens on uncaught exceptions in coroutines.
+     *   ```
+     *   
+     *   ```
+     * 
+     * \tparam Clock A Clock type that comforms to the template `embed::CClock`.
+     * 
+     * \see embed::Task
+     * \see embed::RealTimeScheduler
+     * \see embed::CClock
+     * \see embed::Clock
+     * \see embed::ClockTick
+     */
     template<CClock Clock>
-    class RealTimeTask : public CoTask{
+    class RealTimeTask : public Task{
     private:
     public:
 
@@ -37,7 +72,9 @@ namespace embed
         /**
          * @brief sets the ready time relative from now and the deadline relative from the start time
          */
-        RealTimeTask(Coroutine<embed::Exit>&& main, const char* name, duration ready, duration deadline) : CoTask(std::move(main), name){
+        RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, duration ready, duration deadline) 
+            : Task(std::move(main), name)
+        {
             this->_schedule.ready = Clock::now() + ready;
             this->_schedule.deadline = this->_schedule.ready + deadline;
         }
@@ -45,7 +82,7 @@ namespace embed
         /**
          * @brief sets the ready time to the absolute time point and the deadline relative from the start time
          */
-        RealTimeTask(Coroutine<embed::Exit>&& main, const char* name, time_point ready, duration deadline) : CoTask(std::move(main), name){
+        RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, time_point ready, duration deadline) : Task(std::move(main), name){
             this->_schedule.ready = ready;
             this->_schedule.deadline = this->_schedule.ready + deadline;
         }
@@ -53,7 +90,7 @@ namespace embed
         /**
          * @brief sets the ready and deadline time to the absolute time points
          */
-        RealTimeTask(Coroutine<embed::Exit>&& main, const char* name, time_point ready, time_point deadline) : CoTask(std::move(main), name){
+        RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, time_point ready, time_point deadline) : Task(std::move(main), name){
             this->_schedule.ready = ready;
             this->_schedule.deadline = deadline;
         }
@@ -78,7 +115,14 @@ namespace embed
          */
         virtual bool missed_deadline([[maybe_unused]]Clock::duration d){return true;}
 
+        /**
+         * \brief returns the time point at which this task becomes ready to be executed
+         */
         inline time_point ready_time() const {return this->_schedule.ready;}
+
+        /**
+         * \brief returns the time point before which this task needs to be executed
+         */
         inline time_point deadline() const {return this->_schedule.deadline;}
 
         
