@@ -5,7 +5,7 @@
 
 namespace embed{
     
-    CoTask::CoTask(Coroutine<embed::Exit>&& main, const char* task_name) noexcept
+    Task::Task(Coroutine<embed::Exit>&& main, std::string_view task_name) noexcept
             : _task_name(task_name)
             , _main_coroutine(std::move(main))
     {
@@ -13,7 +13,7 @@ namespace embed{
         this->_main_coroutine.Register(this);
     }
 
-    CoTask::CoTask(CoTask&& other) noexcept
+    Task::Task(Task&& other) noexcept
         : _task_name(other._task_name)
         , _main_coroutine(std::move(other._main_coroutine))
         , _leaf_coroutine(std::move(other._leaf_coroutine))
@@ -27,7 +27,7 @@ namespace embed{
         other._instant_resume = false;
     }
 
-    CoTask& CoTask::operator=(CoTask&& other) noexcept {
+    Task& Task::operator=(Task&& other) noexcept {
         if(this != &other){
             this->_task_name = other._task_name;
             this->_id = other._id;
@@ -47,7 +47,7 @@ namespace embed{
 
     
 
-    bool CoTask::is_resumable() const {
+    bool Task::is_resumable() const {
         if(this->_leaf_coroutine && !this->is_done()){
             if(this->_leaf_awaitable != nullptr){
                 return this->_leaf_awaitable->await_ready();
@@ -58,7 +58,7 @@ namespace embed{
         return false;
     }
 
-    void CoTask::resume(){
+    void Task::resume(){
         EMBED_ASSERT_O1(this->is_resumable());
         do{
             this->_instant_resume = false;
@@ -72,7 +72,7 @@ namespace embed{
         */
     }
 
-    void CoTask::handle_exception(std::exception_ptr except_ptr) {
+    void Task::handle_exception(std::exception_ptr except_ptr) {
         try {
             std::rethrow_exception(except_ptr);
         } catch (const embed::Exception& e) {
@@ -90,7 +90,7 @@ namespace embed{
         this->_instant_resume = false;
     }
 
-    void CoTask::kill_chain(){
+    void Task::kill_chain(){
         // kill loop
         while(this->_leaf_coroutine){
             CoroutineNode* next = this->_leaf_coroutine->parent();
