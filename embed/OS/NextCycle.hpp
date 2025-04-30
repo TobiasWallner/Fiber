@@ -14,9 +14,9 @@ namespace embed
         inline void await_resume() noexcept {}
 
     private:
-        inline CoTaskSignal await_suspend_signal() noexcept override {
+        inline CoSignal await_suspend_signal() noexcept override {
             this->_ready = true;
-            return CoTaskSignal().next_cycle();
+            return CoSignal().next_cycle();
         }
     };
 
