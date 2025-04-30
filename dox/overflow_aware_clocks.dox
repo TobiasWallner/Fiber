@@ -1,7 +1,8 @@
 /**
 @page page_overflow_aware_clocks Overflow aware: Clocks, Time-Points and Durations
 
-page_exceptions_and_assertions_disable Overview
+@section page_exceptions_and_assertions_disable Overview
+
 The `embed` library provides a fully overflow-aware timing system including:
 - Clocks
 - Time points
@@ -84,6 +85,10 @@ rtscheduler.addTask(task);
 `embed` makes working with microcontroller timers as safe and intuitive as modern C++ chrono types — without giving up performance or hardware alignment.
 You keep full control over the tick source, overflow range, and resolution, and the library guarantees that comparisons and arithmetic Just Work™.
 
-@see ClockTick, TimePoint, Duration, Clock, CClock
+@see embed::ClockTick
+@see embed::TimePoint
+@see embed::Duration
+@see embed::CClock
+@see embed::Clock
 
 */

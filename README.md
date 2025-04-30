@@ -45,7 +45,7 @@ Each task suspends explicitly at `co_await` points, allowing others to run. No b
 The OS is just the scheduler of your choice, add some tasks and let it spin.
 ```cpp
 int main(){
-  CoTask task(coroutine(), "task");
+  Task task(coroutine(), "task");
 
   embed::StaticLinearScheduler scheduler;
   scheduler.addTask(task);

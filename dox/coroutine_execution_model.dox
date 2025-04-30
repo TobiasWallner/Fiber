@@ -28,7 +28,7 @@ The list structure supports:
 - **Awaitable**:
   - A special form of coroutine node that is always the **leaf node**
   - For example: `co_await delay(10ms)` or `co_await future`
-- **CoTask**:
+- **Task**:
   - Owns the coroutine chain
   - Holds:
     - A pointer to the **root** (head/original coroutine)
@@ -38,8 +38,8 @@ The list structure supports:
     - Handling exceptions
     - Destroying the coroutine chain
     - Tracking lifecycle and status
-- **CoTaskSignal**:
-  - Represents a signal that can be sent from (nested) coroutines to CoTask and thus to the Scheduler
+- **CoSignal**:
+  - Represents a signal that can be sent from (nested) coroutines to Task and thus to the Scheduler
   - Contains information about "how" or "why" the coroutine suspended at an `co_await` point
     - allows for different scheduling strategies
 
@@ -49,16 +49,16 @@ Coroutines are only logically nested but physically flat.
 
 @section section_coroutine_execution_model_control_flow Control Flow
 
-1. `CoTask::resume()` is called
+1. `Task::resume()` is called
 2. It resumes the **leaf coroutine** in the chain
 3. The coroutine may:
     - `co_await` another coroutine → creates a new coroutine and sets it as the new leaf
     - `co_return` or `co_yield` → returns to `final_suspend()`
-4. After `final_suspend()`, control returns to `CoTask`
-5. If there is a parent coroutine, `CoTask` registers that as the new leaf and resumes it immediately
-6. If the chain completes, `CoTask` marks the task as `Exit::Success`
-All control flow and state transition pass through `CoTask`. The coroutine chain **never resumes itself**.
-7. A `co_await Delay` or `co_await NextCycle` sends a `CoTaskSignal` signal to the CoTask that forwards it to the Scheduler allowing different scheduling strategies.
+4. After `final_suspend()`, control returns to `Task`
+5. If there is a parent coroutine, `Task` registers that as the new leaf and resumes it immediately
+6. If the chain completes, `Task` marks the task as `Exit::Success`
+All control flow and state transition pass through `Task`. The coroutine chain **never resumes itself**.
+7. A `co_await Delay` or `co_await NextCycle` sends a `CoSignal` signal to the Task that forwards it to the Scheduler allowing different scheduling strategies.
 
 ---
 
@@ -67,8 +67,8 @@ All control flow and state transition pass through `CoTask`. The coroutine chain
 - When a coroutine throws and does not catch the exception:
   - The compiler-generated `try/catch` calls `promise_type::unhandled_exception()`
   - That stores `std::current_exception()` inside the coroutine's promise
-  - Then calls `CoTask::handle_exception()`
-- `CoTask::handle_exception()`:
+  - Then calls `Task::handle_exception()`
+- `Task::handle_exception()`:
   - Re-throws the exception to identify its type
   - Logs diagnostic output
   - Calls `kill_chain()` to destroy all coroutine frames (from leaf to root)
@@ -79,13 +79,13 @@ All control flow and state transition pass through `CoTask`. The coroutine chain
 @section section_coroutine_execution_model_coroutine_chain_destruction Coroutine Chain Destruction
 
 - Coroutine memory is not automatically freed unless `.destroy()` is called
-- `CoTask::kill_chain()` iterates from the **leaf up to the root**, calling `.destroy()` on each coroutine frame
+- `Task::kill_chain()` iterates from the **leaf up to the root**, calling `.destroy()` on each coroutine frame
 - This minimizes stack usage and avoids leaks or dangling handles
 
 @section section_coroutine_execution_model_core_invariants Core Invariants
 
-- Only `CoTask` is allowed to resume coroutines
-- Every `co_await` and `co_return` returns control to `CoTask`
+- Only `Task` is allowed to resume coroutines
+- Every `co_await` and `co_return` returns control to `Task`
 - No coroutine resumes another coroutine directly
 - The active coroutine is always the tail of the chain (`leaf`)
 - The chain is always linear and acyclic
@@ -95,15 +95,15 @@ All control flow and state transition pass through `CoTask`. The coroutine chain
 
 Think of the coroutine chain as a linked list:
 - `Coroutine` is a **node**
-- `CoTask` is the **owner and controller** of the list
+- `Task` is the **owner and controller** of the list
 - `co_await` links nodes in **reverse**, so the list grows toward the leaf
-- Only `CoTask` traverses and manipulates the list
+- Only `Task` traverses and manipulates the list
 
 ---
 
-@see embed::CoTaskSignal
+@see embed::CoSignal
 @see embed::Coroutine
-@see embed::CoTask
+@see embed::Task
 @see embed::CoroutineNode
 @see embed::CoroutinePromise
 @see embed::Future
