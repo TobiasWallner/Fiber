@@ -9,8 +9,7 @@
 #include <embed/OS/TryAwait.hpp>
 #include <embed/OS/Delay.hpp>
 #include <embed/OS/NextCycle.hpp>
-#include <embed/OS/CoTaskSignal.hpp>
-#include <embed/OS/embed_await.hpp>
+#include <embed/OS/CoSignal.hpp>
 
 namespace{
     embed::TestResult Coroutine_SimpleTask_test(){
@@ -19,10 +18,10 @@ namespace{
         embed::StaticLinearAllocatorDebug<1024> allocator;
         embed::coroutine_frame_allocator = &allocator;
 
-        class SimpleTask : public embed::CoTask{
+        class SimpleTask : public embed::Task{
             public:
             int result = 0;
-            SimpleTask() : embed::CoTask(this->main(), "SimpleTask"){}
+            SimpleTask() : embed::Task(this->main(), "SimpleTask"){}
             embed::Coroutine<embed::Exit> main(){
                 result = 42;
                 co_return embed::Exit::Success;
@@ -78,7 +77,7 @@ namespace{
         embed::coroutine_frame_allocator = &allocator;
         
         CoroutineSuite suit;
-        embed::CoTask task(suit.co_first(), "nested task");
+        embed::Task task(suit.co_first(), "nested task");
         
         TEST_EQUAL(suit.result, 0);
 
@@ -102,12 +101,12 @@ namespace{
         embed::StaticLinearAllocatorDebug<1024> allocator;
         embed::coroutine_frame_allocator = &allocator;
 
-        class Task : public embed::CoTask{
+        class Task : public embed::Task{
             public:
             int result = 0;
             embed::FuturePromisePair<int> future_promise = embed::make_future_promise<int>();
 
-            Task() : CoTask(this->main(), "Awaiting Future"){}
+            Task() : embed::Task(this->main(), "Awaiting Future"){}
 
             embed::Coroutine<embed::Exit> main(){
                 result = co_await embed::TryAwait(future_promise.future);
@@ -164,13 +163,13 @@ namespace{
         embed::StaticLinearAllocatorDebug<1024> allocator;
         embed::coroutine_frame_allocator = &allocator;
 
-        class Task : public embed::CoTask{
+        class Task : public embed::Task{
             public:
             int result = 0;
             embed::FuturePromisePair<int> fp_pair = embed::make_future_promise<int>();
             embed::FuturePromisePair<int> future_promise = embed::make_future_promise<int>();
 
-            Task() : CoTask(this->main(), "Signaling test"){}
+            Task() : embed::Task(this->main(), "Signaling test"){}
 
             embed::Coroutine<embed::Exit> main(){
                 using namespace std::chrono_literals;
@@ -187,8 +186,8 @@ namespace{
 
         task.resume(); // co_await embed::NextCycle();
         {
-            const embed::CoTaskSignal signal = task.get_signal();
-            TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::NextCycle);
+            const embed::CoSignal signal = task.get_signal();
+            TEST_EQUAL(signal.type(), embed::CoSignal::Type::NextCycle);
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
             TEST_FALSE(task.is_done());
@@ -196,8 +195,8 @@ namespace{
 
         task.resume(); // co_await embed::Delay(100ns)
         {
-            const embed::CoTaskSignal signal = task.get_signal();
-            TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::ImplicitDelay);
+            const embed::CoSignal signal = task.get_signal();
+            TEST_EQUAL(signal.type(), embed::CoSignal::Type::ImplicitDelay);
             TEST_EQUAL(signal.implicit_delay().delay, 100ns);
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
@@ -206,8 +205,8 @@ namespace{
 
         task.resume(); // embed::Delay(200ns, 2ns);
         {
-            const embed::CoTaskSignal signal = task.get_signal();
-            TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::ExplicitDelay);
+            const embed::CoSignal signal = task.get_signal();
+            TEST_EQUAL(signal.type(), embed::CoSignal::Type::ExplicitDelay);
             TEST_EQUAL(signal.explicit_delay().delay, 200ns);
             TEST_EQUAL(signal.explicit_delay().rel_deadline, 2ns);
             TEST_TRUE(task.is_resumable());
@@ -217,8 +216,8 @@ namespace{
 
         task.resume(); // co_await this->fp_pair.future;
         {
-            const embed::CoTaskSignal signal = task.get_signal();
-            TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::Await);
+            const embed::CoSignal signal = task.get_signal();
+            TEST_EQUAL(signal.type(), embed::CoSignal::Type::Await);
             TEST_FALSE(task.is_resumable());
             TEST_TRUE(task.is_awaiting());
             TEST_FALSE(task.is_done());
@@ -233,8 +232,8 @@ namespace{
 
         task.resume(); // co_return embed::Exit::Success;
         {
-            const embed::CoTaskSignal signal = task.get_signal();
-            TEST_EQUAL(signal.type(), embed::CoTaskSignal::Type::None);
+            const embed::CoSignal signal = task.get_signal();
+            TEST_EQUAL(signal.type(), embed::CoSignal::Type::None);
             TEST_FALSE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
             TEST_TRUE(task.is_done());
