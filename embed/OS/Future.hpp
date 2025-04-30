@@ -60,7 +60,7 @@ namespace embed{
      * ```
      */
     template<class T>
-    class Future : public AwaitableNode{
+    class Future{
         private:
             enum class State{
                 Busy,   ///< signals that the object is not finished and one has to wait
@@ -278,7 +278,7 @@ namespace embed{
              * 
              * @return `true` if the Future is no longer waiting on the Promise
              */
-            constexpr bool await_ready() const noexcept override {
+            constexpr bool await_ready() const noexcept {
                 return !this->is_waiting();
             }
             
