@@ -67,7 +67,7 @@ namespace embed
             }
         }
 
-        void* do_allocate(const std::size_t size, const std::size_t alignment) override {
+        void* do_allocate(const std::size_t size, const std::size_t alignment) final {
             const std::size_t num_words = (size + sizeof(word) - 1) / sizeof(word);
 
             std::size_t largest_free_size = 0;
@@ -121,11 +121,11 @@ namespace embed
                 }
             }
             // TODO: use an embed error here
-            EMBED_THROW_CRITICAL(AllocationFailure(size, bufferSize*sizeof(word), largest_free_size*sizeof(word), nfree, nalloc));
+            EMBED_THROW(AllocationFailure(size, bufferSize*sizeof(word), largest_free_size*sizeof(word), nfree, nalloc));
         }
 
-        void do_deallocate(void* ptr, [[maybe_unused]]std::size_t bytes, [[maybe_unused]]std::size_t alignment) override {
-            #if defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)
+        void do_deallocate(void* ptr, [[maybe_unused]]std::size_t bytes, [[maybe_unused]]std::size_t alignment) final {
+            #if (!defined(EMBED_DISABLE_ASSERTIONS) && (defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)))
                 // do manual, because deallocate is probably in a destructor and noexcept would call `__exit()` instead of propperly throwing
                 if(!(reinterpret_cast<const void*>(&buffer[0]) <= ptr) && (ptr < reinterpret_cast<const void*>(&buffer[bufferSize]))){
                     embed::cerr << embed::AssertionFailureCritical("(&buffer[0]) <= ptr) && (ptr < (&buffer[bufferSize])", "Tried to free pointer that is not in the range of the allocator.", EMBED_FUNCTION_SIGNATURE) << embed::endl;
@@ -134,12 +134,12 @@ namespace embed
             #endif
             Header* header = reinterpret_cast<Header*>(ptr)-1;
 
-            #if defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)
+            #if (!defined(EMBED_DISABLE_ASSERTIONS) && (defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)))
                 std::size_t iterations = 0;
             #endif
             while((header->is_allocated == 0) && (header->size == 0)){
                 --header;
-                #if defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)
+                #if (!defined(EMBED_DISABLE_ASSERTIONS) && (defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)))
                     if(!(reinterpret_cast<const void*>(header) >= reinterpret_cast<const void*>(&buffer[0]))){
                         embed::cerr << embed::AssertionFailureCritical("reinterpret_cast<const void*>(header) >= reinterpret_cast<const void*>(&buffer[0])", "Tried to free a pointer that is not a valid memory segment within the allocator", EMBED_FUNCTION_SIGNATURE) << embed::endl;
                         return;
@@ -155,27 +155,35 @@ namespace embed
             header->is_allocated = 0;
         }
 
-        bool do_is_equal([[maybe_unused]] const std::pmr::memory_resource& other ) const noexcept override {return false;}
+        bool do_is_equal([[maybe_unused]] const std::pmr::memory_resource& other ) const noexcept final {return false;}
     };
 
     template<size_t Bytes>
-    class StaticLinearAllocatorDebug : public StaticLinearAllocator<Bytes>{
+    class StaticLinearAllocatorDebug : public std::pmr::memory_resource {
     private:
-        std::size_t count_alloc = 0;
-        std::size_t count_free = 0;
+        std::size_t _count_alloc = 0;
+        std::size_t _count_free = 0;
+        StaticLinearAllocator<Bytes> _allocator;
     public:
-        std::size_t nalloc() const {return this->count_alloc;}
-        std::size_t nfree() const {return this->count_free;}
+        std::size_t nalloc() const {return this->_count_alloc;}
+        std::size_t nfree() const {return this->_count_free;}
 
-        void* do_allocate(const std::size_t size, const std::size_t alignment) override {
-            this->count_alloc += 1;
-            return this->StaticLinearAllocator<Bytes>::do_allocate(size, alignment);
+        template<class Stream>
+        inline void dump(Stream& stream) {this->_allocator.dump(stream);}
+
+        void* do_allocate(const std::size_t size, const std::size_t alignment) final {
+            ++this->_count_alloc;
+            return this->_allocator.do_allocate(size, alignment);
         }
 
-        void do_deallocate(void* ptr, [[maybe_unused]]std::size_t size, [[maybe_unused]]std::size_t alignment) override {
-            this->count_free += 1;
-            this->StaticLinearAllocator<Bytes>::do_deallocate(ptr, size, alignment);
+        void do_deallocate(void* ptr, [[maybe_unused]]std::size_t size, [[maybe_unused]]std::size_t alignment) final {
+            ++this->_count_free;
+            this->_allocator.do_deallocate(ptr, size, alignment);
         }
+
+        inline bool do_is_equal([[maybe_unused]] const std::pmr::memory_resource& other ) const noexcept final {return false;}
+
+        inline bool empty(){return this->_allocator.empty();}
     };
     
 } // namespace embed

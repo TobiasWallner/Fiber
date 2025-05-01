@@ -11,7 +11,9 @@
 
 int test_all(){
 
+    #ifndef EMBED_DISABLE_EXCEPTIONS
     try{
+    #endif
         return embed::TestResult()
             | embed::ArrayList_test
             | embed::DualArrayList_test
@@ -21,11 +23,12 @@ int test_all(){
             | embed::RealTimeScheduler_test
             | embed::evaluate
             ;
-
+    #ifndef EMBED_DISABLE_EXCEPTIONS
     }catch(embed::Exception& e){
         embed::cout << e << embed::endl;
     }catch(std::exception& e){
         embed::cout << e.what() << embed::endl;
     }
     return EXIT_FAILURE;
+    #endif
 }

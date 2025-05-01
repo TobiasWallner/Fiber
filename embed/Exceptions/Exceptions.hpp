@@ -35,7 +35,7 @@ namespace embed{
 
     public:
         constexpr const char* type() const noexcept {return this->_type;}
-        const char* what() const noexcept override;
+        const char* what() const noexcept final;
         virtual void print(embed::OStream& stream) const;   
     };
 
@@ -68,7 +68,7 @@ namespace embed{
         inline AssertionFailureCritical(char const* condition, char const* message, char const* function_signature)     
             : AssertionFailure("AssertionFailure:CRITICAL", condition, message, function_signature){}
 
-        virtual void print(OStream& stream) const override;
+        virtual void print(OStream& stream) const final;
     };
 
     class AssertionFailureO1 : public AssertionFailure{
@@ -80,7 +80,7 @@ namespace embed{
         inline AssertionFailureO1(char const* condition, char const* message, char const* function_signature)     
             : AssertionFailure("AssertionFailure:O1", condition, message, function_signature){}
 
-        virtual void print(OStream& stream) const override;
+        virtual void print(OStream& stream) const final;
     };
 
     class AssertionFailureFull : public AssertionFailure{
@@ -92,7 +92,7 @@ namespace embed{
         inline AssertionFailureFull(char const* condition, char const* message, char const* function_signature)     
             : AssertionFailure("AssertionFailure:FULL", condition, message, function_signature){}
 
-        virtual void print(OStream& stream) const override;
+        virtual void print(OStream& stream) const final;
     };
 
     class AllocationFailure : public Exception {
@@ -114,7 +114,7 @@ namespace embed{
             , nfree(nfree)
             , nalloc(nalloc){}
 
-        virtual void print(OStream& stream) const override;
+        virtual void print(OStream& stream) const final;
     };
 
     #if defined(EMBED_USE_EXCEPTION_CALLBACKS)
@@ -122,7 +122,7 @@ namespace embed{
         void (*exception_callback)(const Exception& e) = default_exception_callback;
         #define EMBED_THROW(exception) exception_callback(exception); while(true){/* trap */}
     #elif defined(EMBED_DISABLE_EXCEPTIONS)
-        #define EMBED_THROW(exception) ((void)sizeof(exception))
+        #define EMBED_THROW(exception) ((void)sizeof(exception)); std::terminate();
     #else
         #define EMBED_THROW(exception) throw exception
     #endif
@@ -169,16 +169,6 @@ namespace embed{
     #else
         #define EMBED_ASSERT_FULL(condition) EMBED_USE_UNUSED(condition)
         #define EMBED_ASSERT_FULL_MSG(condition, message) EMBED_USE_UNUSED(condition); EMBED_USE_UNUSED(message)
-    #endif
-
-
-    // -----------------------------------------------------------------------------------------------------------------------------------------------------
-
-    
-    #if (defined(EMBED_ASSERTION_LEVEL_CRITICAL) || defined(EMBED_ASSERTION_LEVEL_O1) || defined(EMBED_ASSERTION_LEVEL_FULL)) && !defined(EMBED_DISABLE_ASSERTIONS)
-        #define EMBED_THROW_CRITICAL(exception) EMBED_THROW(exception)
-    #else
-        #define EMBED_THROW_CRITICAL(exception) ((void)0)
     #endif
 
 }

@@ -19,8 +19,8 @@ option(
 #                                Exceptions
 # ================================================================================
 
-option(EMBED_DISABLE_ASSERTIONS         "Disable all embedOS assertions" OFF)
-option(EMBED_DISABLE_EXCEPTIONS  "Disables exceptions, will also disable assertions" OFF)
+option(EMBED_DISABLE_ASSERTIONS "Disable all embedOS assertions" OFF)
+option(EMBED_DISABLE_EXCEPTIONS "Disables exceptions, will also disable assertions" OFF)
 
 if(EMBED_DISABLE_EXCEPTIONS AND NOT EMBED_DISABLE_ASSERTIONS)
     message(STATUS "embed: Disabling assertions `EMBED_DISABLE_ASSERTIONS = ON`, because `EMBED_DISABLE_EXCEPTIONS = ON`")

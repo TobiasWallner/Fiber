@@ -299,14 +299,14 @@ namespace embed
                     }break;
                     case CoSignal::Type::ImplicitDelay : {
                         const duration rel_deadline = task->_schedule.deadline - task->_schedule.ready;
-                        task->_schedule.ready = Clock::now() + embed::rounding_duration_cast<duration>(signal.implicit_delay().delay);
+                        task->_schedule.ready = Clock::now() + embed::rounding_duration_cast<duration>(signal.delay());
                         task->_schedule.deadline = task->_schedule.ready + rel_deadline;
                         this->waiting_queue().push(task);
                         logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
                     }break;
                     case CoSignal::Type::ExplicitDelay : {
-                        task->_schedule.ready = Clock::now() + embed::rounding_duration_cast<duration>(signal.explicit_delay().delay);
-                        task->_schedule.deadline = task->_schedule.ready + embed::rounding_duration_cast<duration>(signal.explicit_delay().rel_deadline);
+                        task->_schedule.ready = Clock::now() + embed::rounding_duration_cast<duration>(signal.delay());
+                        task->_schedule.deadline = task->_schedule.ready + embed::rounding_duration_cast<duration>(signal.deadline());
                         logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
                     }break;
                     case CoSignal::Type::None : {

@@ -197,7 +197,7 @@ namespace{
         {
             const embed::CoSignal signal = task.get_signal();
             TEST_EQUAL(signal.type(), embed::CoSignal::Type::ImplicitDelay);
-            TEST_EQUAL(signal.implicit_delay().delay, 100ns);
+            TEST_EQUAL(signal.delay(), 100ns);
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
             TEST_FALSE(task.is_done());
@@ -207,8 +207,8 @@ namespace{
         {
             const embed::CoSignal signal = task.get_signal();
             TEST_EQUAL(signal.type(), embed::CoSignal::Type::ExplicitDelay);
-            TEST_EQUAL(signal.explicit_delay().delay, 200ns);
-            TEST_EQUAL(signal.explicit_delay().rel_deadline, 2ns);
+            TEST_EQUAL(signal.delay(), 200ns);
+            TEST_EQUAL(signal.deadline(), 2ns);
             TEST_TRUE(task.is_resumable());
             TEST_FALSE(task.is_awaiting());
             TEST_FALSE(task.is_done());

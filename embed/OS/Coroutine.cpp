@@ -72,23 +72,30 @@ namespace embed{
         */
     }
 
-    void Task::handle_exception(std::exception_ptr except_ptr) {
-        try {
-            std::rethrow_exception(except_ptr);
-        } catch (const embed::Exception& e) {
-            embed::cerr << e << embed::endl;
-        } catch (const std::exception& e) {
-            embed::cerr << e.what() << embed::endl;
-        } catch (...) {
-            embed::cerr << "[" << embed::ansi::bright_red << embed::ansi::bold << "Unknown exception" << embed::ansi::reset << "]" << embed::endl;
+    #ifndef EMBED_DISABLE_EXCEPTIONS
+        // Variation using exceptions
+        void Task::handle_exception(std::exception_ptr except_ptr) {
+            try {
+                std::rethrow_exception(except_ptr);
+            } catch (const embed::Exception& e) {
+                embed::cerr << e << embed::endl;
+            } catch (const std::exception& e) {
+                embed::cerr << e.what() << embed::endl;
+            } catch (...) {
+                embed::cerr << "[" << embed::ansi::bright_red << embed::ansi::bold << "Unknown exception" << embed::ansi::reset << "]" << embed::endl;
+            }
+            embed::cerr << "    Unhandled exception inside task: " << this->_task_name << ", id: " << this->_id << embed::endl;
+            embed::cerr << "    Killing task." << embed::endl;
+            this->kill_chain();
+            this->_instant_resume = false;
         }
-        
-        embed::cerr << "    Unhandled exception inside task: " << this->_task_name << ", id: " << this->_id << embed::endl;
-        embed::cerr << "    Killing task." << embed::endl;
-    
-        this->kill_chain();
-        this->_instant_resume = false;
-    }
+    #else
+        // Variation limiting the use of exceptions
+        void Task::handle_exception() {
+            this->kill_chain();
+            this->_instant_resume = false;
+        }
+    #endif
 
     void Task::kill_chain(){
         // kill loop

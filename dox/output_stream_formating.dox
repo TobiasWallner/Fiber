@@ -45,15 +45,15 @@ To create your own output stream (e.g., UART, USB), derive from embed::OStream:
 \code{.cpp}
 class MyStream : public embed::OStream {
 public:
-    void put(char c) override {
+    void put(char c) final {
         // Output one character
     }
 
-    void flush() override {
+    void flush() final {
         // Flush buffer if necessary
     }
 
-    void write(const char* str, size_t len) override {
+    void write(const char* str, size_t len) final {
         // (Optional) Optimized multi-character output
     }
 };

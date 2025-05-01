@@ -38,13 +38,13 @@ namespace embed{
      * 
      * Derive from `AwaitableNode` and implement:
      * 
-     * - `bool await_ready() const noexcept override { ...Code... }`
+     * - `bool await_ready() const noexcept final { ...Code... }`
      * 
      * - `auto await_resume() const noexcept { ...Code... }`
      * 
      * optionally also define:
      * 
-     * - `void await_suspend_signal(Task* task) noexcept override { ... Code ... }`
+     * - `CoSignal await_suspend_signal() noexcept  final { ... Code ... }`
      * 
      * if you want to send a signal to the task
      */
@@ -369,7 +369,13 @@ namespace embed{
         inline Exit exit_status();
 
         /// @brief exception handler - will be called if an un-catched exception in a coroutine arises
-        virtual void handle_exception(std::exception_ptr except_ptr);
+        #ifndef EMBED_DISABLE_EXCEPTIONS
+            // variation using exceptions
+            void handle_exception(std::exception_ptr except_ptr);
+        #else
+            // variation limiting the use of exceptions
+            void handle_exception();
+        #endif
 
         /// @brief kills the coroutine chain.
         void kill_chain();
@@ -403,13 +409,15 @@ namespace embed{
         constexpr AwaitableWrapper(Awaitable& awaitable)
             : _awaitable(awaitable){}
 
-        constexpr bool await_ready() const noexcept override {
+        constexpr bool await_ready() const noexcept final {
             return this->_awaitable.await_ready();
         }
 
         constexpr auto await_resume() noexcept {
             return this->_awaitable.await_resume();
         }
+
+        virtual CoSignal await_suspend_signal() noexcept final {return CoSignal().await();}
 
         template<class Handle>
         constexpr auto await_suspend(Handle handle) noexcept {
@@ -452,13 +460,15 @@ namespace embed{
         constexpr AwaitableWrapper(Awaitable&& awaitable)
             : _awaitable(std::move(awaitable)){}
 
-        constexpr bool await_ready() const noexcept override {
+        constexpr bool await_ready() const noexcept final {
             return this->_awaitable.await_ready();
         }
 
         constexpr auto await_resume() noexcept {
             return this->_awaitable.await_resume();
         }
+
+        virtual CoSignal await_suspend_signal() noexcept final {return CoSignal().await();}
 
         template<class ReturnType>
         constexpr auto await_suspend(std::coroutine_handle<embed::CoroutinePromise<ReturnType>> handle) noexcept {
@@ -530,6 +540,8 @@ namespace embed{
     
     public:
 
+        ~CoroutinePromise() = default;
+
         template<class Awaitable>
         inline auto await_transform(Awaitable&& awaitable){
             if constexpr (!std::derived_from<Awaitable, AwaitableNode> && !std::derived_from<Awaitable, CoroutineNode>){
@@ -544,7 +556,11 @@ namespace embed{
 
         /// @brief Print an error message and kill the task
         inline void unhandled_exception() noexcept {
-            this->master()->handle_exception(std::current_exception());
+            #ifndef EMBED_DISABLE_EXCEPTIONS
+                this->master()->handle_exception(std::current_exception());
+            #else
+                this->master()->handle_exception();
+            #endif
         } 
 
         inline void return_value(const ReturnType& value){this->_return_value = value;}
@@ -567,15 +583,15 @@ namespace embed{
             return;
         }
         
-        inline void destroy() noexcept override{
+        inline void destroy() noexcept final{
             std::coroutine_handle<CoroutinePromise>::from_promise(*this).destroy();
         }
         
-        inline void resume() noexcept override{
+        inline void resume() noexcept final{
             std::coroutine_handle<CoroutinePromise>::from_promise(*this).resume();
         }
         
-        inline bool is_done() const noexcept  override{
+        inline bool is_done() const noexcept  final{
             // use const cast, because the `std::coroutine_handle<>::from_promise()` has no `const` version but `is_done()` is still `const`, so it it fine here.
             // `const_cast` is not ideal but necessary due to the lack of `const` overloads of `std::coroutine_handle<>::from_promise()`
             return std::coroutine_handle<CoroutinePromise>::from_promise(const_cast<CoroutinePromise&>(*this)).done();

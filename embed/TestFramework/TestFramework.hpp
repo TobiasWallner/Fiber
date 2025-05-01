@@ -171,6 +171,10 @@ namespace embed{
     _embed_test_result_ = embed::TestResult::Type::Fail; \
     embed::TEST_ERROR_print(EMBED_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 
-#define TEST_THROW(callable) try{callable; TEST_ERROR;}catch(...){}
+#ifndef EMBED_DISABLE_EXCEPTIONS
+    #define TEST_THROW(callable) try{callable; TEST_ERROR;}catch(...){}
+#else
+    #define TEST_THROW(callable) ;
+#endif
 
 

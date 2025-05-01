@@ -70,15 +70,13 @@ namespace embed
         
         /// @brief return `true` if the awatiable is ready. 
         /// @details initially returns `false` on the first read, but `true` on the second. `_ready` is set `true` in `await_suspend_signal()`
-        inline bool await_ready() const noexcept override {return this->_ready;}
+        inline bool await_ready() const noexcept final {return this->_ready;}
 
         /// @brief A delay does not return a value to be read -> `void`
         inline void await_resume() noexcept {}
 
-    private:
-
         /// @brief Signals a delay to the root task or scheduler and sets `_ready` to `true`.
-        inline CoSignal await_suspend_signal() noexcept override {
+        virtual CoSignal await_suspend_signal() noexcept final {
             this->_ready = true;
             CoSignal signal;
             if(this->_delay_deadline.has_value()){

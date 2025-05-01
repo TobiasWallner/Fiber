@@ -61,10 +61,8 @@ namespace embed
             TEST_NOT_EQUAL(arr.front(), arr.back());
     
             // check after 4th insertion out of size - allocation error
-            try{
-                arr.emplace_back(55); // should throw
-                TEST_ERROR; // should not be reached
-            }catch(const std::exception& e){}
+            TEST_THROW(arr.emplace_back(55);)
+
             // same checks as before 55 should not be added
             TEST_FALSE(arr.empty());
             TEST_EQUAL(arr.size(), 3);
@@ -138,12 +136,7 @@ namespace embed
             TEST_EQUAL(arr[4], 3);
             TEST_EQUAL(arr[5], 4);
             
-            try{
-                arr.insert(/* pos */arr.begin()+1, /* value */ 88);
-                TEST_ERROR;
-            }catch(std::exception& e){
-    
-            }
+            TEST_THROW(arr.insert(/* pos */arr.begin()+1, /* value */ 88))
     
             arr.clear();
             arr.insert(0, 456);
@@ -208,10 +201,7 @@ namespace embed
             TEST_EQUAL(c[6], 3);
             TEST_EQUAL(c[7], 4);
     
-            try{
-                c.insert(3, b);
-                TEST_ERROR;
-            }catch(std::exception& e){}
+            TEST_THROW(c.insert(3, b);)
             TEST_EQUAL(c.size(), 8);
             TEST_EQUAL(c[0], 1);
             TEST_EQUAL(c[1], 2);

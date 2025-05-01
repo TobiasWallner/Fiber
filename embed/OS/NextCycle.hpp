@@ -9,12 +9,12 @@ namespace embed
         bool _ready = false;
     public:
 
-        inline bool await_ready() const noexcept override {return this->_ready;}
+        inline bool await_ready() const noexcept final {return this->_ready;}
 
         inline void await_resume() noexcept {}
 
     private:
-        inline CoSignal await_suspend_signal() noexcept override {
+        inline CoSignal await_suspend_signal() noexcept final {
             this->_ready = true;
             return CoSignal().next_cycle();
         }

@@ -1061,7 +1061,7 @@ namespace embed
 
     template<class T, std::size_t N>
     embed::OStream& operator << (OStream& stream, const DualArrayList<T, N>& dlist){
-        stream << "embed::DualArrayList<" << typeid(T).name() << ", " << N << ">{\n";
+        stream << "embed::DualArrayList{\n";
         stream << "  left: [";
 
         {

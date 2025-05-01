@@ -8,16 +8,16 @@
 
 class StdOut : public embed::OStream{
     public:
-    inline void put(char c) override{std::cout.put(c);}
-    inline void flush() override{std::cout.flush();}
-    inline void write(const char* str, size_t len) override{std::cout.write(str, len);}
+    inline void put(char c) final {std::cout.put(c);}
+    inline void flush() final {std::cout.flush();}
+    inline void write(const char* str, size_t len) final {std::cout.write(str, len);}
 };
 
 class StdErr : public embed::OStream{
     public:
-    inline void put(char c) override{std::cerr.put(c);}
-    inline void flush() override{std::cerr.flush();}
-    inline void write(const char* str, size_t len) override{std::cerr.write(str, len);}
+    inline void put(char c) final {std::cerr.put(c);}
+    inline void flush() final {std::cerr.flush();}
+    inline void write(const char* str, size_t len) final {std::cerr.write(str, len);}
 };
 
 int main(){
