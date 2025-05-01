@@ -28,6 +28,7 @@ The list structure supports:
 - **Awaitable**:
   - A special form of coroutine node that is always the **leaf node**
   - For example: `co_await delay(10ms)` or `co_await future`
+  - Supports arbitrary awaitables through `await_transform`
 - **Task**:
   - Owns the coroutine chain
   - Holds:
@@ -53,7 +54,8 @@ Coroutines are only logically nested but physically flat.
 2. It resumes the **leaf coroutine** in the chain
 3. The coroutine may:
     - `co_await` another coroutine → creates a new coroutine and sets it as the new leaf
-    - `co_return` or `co_yield` → returns to `final_suspend()`
+    - `co_await` another awaitable → (optionally transforms it via `await_transfrom` to integrate into the scheduler) and sets a new awaitable leaf.
+    - `co_return` or returns to `final_suspend()`
 4. After `final_suspend()`, control returns to `Task`
 5. If there is a parent coroutine, `Task` registers that as the new leaf and resumes it immediately
 6. If the chain completes, `Task` marks the task as `Exit::Success`

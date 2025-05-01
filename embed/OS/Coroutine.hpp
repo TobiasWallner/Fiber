@@ -532,7 +532,7 @@ namespace embed{
 
         template<class Awaitable>
         inline auto await_transform(Awaitable&& awaitable){
-            if constexpr (!std::derived_from<Awaitable, AwaitableNode>){
+            if constexpr (!std::derived_from<Awaitable, AwaitableNode> && !std::derived_from<Awaitable, CoroutineNode>){
                 return wrap_awaitable(std::forward<Awaitable>(awaitable));
             }else{
                 return std::forward<Awaitable>(awaitable);

@@ -38,7 +38,7 @@ namespace embed
          */
         template<class Rep, CStdRatio Period>
         explicit constexpr Delay(std::chrono::duration<Rep, Period> delay)
-            : _delay_ready(std::chrono::duration_cast<std::chrono::nanoseconds>(delay)){}
+            : _delay_ready(embed::rounding_duration_cast<std::chrono::nanoseconds>(delay)){}
 
         /**
          * @brief Constructs a delay that can be `co_await`ed and sends a signal to the scheduler for re-scheduleing.

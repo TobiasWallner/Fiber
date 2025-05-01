@@ -17,17 +17,22 @@ namespace embed
 // --------------------------------------------------------------------------------
 
     template<typename T>
-    struct is_std_ratio : std::false_type {};
+    concept CStdRatio = requires {
+        { T::num } -> std::convertible_to<intmax_t>;
+        { T::den } -> std::convertible_to<intmax_t>;
+        requires std::is_same_v<T, std::ratio<T::num, T::den>>;
+    };
 
-    // Specialization for std::ratio<num, den>
-    template<intmax_t Num, intmax_t Den>
-    struct is_std_ratio<std::ratio<Num, Den>> : std::true_type {};
-
-    template<class T>
-    constexpr inline bool is_std_ratio_v = is_std_ratio<T>::value;
+// --------------------------------------------------------------------------------
+//                               CStdDuration
+// --------------------------------------------------------------------------------
 
     template<typename T>
-    concept CStdRatio = is_std_ratio_v<T>;
+    concept CStdDuration = requires {
+        typename T::rep;
+        typename T::period;
+        requires std::same_as<T, std::chrono::duration<typename T::rep, typename T::period>>;
+    };
 
 // --------------------------------------------------------------------------------
 //                               CStdOptional

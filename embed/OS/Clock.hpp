@@ -9,13 +9,13 @@
 
 #include <embed/Core/definitions.hpp>
 #include <embed/Core/concepts.hpp>
+#include <embed/Core/chrono.hpp>
 #include <embed/Exceptions/Exceptions.hpp>
 
 // just expose it so everyone can write 1ms.
 using namespace std::chrono_literals;
 
-namespace embed
-{
+namespace embed{
 
     /**
      * @brief An overflow aware tick class template to simulate the behaviour of hardware timers in microcontrollers for use in Duration and TimePoint types
@@ -216,6 +216,25 @@ namespace embed
 
         friend OStream& operator<<(OStream& stream, const ClockTick tick){return stream << tick.value;}
     };
+}// namespace embed
+
+namespace std{
+
+    /// @brief Overload `std::is_integral` with `std::true_type` for `embed::ClockTick`
+    /// @tparam UInt an integer/integral type
+    /// @tparam MaxTick the maximum number of representable ticks before overflow
+    template<std::integral Int, Int MaxTick>
+    struct is_integral<embed::ClockTick<Int, MaxTick>> : std::true_type{};
+
+    /// @brief Overload `std::is_unsigned` with `std::true_type` for `embed::ClockTick`
+    /// @tparam UInt an unsigned integer/integral
+    /// @tparam MaxTick the maximum number of representable ticks before overflow
+    template<std::unsigned_integral UInt, UInt MaxTick>
+    struct is_unsigned<embed::ClockTick<UInt, MaxTick>> : std::true_type{};
+
+}
+
+namespace embed{
 
     
 
@@ -233,25 +252,25 @@ namespace embed
         
         // depending on the duration -> downcast to next lower konventional period
         if constexpr (std::ratio_greater_equal<Period, typename std::chrono::years::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::years>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::years>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::months::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::month>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::month>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::weeks::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::weeks>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::weeks>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::days::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::days>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::days>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::hours::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::hours>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::hours>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::minutes::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::minutes>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::minutes>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::seconds::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::seconds>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::seconds>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::milliseconds::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::milliseconds>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::milliseconds>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::microseconds::period>::value){
-            return stream << std::chrono::duration_cast<std::chrono::microseconds>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::microseconds>(d);
         }else /*if constexpr (std::ratio_greater_equal<Period, typename std::chrono::nanoseconds::period)) */{
-            return stream << std::chrono::duration_cast<std::chrono::nanoseconds>(d);
+            return stream << embed::rounding_duration_cast<std::chrono::nanoseconds>(d);
         }
     }
 
@@ -324,6 +343,4 @@ namespace embed
         }
     };
 
-    
-    
 } // namespace embed

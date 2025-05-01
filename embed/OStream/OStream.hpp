@@ -10,6 +10,7 @@
 //embed
 #include <embed/Core/concepts.hpp>
 #include <embed/Core/type_traits.hpp>
+#include <embed/Core/chrono.hpp>
 #include <embed/math/math.hpp>
 #include <embed/Exceptions/Exceptions.hpp>
 
@@ -1320,25 +1321,25 @@ namespace embed{
     template<class Rep, class Period = std::ratio<1, 1>>
     auto format_chrono(std::chrono::duration<Rep, Period> duration){
         if constexpr (std::ratio_greater_equal<Period, typename std::chrono::years::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::years>(duration).count(), "Y");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::years>(duration).count(), "Y");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::months::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::months>(duration).count(), "M");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::months>(duration).count(), "M");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::weeks::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::weeks>(duration).count(), "W");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::weeks>(duration).count(), "W");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::days::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::day>(duration).count(), "D");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::day>(duration).count(), "D");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::hours::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::hours>(duration).count(), "h");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::hours>(duration).count(), "h");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::minutes::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::minutes>(duration).count(), "m");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::minutes>(duration).count(), "m");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::seconds::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::seconds>(duration).count(), "s");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::seconds>(duration).count(), "s");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::milliseconds::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count(), "ms");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::milliseconds>(duration).count(), "ms");
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::microseconds::period>::value){
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::microseconds>(duration).count(), "us");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::microseconds>(duration).count(), "us");
         }else /* if constexpr (std::ratio_greater_equal<Period, typename std::chrono::nanoseconds::period>::value) */ {
-            return FormatIntSuffix(std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count(), "ns");
+            return FormatIntSuffix(embed::rounding_duration_cast<std::chrono::nanoseconds>(duration).count(), "ns");
         }
     }
 

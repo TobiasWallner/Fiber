@@ -33,7 +33,7 @@ modulo operations, but only for constructions (can be mittigated by using `Clock
 `embed::Duration`, `embed::TimePoint`, and `embed::Clock` all follow the exact semantics and layout of their standard counterparts:
 - `embed::Duration` is a wrapper around `std::chrono::duration` using `ClockTick` as its representation type.
 - `embed::TimePoint` wraps `std::chrono::time_point` using your chosen `Clock`.
-- All durations can be converted using `std::chrono::duration_cast`.
+- All durations can be converted using `std::chrono::duration_cast` or `embed::rounding_duration_cast`.
 
 You can freely mix `embed` clocks with standard `std::chrono` durations where appropriate.
 
