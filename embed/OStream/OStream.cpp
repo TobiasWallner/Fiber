@@ -96,8 +96,103 @@ namespace embed{
     //                                       Integer Formating
     // -----------------------------------------------------------------------------------------------
 
+    void print_num_stringified(OStream& stream, std::string_view sign_str, std::string_view num_str, const FormatIntParams& params){
+        print_num_stringified(stream, sign_str, num_str, "", params);
 
-    
+        //const int padding_count = params._mwidth - static_cast<int>(sign_str.size()) - static_cast<int>(num_str.size());
+        //const int left_padding_count = padding_count / 2;
+        //const int right_padding_count = padding_count - left_padding_count;
+        //const FormatStr padding = FormatStr("").fill(params._fill).mwidth(padding_count);
+        //const FormatStr left_padding = FormatStr("").fill(params._fill).mwidth(left_padding_count);
+        //const FormatStr right_padding = FormatStr("").fill(params._fill).mwidth(right_padding_count);
+        //
+        //switch(params._alignment){
+        //    case AlignmentLRC::Left : {
+        //        // padding after sign
+        //        stream << sign_str << num_str << padding;
+        //    }break;
+        //    case AlignmentLRC::Center : {
+        //        if(params._pad_sign){
+        //            // padding between sign and number and after number
+        //            stream << sign_str << left_padding << num_str << right_padding;
+        //        }else{
+        //            // padding before sign and after number
+        //            stream << left_padding << sign_str << num_str << right_padding;
+        //        }
+        //    }break;
+        //    default: //fallthrough
+        //    case AlignmentLRC::Right : {
+        //        if(params._pad_sign){
+        //            // padding between sign and number
+        //            stream << sign_str << padding << num_str;
+        //        }else{
+        //            // padding before sign
+        //            stream << padding << sign_str << num_str;
+        //        }
+        //    }break;
+        //}
+    }
+
+    void print_num_stringified(OStream& stream, std::string_view sign_str, std::string_view num_str, std::string_view suffix, const FormatIntSuffixParams& params){
+        const int padding = params._mwidth - static_cast<int>(sign_str.size()) - static_cast<int>(num_str.size()) - static_cast<int>(suffix.size());
+        
+
+        int padding_before_sign = 0;
+        int padding_between_sign_number = 0;
+        int padding_between_number_suffix = 0;
+        int padding_after_suffix = 0; 
+
+        switch(params._alignment){
+            case AlignmentLRC::Left : {
+                if(params._pad_suffix){
+                    // padding between number and suffix
+                    padding_between_number_suffix = padding;
+                }else{
+                    // padding after suffix
+                    padding_after_suffix = padding;
+                }
+            }break;
+            case AlignmentLRC::Center : {
+                const int left_padding = padding / 2;
+                const int right_padding = padding - left_padding;
+
+                if(!params._pad_sign && !params._pad_suffix){
+                    // padding before sign and after suffix
+                    padding_before_sign = left_padding;
+                    padding_after_suffix = right_padding;
+                }else if(params._pad_sign && !params._pad_suffix){
+                    // padding between sign and number and after suffix
+                    padding_between_sign_number = left_padding;
+                    padding_after_suffix = right_padding;
+                }else if(!params._pad_sign && params._pad_suffix){
+                    // padding before sign and between number and suffix
+                    padding_before_sign = left_padding;
+                    padding_between_number_suffix = right_padding;
+                }else /* (params._pad_sign && params._pad_suffix) */ {
+                    // padding between sign and number and between number and suffix
+                    padding_between_sign_number = left_padding;
+                    padding_between_number_suffix = right_padding;
+                }
+            }break;
+            case AlignmentLRC::Right : {
+                if(params._pad_sign){
+                    // padding between sign and number
+                    padding_between_sign_number = padding;
+                }else{
+                    // padding before sign
+                    padding_before_sign = padding;
+                }
+            }break;
+        }
+
+        stream.put(params._fill, padding_before_sign);
+        stream.write(sign_str.data(), sign_str.size());
+        stream.put(params._fill, padding_between_sign_number);
+        stream.write(num_str.data(), num_str.size());
+        stream.put(params._fill, padding_between_number_suffix);
+        stream.write(suffix.data(), suffix.size());
+        stream.put(params._fill, padding_after_suffix);
+    }
 
     // -----------------------------------------------------------------------------------------------
     //                                       Float Formating

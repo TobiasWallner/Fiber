@@ -240,6 +240,12 @@ namespace embed{
         stream.write(str);
         return stream;
     }
+
+    template<CStringView StringView>
+    inline OStream& operator<<(OStream& stream, const StringView& str){
+        stream.write(str.data(), str.size());
+        return stream;
+    }
     
     enum class AlignmentLRC{Left, Right, Center};
 
@@ -646,78 +652,65 @@ namespace embed{
 
     template<std::unsigned_integral UInt>
     std::string_view uint_to_string(char* buffer_first, char* buffer_last, UInt value, bool use_thousands_char = false, char thousands_char = ','){
-        char * itr = buffer_last;
+        if constexpr (!std::same_as<UInt, typename embed::make_fast<UInt>::type>){
+            return uint_to_string(buffer_first, buffer_last, static_cast<typename embed::make_fast<UInt>::type>(value), use_thousands_char, thousands_char);
+        }else{
+            char * itr = buffer_last;
 
-        if(value == 0){
-            *--itr = '0';
+            if(value == 0){
+                *--itr = '0';
+                return std::string_view(itr, buffer_last);
+            }
+    
+            // convert to string
+            for(size_t i = 0; value != 0 && itr != buffer_first; ++i){
+                const auto mod = value % 10;
+                value = value / 10;
+                if((use_thousands_char!='\0') && (i != 0) && (i % 3 == 0)) {*--itr = thousands_char;};
+                *--itr = '0' + static_cast<char>(mod);
+            }
+    
             return std::string_view(itr, buffer_last);
         }
-
-        // convert to string
-        for(size_t i = 0; value != 0 && itr != buffer_first; ++i){
-            const auto mod = value % 10;
-            value = value / 10;
-            if((use_thousands_char!='\0') && (i != 0) && (i % 3 == 0)) {*--itr = thousands_char;};
-            *--itr = '0' + static_cast<char>(mod);
-        }
-
-        return std::string_view(itr, buffer_last);
     }
 
+    void print_num_stringified(OStream& stream, std::string_view sign_str, std::string_view num_str, const FormatIntParams& params);
+
     template<std::integral Int>
-    void print(OStream& stream, const Int& value, const FormatIntParams& params){
+        requires (std::same_as<Int, typename embed::make_fast<Int>::type>)
+    void print_fast_int(OStream& stream, const Int& value, const FormatIntParams& params){
         using namespace std::string_view_literals;
         using UInt = typename std::make_unsigned<Int>::type;
         
         std::string_view sign_str = ""sv;
 
-        UInt unsigned_value = 0;
+        UInt unsigned_value = static_cast<UInt>(value);
 
-        if(value >= 0){
-            unsigned_value = value;
-            if(params._force_sign){
+        if constexpr (std::is_signed_v<Int>){
+            if(value < 0){
+                unsigned_value = static_cast<UInt>(-value);
+                sign_str = "-"sv;
+                
+            }else if(params._force_sign){
                 sign_str = "+"sv;
             }
         }else{
-            unsigned_value = static_cast<std::make_unsigned<Int>::type>(-value);
-            sign_str = "-"sv;
+            if(params._force_sign){
+                sign_str = "+"sv;
+            }
         }
 
         char buffer[32];
         const std::string_view num_str = uint_to_string(&buffer[0], &buffer[32], unsigned_value, params._use_thousands, params._thousands_char);
 
-        const int padding_count = params._mwidth - static_cast<int>(sign_str.size()) - static_cast<int>(num_str.size());
-        const int left_padding_count = padding_count / 2;
-        const int right_padding_count = padding_count - left_padding_count;
-        const FormatStr padding = FormatStr("").fill(params._fill).mwidth(padding_count);
-        const FormatStr left_padding = FormatStr("").fill(params._fill).mwidth(left_padding_count);
-        const FormatStr right_padding = FormatStr("").fill(params._fill).mwidth(right_padding_count);
+        print_num_stringified(stream, sign_str, num_str, params);
+    }
 
-        switch(params._alignment){
-            case AlignmentLRC::Left : {
-                // padding after sign
-                stream << sign_str << num_str << padding;
-            }break;
-            case AlignmentLRC::Center : {
-                if(params._pad_sign){
-                    // padding between sign and number and after number
-                    stream << sign_str << left_padding << num_str << right_padding;
-                }else{
-                    // padding before sign and after number
-                    stream << left_padding << sign_str << num_str << right_padding;
-                }
-            }break;
-            default: //fallthrough
-            case AlignmentLRC::Right : {
-                if(params._pad_sign){
-                    // padding between sign and number
-                    stream << sign_str << padding << num_str;
-                }else{
-                    // padding before sign
-                    stream << padding << sign_str << num_str;
-                }
-            }break;
-        }
+    template<std::integral Int>
+    inline void print(OStream& stream, const Int& value, const FormatIntParams& params){
+        using FInt = typename embed::make_fast<Int>::type;
+        const FInt fast_value(value);
+        print_fast_int(stream, fast_value, params);
     }
 
     template<std::integral Int>
@@ -836,8 +829,11 @@ namespace embed{
         constexpr FormatIntSuffix& center(){this->_alignment = AlignmentLRC::Center; return *this;}
     };
 
+    void print_num_stringified(OStream& stream, std::string_view sign_str, std::string_view num_str, std::string_view suffix, const FormatIntSuffixParams& params);
+
     template<std::integral Int>
-    void print(OStream& stream, const Int& value, std::string_view suffix, const FormatIntSuffixParams& params){
+        requires(std::same_as<Int, typename embed::make_fast<Int>::type>)
+    void print_fast_int(OStream& stream, const Int& value, std::string_view suffix, const FormatIntSuffixParams& params){
         using namespace std::string_view_literals;
         using UInt = typename std::make_unsigned<Int>::type;
 
@@ -858,49 +854,14 @@ namespace embed{
         char buffer[32];
         const std::string_view num_str = uint_to_string(&buffer[0], &buffer[32], unsigned_value, params._use_thousands, params._thousands_char);
 
-        const int padding_count = params._mwidth - static_cast<int>(sign_str.size()) - static_cast<int>(num_str.size()) - static_cast<int>(suffix.size());
-        const int left_padding_count = padding_count / 2;
-        const int right_padding_count = padding_count - left_padding_count;
-        const FormatStr padding = FormatStr("").fill(params._fill).mwidth(padding_count);
-        const FormatStr left_padding = FormatStr("").fill(params._fill).mwidth(left_padding_count);
-        const FormatStr right_padding = FormatStr("").fill(params._fill).mwidth(right_padding_count);
+        print_num_stringified(stream, sign_str, num_str, suffix, params);
+    }
 
-        switch(params._alignment){
-            case AlignmentLRC::Left : {
-                if(params._pad_suffix){
-                    // padding between number and suffix
-                    stream << sign_str << num_str << padding << suffix;
-                }else{
-                    // padding after suffix
-                    stream << sign_str << num_str  << suffix << padding;
-                }
-            }break;
-            case AlignmentLRC::Center : {
-                if(!params._pad_sign && !params._pad_suffix){
-                    // padding before sign and after suffix
-                    stream << left_padding << sign_str << num_str << suffix << right_padding;
-                }else if(params._pad_sign && !params._pad_suffix){
-                    // padding between sign and number and after suffix
-                    stream << sign_str << left_padding << num_str << suffix << right_padding;
-                }else if(!params._pad_sign && params._pad_suffix){
-                    // padding before sighn and between number and suffix
-                    stream << left_padding << sign_str << num_str << right_padding << suffix;
-                }else /* (params._pad_sign && params._pad_suffix) */ {
-                    // padding between sign and number and between number and suffix
-                    stream << sign_str << left_padding << num_str << right_padding << suffix;
-                }
-            }break;
-            default: // fall through
-            case AlignmentLRC::Right : {
-                if(params._pad_sign){
-                    // padding between sign and number
-                    stream << sign_str << padding << num_str << suffix;
-                }else{
-                    // padding before sign
-                    stream << padding << sign_str << num_str << suffix;
-                }
-            }break;
-        }
+    template<std::integral Int>
+    inline void print(OStream& stream, const Int& value, std::string_view suffix, const FormatIntSuffixParams& params){
+        using FastInt = embed::make_fast<Int>::type;
+        const FastInt fast_value(value);
+        print_fast_int(stream, fast_value, suffix, params);
     }
 
     template<std::integral Int>
@@ -1354,7 +1315,7 @@ namespace embed{
 
     template<class T>
     OStream& operator<<(OStream& stream, std::reverse_iterator<T> value){
-        return stream << "std::reverse_iterator<" << typeid(T).name() << ">(" << (value.base()-1) << ")";
+        return stream << "std::reverse_iterator<>(" << (value.base()-1) << ")";
     }
 
     // -----------------------------------------------------------------------------------------------
