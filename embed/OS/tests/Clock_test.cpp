@@ -192,15 +192,15 @@ namespace embed{
 
     static embed::TestResult Duration_test_construction(){
         TEST_START;
-        [[maybe_unused]] embed::Duration<uint32_t, std::nano, 1024> d;
+        [[maybe_unused]] embed::Duration d;
         TEST_END;
     }
 
     static embed::TestResult Duration_test_std_integration(){
         TEST_START;
-        embed::Duration<uint32_t, std::nano, 1024> d(5);
-        const auto a = d + 1ns; // TODO: integrate std::numeric_literal into embed::Duration operators.
-        TEST_EQUAL(a.count(), 6);
+        embed::Duration d(5ms);
+        const auto a = d + 1ms;
+        TEST_EQUAL(a, 6ms);
         TEST_END;
     }
 
@@ -210,12 +210,10 @@ namespace embed{
     static embed::TestResult Clock_template_instantiation_and_time_point(){
         TEST_START;
 
-        using MyClock = Clock<uint32_t, std::micro, get_timer_count>;
+        using TimePoint = embed::TimePoint;
 
-        using TimePoint = MyClock::time_point;
-
-        TimePoint t1(1us);
-        TimePoint t2(33us);
+        TimePoint t1(1ms);
+        TimePoint t2(33ms);
 
         TEST_SMALLER(t1, t2);
         

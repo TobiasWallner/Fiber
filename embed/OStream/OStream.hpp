@@ -17,17 +17,17 @@
 namespace embed{
 
     #ifdef EMBED_FMT_MINIMAL
-        #if defined(EMBED_FMT_DECIMALS_1)
+        #if defined(EMBED_FMT_FLOAT_DECIMALS_1)
             #define EMBED_FMT_DECIMALS 1
-        #elif defined(EMBED_FMT_DECIMALS_2)
+        #elif defined(EMBED_FMT_FLOAT_DECIMALS_2)
             #define EMBED_FMT_DECIMALS 2
-        #elif defined(EMBED_FMT_DECIMALS_3)
+        #elif defined(EMBED_FMT_FLOAT_DECIMALS_3)
             #define EMBED_FMT_DECIMALS 3
-        #elif defined(EMBED_FMT_DECIMALS_4)
+        #elif defined(EMBED_FMT_FLOAT_DECIMALS_4)
             #define EMBED_FMT_DECIMALS 4
-        #elif defined(EMBED_FMT_DECIMALS_5)
+        #elif defined(EMBED_FMT_FLOAT_DECIMALS_5)
             #define EMBED_FMT_DECIMALS 5
-        #elif defined(EMBED_FMT_DECIMALS_6)
+        #elif defined(EMBED_FMT_FLOAT_DECIMALS_6)
             #define EMBED_FMT_DECIMALS 6
         #endif
 

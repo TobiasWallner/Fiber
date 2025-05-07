@@ -7,17 +7,14 @@
 namespace embed
 {
 
-
-    template<CClock Clock>
     struct RealTimeSchedule{
-        Clock::time_point ready;
-        Clock::time_point deadline;
+        TimePoint ready;
+        TimePoint deadline;
     };
 
-    template<CClock Clock>
     struct ExecutionTime{
-        Clock::time_point start;
-        Clock::time_point end;
+        TimePoint start;
+        TimePoint end;
     };
 
     /**
@@ -32,22 +29,26 @@ namespace embed
      * 
      * - Overload the following to calculate the next schedule from the last schedule and/or execution times.
      *   ```cpp
-     *   virtual RealTimeSchedule<Clock> next_schedule(RealTimeSchedule<Clock> previous_schedule, ExecutionTime<Clock> previous_execution)
+     *   virtual RealTimeSchedule next_schedule(RealTimeSchedule previous_schedule, ExecutionTime previous_execution)
      *   ``` 
      *   
      * - Overload the following to decide weather or not a missed deadline should or should not resume the task, given the duration that passed since the deadline.
      *   ```
-     *   virtual bool missed_deadline(Clock::duration d)
+     *   virtual bool missed_deadline(embed::Duration d)
      *   ```
      *   
      * Methods that you might like to overload from `Task`
      * 
      * - Overload the following to decide what happens on uncaught exceptions in coroutines.
      *   ```
-     *   
+     *   #ifndef EMBED_DISABLE_EXCEPTIONS
+     *       // variation using exceptions
+     *       void handle_exception(std::exception_ptr except_ptr);
+     *   #else
+     *       // variation limiting the use of exceptions
+     *       void handle_exception();
+     *   #endif
      *   ```
-     * 
-     * \tparam Clock A Clock type that comforms to the template `embed::CClock`.
      * 
      * \see embed::Task
      * \see embed::RealTimeScheduler
@@ -55,56 +56,50 @@ namespace embed
      * \see embed::Clock
      * \see embed::ClockTick
      */
-    template<CClock Clock>
     class RealTimeTask : public Task{
     private:
     public:
-
         // TODO: store schedules in the scheduler - keep cache misses short - remove from user perspective
-        RealTimeSchedule<Clock> _schedule;
-        Clock::time_point _execution_start;
-    
-
-        using clock = Clock;
-        using duration = Clock::duration;
-        using time_point = Clock::time_point;
-
-        /**
-         * @brief sets the ready time relative from now and the deadline relative from the start time
-         */
-        RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, duration ready, duration deadline) 
-            : Task(std::move(main), name)
-        {
-            this->_schedule.ready = Clock::now() + ready;
-            this->_schedule.deadline = this->_schedule.ready + deadline;
-        }
+        RealTimeSchedule _schedule;
+        TimePoint _execution_start;
 
         /**
          * @brief sets the ready time to the absolute time point and the deadline relative from the start time
          */
-        RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, time_point ready, duration deadline) : Task(std::move(main), name){
+        inline RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, embed::TimePoint ready, embed::Duration deadline) 
+            : Task(std::move(main), name)
+        {
             this->_schedule.ready = ready;
             this->_schedule.deadline = this->_schedule.ready + deadline;
         }
 
+        template<std::integral Rep, CRatio Period>
+        inline RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, embed::TimePoint ready, std::chrono::duration<Rep, Period> deadline) 
+            : RealTimeTask(std::move(main), name, ready, embed::rounding_duration_cast<Duration>(deadline)){}
+
         /**
          * @brief sets the ready and deadline time to the absolute time points
          */
-        RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, time_point ready, time_point deadline) : Task(std::move(main), name){
+        RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, embed::TimePoint ready, embed::TimePoint deadline) 
+            : 
+        Task(std::move(main), name){
             this->_schedule.ready = ready;
             this->_schedule.deadline = deadline;
         }
 
         /**
          * @brief Overrideable: Gets called after a `co_await NextCycle;` to calculate the schedule of the next cycle.
+         * 
+         * Note that `previous_execution.end` is equivalent to the current time .aka `now()`
+         * 
          * @param previous_schedule the previous schedule of this task
          * @param previous_execution the previous execution time from the start of the cycle to the end of the cycle
          */
-        virtual RealTimeSchedule<Clock> next_schedule(
-            [[maybe_unused]]RealTimeSchedule<Clock> previous_schedule, 
-            [[maybe_unused]]ExecutionTime<Clock> previous_execution)
+        virtual RealTimeSchedule next_schedule(
+            [[maybe_unused]]RealTimeSchedule previous_schedule, 
+            [[maybe_unused]]ExecutionTime previous_execution)
         {
-            return RealTimeSchedule<Clock>{Clock::now(), Clock::now()};
+            return RealTimeSchedule{previous_execution.end, previous_execution.end};
         }
 
         /**
@@ -113,58 +108,48 @@ namespace embed
          * @details The default version will always return `true` to continue the task
          * @returns Returns if the task should still be executed (`true`) or not (`false`)
          */
-        virtual bool missed_deadline([[maybe_unused]]Clock::duration d){return true;}
+        virtual bool missed_deadline([[maybe_unused]]embed::Duration d){return true;}
 
         /**
          * \brief returns the time point at which this task becomes ready to be executed
          */
-        inline time_point ready_time() const {return this->_schedule.ready;}
+        inline embed::TimePoint ready_time() const {return this->_schedule.ready;}
 
         /**
          * \brief returns the time point before which this task needs to be executed
          */
-        inline time_point deadline() const {return this->_schedule.deadline;}
+        inline embed::TimePoint deadline() const {return this->_schedule.deadline;}
 
         
     };
 
-    template<CClock Clock>
     struct smaller_ready_time{
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.ready_time() < rhs.ready_time();}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->ready_time() < rhs->ready_time();}
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.ready_time() < rhs;}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->ready_time() < rhs;}
+        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.ready_time() < rhs.ready_time();}
+        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->ready_time() < rhs->ready_time();}
+        inline bool operator() (const RealTimeTask& lhs, const typename embed::TimePoint& rhs){return lhs.ready_time() < rhs;}
+        inline bool operator() (const RealTimeTask* lhs, const typename embed::TimePoint& rhs){return lhs->ready_time() < rhs;}
     };
 
-    template<CClock Clock>
     struct larger_ready_time{
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.ready_time() > rhs.ready_time();}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->ready_time() > rhs->ready_time();}
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.ready_time() > rhs;}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->ready_time() > rhs;}
+        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.ready_time() > rhs.ready_time();}
+        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->ready_time() > rhs->ready_time();}
+        inline bool operator() (const RealTimeTask& lhs, const typename embed::TimePoint& rhs){return lhs.ready_time() > rhs;}
+        inline bool operator() (const RealTimeTask* lhs, const typename embed::TimePoint& rhs){return lhs->ready_time() > rhs;}
     };
 
-    template<CClock Clock>
     struct smaller_deadline{
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.deadline() < rhs.deadline();}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->deadline() < rhs->deadline();}
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.deadline() < rhs;}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->deadline() < rhs;}
+        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.deadline() < rhs.deadline();}
+        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->deadline() < rhs->deadline();}
+        inline bool operator() (const RealTimeTask& lhs, const typename embed::TimePoint& rhs){return lhs.deadline() < rhs;}
+        inline bool operator() (const RealTimeTask* lhs, const typename embed::TimePoint& rhs){return lhs->deadline() < rhs;}
     };
 
-    template<CClock Clock>
     struct larger_deadline{
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const RealTimeTask<Clock>& rhs){return lhs.deadline() > rhs.deadline();}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const RealTimeTask<Clock>* rhs){return lhs->deadline() > rhs->deadline();}
-        inline bool operator() (const RealTimeTask<Clock>& lhs, const typename Clock::time_point& rhs){return lhs.deadline() > rhs;}
-        inline bool operator() (const RealTimeTask<Clock>* lhs, const typename Clock::time_point& rhs){return lhs->deadline() > rhs;}
+        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.deadline() > rhs.deadline();}
+        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->deadline() > rhs->deadline();}
+        inline bool operator() (const RealTimeTask& lhs, const typename embed::TimePoint& rhs){return lhs.deadline() > rhs;}
+        inline bool operator() (const RealTimeTask* lhs, const typename embed::TimePoint& rhs){return lhs->deadline() > rhs;}
     };
-
-    template<CClock Clock>
-    inline bool is_ready(const RealTimeTask<Clock>& task){return task.ready_time() <= Clock::now();}
-
-    template<CClock Clock>
-    inline bool is_ready(const RealTimeTask<Clock>* task){return task->ready_time() <= Clock::now();}
 
 } // namespace embed
 

@@ -9,6 +9,8 @@
 #include <embed/OS/tests/RealTimeScheduler_test.hpp>
 #include <embed/OStream/tests/OStream_test.hpp>
 
+#include <iostream>
+
 int test_all(){
 
     #ifndef EMBED_DISABLE_EXCEPTIONS

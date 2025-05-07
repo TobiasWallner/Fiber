@@ -21,8 +21,7 @@ namespace embed
     /**
      * @brief Default implementation for a function that should send the MCU to sleep until `time`, but does nothing.
      */
-    template<CClock Clock>
-    void default_sleep_until([[maybe_unused]]typename Clock::time_point time){
+    void default_sleep_until([[maybe_unused]]TimePoint time){
         return;
     }
 
@@ -31,16 +30,14 @@ namespace embed
      */
     template<class Logger>
     concept CRealTimeSchedulerLogger = requires(
-        Logger::time_point time, 
-        Logger::time_point time_after, 
-        Logger::time_point time_until, 
+        TimePoint time, 
+        TimePoint time_after, 
+        TimePoint time_until, 
         std::string_view name, 
         unsigned int id, 
         std::string_view from_queue, 
         std::string_view to_queue) 
     {
-        typename Logger::time_point;
-
         { Logger::log_add(time, name, id, to_queue) };
         { Logger::log_move(time, name, id, from_queue, to_queue) };
         { Logger::log_resume(time, time_after, name, id) };
@@ -51,18 +48,14 @@ namespace embed
     /**
      * @brief A default logger that does nothing
      */
-    template<CClock Clock>
     class NullLogger {
     public:
-        using cock = Clock;
-        using time_point = typename Clock::time_point;
-        using duration = typename Clock::duration;
 
-        static inline void log_add([[maybe_unused]]time_point time, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id, [[maybe_unused]]std::string_view to_queue){}
-        static inline void log_move([[maybe_unused]]time_point time, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id, [[maybe_unused]]std::string_view from_queue, [[maybe_unused]]std::string_view to_queue){}
-        static inline void log_resume([[maybe_unused]]time_point time_from, [[maybe_unused]]time_point time_after, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id){}
-        static inline void log_delete([[maybe_unused]]time_point time, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id){}
-        static inline void log_sleep([[maybe_unused]]time_point time, [[maybe_unused]]time_point sleep_until){}
+        static inline void log_add([[maybe_unused]]TimePoint time, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id, [[maybe_unused]]std::string_view to_queue){}
+        static inline void log_move([[maybe_unused]]TimePoint time, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id, [[maybe_unused]]std::string_view from_queue, [[maybe_unused]]std::string_view to_queue){}
+        static inline void log_resume([[maybe_unused]]TimePoint time_from, [[maybe_unused]]TimePoint time_after, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id){}
+        static inline void log_delete([[maybe_unused]]TimePoint time, [[maybe_unused]]std::string_view name, [[maybe_unused]]unsigned int id){}
+        static inline void log_sleep([[maybe_unused]]TimePoint time, [[maybe_unused]]TimePoint sleep_until){}
 
     };
 
@@ -79,12 +72,8 @@ namespace embed
      * @see embed::CClock
      * @see embed::RealTimeScheduler
      */
-    template<CClock Clock>
     class OutputLogger {
     public:
-        using cock = Clock;
-        using time_point = typename Clock::time_point;
-        using duration = typename Clock::duration;
 
         static inline OStreamRef stream;
 
@@ -92,12 +81,12 @@ namespace embed
             stream << embed::ansi::blue << symbol;
         }
 
-        static void print_time_point(time_point time){
+        static void print_time_point(TimePoint time){
             stream << embed::ansi::blue << time;
         }
 
-        static void print_time_point(duration duration){
-            stream << embed::ansi::light_blue << duration;
+        static void print_time_point(Duration Duration){
+            stream << embed::ansi::light_blue << Duration;
         }
 
         static void print_primary_action(std::string_view action){
@@ -116,7 +105,7 @@ namespace embed
             stream << embed::ansi::light_yellow << id;
         }
 
-        static void print_time(time_point time){
+        static void print_time(TimePoint time){
             using namespace std::string_view_literals;
             print_symbol("@"sv);
             print_time_point(time);
@@ -131,7 +120,7 @@ namespace embed
             print_symbol("}"sv);
         }
 
-        static void log_add(time_point time, std::string_view name, unsigned int id, std::string_view to_queue){
+        static void log_add(TimePoint time, std::string_view name, unsigned int id, std::string_view to_queue){
             using namespace std::string_view_literals;
             print_time(time);
             print_primary_action("add"sv);
@@ -141,7 +130,7 @@ namespace embed
             stream << embed::ansi::reset << embed::endl;
         }
 
-        static void log_move(time_point time, std::string_view name, unsigned int id, std::string_view from_queue, std::string_view to_queue){
+        static void log_move(TimePoint time, std::string_view name, unsigned int id, std::string_view from_queue, std::string_view to_queue){
             using namespace std::string_view_literals;
             print_time(time);
             print_primary_action("move"sv);
@@ -153,7 +142,7 @@ namespace embed
             stream << embed::ansi::reset << embed::endl;
         }
 
-        static void log_resume(time_point time_from, time_point time_after, std::string_view name, unsigned int id){
+        static void log_resume(TimePoint time_from, TimePoint time_after, std::string_view name, unsigned int id){
             using namespace std::string_view_literals;
             print_time(time_from);
             print_primary_action("resume"sv);
@@ -163,7 +152,7 @@ namespace embed
             stream << embed::ansi::reset << embed::endl;
         }
 
-        static void log_delete(time_point time, std::string_view name, unsigned int id){
+        static void log_delete(TimePoint time, std::string_view name, unsigned int id){
             using namespace std::string_view_literals;
             print_time(time);
             print_primary_action("delete"sv);
@@ -171,7 +160,7 @@ namespace embed
             stream << embed::ansi::reset << embed::endl;
         }
 
-        static void log_sleep(time_point time, time_point sleep_until){
+        static void log_sleep(TimePoint time, TimePoint sleep_until){
             using namespace std::string_view_literals;
             print_time(time);
             print_primary_action("sleep until"sv);
@@ -189,41 +178,33 @@ namespace embed
      * - running: a priority list, sorted by the earliest deadlines.
      * - awaiting: a list containing all tasks that are waiting on an awaitable or future.
      * 
-     * @tparam Clock The `embed::CClock` like clock that the scheduler should use. Defines the tick type, timer overflow, duration, time point and `now()` function.
      * @tparam n_tasks The maximum number of thats that will be pre-allocated for this scheduler.
-     * @tparam FSleepUntil A function in the form `void sleep_until(Clock::time_point time)` that will be called if there is nothing to do and the MCU can enter sleep mode.
      * @tparam logger A logger that implements the functions defined by `embed::CRealTimeSchedulerLogger`
      */
-    template<
-        CClock Clock, size_t n_tasks, 
-        void (*FSleepUntil)(typename Clock::time_point) = default_sleep_until<Clock>, 
-        CRealTimeSchedulerLogger logger = NullLogger<Clock>>
+    template<size_t n_tasks, CRealTimeSchedulerLogger logger = NullLogger>
     class RealTimeScheduler {
-    public:
-        using clock = Clock;
-        using time_point = typename Clock::time_point;
-        using duration = typename Clock::duration;
-        
     private:
-        using RTTask = RealTimeTask<Clock>;
-        using dual_priority_queue_type = DualPriorityQueue<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
-        using dual_array_list_type = DualArrayList<RTTask*, n_tasks>;
+        using dual_priority_queue_type = DualPriorityQueue<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
+        using dual_array_list_type = DualArrayList<RealTimeTask*, n_tasks>;
 
-        using waiting_queue_ref = Stage1DualPriorityQueueRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
-        using running_queue_ref = Stage2DualPriorityQueueRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
+        using waiting_queue_ref = Stage1DualPriorityQueueRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
+        using running_queue_ref = Stage2DualPriorityQueueRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
 
-        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
-        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<RTTask*, n_tasks, larger_ready_time<Clock>, larger_deadline<Clock>>;
+        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
+        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
+        
+        TimePoint (*_now)(); // function pointer to a function returning the current time
+        void (*_sleep_until)(TimePoint); // function pointer to a function returning the current time
 
         // TODO: dual priority queue with an unordered list to save more memory
         //       [stage 2 priority queue][reserve][unordered list][reserve][stage 1 priority list]
         //       consider if the complexity is worth it - probably not!
         dual_priority_queue_type _priority_queue; // ready + deadline
-        ArrayList<RTTask*, n_tasks> _await_bench;
+        ArrayList<RealTimeTask*, n_tasks> _await_bench;
         unsigned int _next_task_id = 0; // next id for the next added task
 
-    private:
 
+    private:
 
         waiting_queue_ref waiting_queue(){return this->_priority_queue;}
         running_queue_ref running_queue(){return this->_priority_queue;}
@@ -239,18 +220,18 @@ namespace embed
          */
         void promote(){
             // promote await back into running queue
-            for(RTTask* task : this->_await_bench){
+            for(RealTimeTask* task : this->_await_bench){
                 if(!task->is_awaiting()){
-                    logger::log_move(Clock::now(), task->name(), task->id(), "await", "run");
+                    logger::log_move(this->now(), task->name(), task->id(), "await", "run");
                     this->running_queue().push(task);
                 }
             }
-            this->_await_bench.erase_if([](const RTTask* task){return !task->is_awaiting();});
+            this->_await_bench.erase_if([](const RealTimeTask* task){return !task->is_awaiting();});
 
             // promote waiting queue into running queue
             while(!this->waiting_queue().empty()){
-                RTTask* task = this->waiting_queue().top();
-                const time_point now = Clock::now();
+                RealTimeTask* task = this->waiting_queue().top();
+                const TimePoint now = this->now();
                 if(task->ready_time() <= now){
                     logger::log_move(now, task->name(), task->id(), "wait", "run");
                     this->waiting_queue().pop();
@@ -259,6 +240,13 @@ namespace embed
                     return;
                 }
             }
+        }
+
+        /**
+         * \brief Sleep until the top of the waiting list
+         */
+        void sleep(){
+            this->_sleep_until(this->waiting_queue().top()->ready_time());
         }
 
         /**
@@ -276,60 +264,69 @@ namespace embed
          * @see embed::AwaitableNode
          */
         void run_next(){
-            if(this->running_queue().empty()){
-                FSleepUntil(this->waiting_queue().top()->ready_time());
-            }else{
-                RTTask* task = this->running_queue().top_pop();
-                task->_execution_start = Clock::now();
-                task->resume();
-                logger::log_resume(task->_execution_start, Clock::now(), task->name(), task->id());
-                // re-schedule
-                
-                const CoSignal signal = task->get_signal();
-                switch(signal.type()){
-                    case CoSignal::Type::Await : {
-                        // clear signal
-                        this->_await_bench.emplace_back(task);
-                        logger::log_move(Clock::now(), task->name(), task->id(), "resume", "await");
-                    }break;
-                    case CoSignal::Type::NextCycle : {
-                        task->_schedule = task->next_schedule(task->_schedule, ExecutionTime<Clock>{task->_execution_start, Clock::now()});
-                        this->waiting_queue().push(task);
-                        logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
-                    }break;
-                    case CoSignal::Type::ImplicitDelay : {
-                        const duration rel_deadline = task->_schedule.deadline - task->_schedule.ready;
-                        task->_schedule.ready = Clock::now() + embed::rounding_duration_cast<duration>(signal.delay());
-                        task->_schedule.deadline = task->_schedule.ready + rel_deadline;
-                        this->waiting_queue().push(task);
-                        logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
-                    }break;
-                    case CoSignal::Type::ExplicitDelay : {
-                        task->_schedule.ready = Clock::now() + embed::rounding_duration_cast<duration>(signal.delay());
-                        task->_schedule.deadline = task->_schedule.ready + embed::rounding_duration_cast<duration>(signal.deadline());
-                        logger::log_move(Clock::now(), task->name(), task->id(), "resume", "wait");
-                    }break;
-                    case CoSignal::Type::None : {
-                        /* 
-                        - Nothing to do 
-                        - task probably finished 
-                        - let it die by not inserting it into lists
-                        */
-                       logger::log_delete(Clock::now(), task->name(), task->id());
-                    } break;
-                    default : {
-                        /* 
-                        - Nothing to do 
-                        - task probably finished 
-                        - let it die by not inserting it into lists
-                        */
-                       logger::log_delete(Clock::now(), task->name(), task->id());
-                    } break;
-                }
+            RealTimeTask* task = this->running_queue().top_pop();
+            task->_execution_start = this->now();
+            task->resume();
+            logger::log_resume(task->_execution_start, this->now(), task->name(), task->id());
+            // re-schedule
+            
+            const CoSignal signal = task->get_signal();
+            switch(signal.type()){
+                case CoSignal::Type::Await : {
+                    // clear signal
+                    this->_await_bench.emplace_back(task);
+                    logger::log_move(this->now(), task->name(), task->id(), "resume", "await");
+                }break;
+                case CoSignal::Type::NextCycle : {
+                    task->_schedule = task->next_schedule(task->_schedule, ExecutionTime{task->_execution_start, this->now()});
+                    this->waiting_queue().push(task);
+                    logger::log_move(this->now(), task->name(), task->id(), "resume", "wait");
+                }break;
+                case CoSignal::Type::ImplicitDelay : {
+                    const Duration rel_deadline = task->_schedule.deadline - task->_schedule.ready;
+                    task->_schedule.ready = this->now() + embed::rounding_duration_cast<Duration>(signal.delay());
+                    task->_schedule.deadline = task->_schedule.ready + rel_deadline;
+                    this->waiting_queue().push(task);
+                    logger::log_move(this->now(), task->name(), task->id(), "resume", "wait");
+                }break;
+                case CoSignal::Type::ExplicitDelay : {
+                    task->_schedule.ready = this->now() + embed::rounding_duration_cast<Duration>(signal.delay());
+                    task->_schedule.deadline = task->_schedule.ready + embed::rounding_duration_cast<Duration>(signal.deadline());
+                    logger::log_move(this->now(), task->name(), task->id(), "resume", "wait");
+                }break;
+                case CoSignal::Type::None : {
+                    /* 
+                    - Nothing to do 
+                    - task probably finished 
+                    - let it die by not inserting it into lists
+                    */
+                    logger::log_delete(this->now(), task->name(), task->id());
+                } break;
+                default : {
+                    /* 
+                    - Nothing to do 
+                    - task probably finished 
+                    - let it die by not inserting it into lists
+                    */
+                    logger::log_delete(this->now(), task->name(), task->id());
+                } break;
             }
         }
 
     public:
+
+        RealTimeScheduler(TimePoint (*now)(), void (*sleep_until)(TimePoint) = default_sleep_until) 
+            : _now(now)
+            , _sleep_until(sleep_until){}
+
+        /**
+         * @brief returns the current time
+         * 
+         * Uses the function passed at construction
+         * 
+         * @returns a TimePoint containing the current time
+         */
+        TimePoint now() const {return this->_now();}
 
         /**
          * @brief Adds a tasks to the scheduler
@@ -338,10 +335,10 @@ namespace embed
          * 
          * @throws Throws an `AssertionFailureO1` if `EMBED_ASSERTION_LEVEL_O1` or higher is enabled, if the task could not be added and the scheduler is already full.
          */
-        void add(RealTimeTask<Clock>* task){
+        void add(RealTimeTask* task){
             task->id(this->_next_task_id++);
             EMBED_ASSERT_O1_MSG(!this->is_full(), "Scheduler is full and cannot handle more tasks safely. S: Increase the storage capacity for the number of tasks in the template parameter `n_taks`.");
-            const time_point now = Clock::now();
+            const TimePoint now = this->now();
             if(task->ready_time() <= now){
                 logger::log_add(now, task->name(), task->id(), "run");
                 this->running_queue().push(task);
@@ -359,7 +356,11 @@ namespace embed
          */
         void spin(){
             this->promote();
-            this->run_next();
+            if(this->is_busy()){
+                this->run_next();
+            }else{
+                this->sleep();
+            }
         }
 
         /**
@@ -382,7 +383,7 @@ namespace embed
         /**
          * @brief returns the number of tasks currently in the waiting queue
          * 
-         * Tasks that are in the waiting queue are waiting for time to pass until `Clock::now()`
+         * Tasks that are in the waiting queue are waiting for time to pass until `this->now()`
          * is larger than the ready time of a task.
          */
         constexpr size_t n_waiting() const {return this->waiting_queue().size();}
@@ -391,7 +392,7 @@ namespace embed
          * @brief returns the number of tasks currently in the running queue
          * 
          * Tasks that are in the ready queue are all tasks that have a ready time that is larger
-         * than `Clock::now()`.
+         * than `this->now()`.
          */
         constexpr size_t n_running() const {return this->running_queue().size();}
 
@@ -452,7 +453,7 @@ namespace embed
         /**
          * @brief prints a scheduler queue to the stream
          * @param stream An `embed::OStream` reference
-         * @param taskList A range that contains `RTTask*` objects
+         * @param taskList A range that contains `RealTimeTask*` objects
          */
         template<std::ranges::range TaskList>
         static void print_task_list(OStream& stream, const TaskList& taskList, const int indentation = 0){
@@ -461,7 +462,7 @@ namespace embed
 
             // get length of longest name
             int max_name_length = 4;
-            for(const RTTask* task : taskList){
+            for(const RealTimeTask* task : taskList){
                 const int name_size = static_cast<int>(task->name().size());
                 max_name_length =  (name_size > max_name_length) ? name_size : max_name_length;
             }
@@ -508,7 +509,7 @@ namespace embed
             stream << embed::newl;
 
             // print table
-            for(const RTTask* task : taskList){
+            for(const RealTimeTask* task : taskList){
                 stream.put(' ', indentation);
                 stream << single_vertical << ' ';
                 stream << FormatStr(task->name()).mwidth(max_name_length).left();
@@ -565,7 +566,7 @@ namespace embed
          * @param stream A reference to an `embed::OStream` object
          */
         void print(OStream& stream) const {
-            const time_point now = Clock::now();
+            const TimePoint now = this->now();
             stream << "@" << now << " Running: " << embed::newl;
             RealTimeScheduler::print_task_list(stream, this->running_queue(), 2);
             stream << embed::newl << "@" << now << " Waiting: " << embed::newl;

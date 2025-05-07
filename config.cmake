@@ -1,3 +1,4 @@
+include(set_exactly_one.cmake)
 
 # ================================================================================
 #                                Compile Tests
@@ -14,6 +15,24 @@ option(
     EMBED_USE_EMBED_SYS_STUBS 
     "Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size"
     OFF)
+# ================================================================================
+#                                system scheduler clock
+# ================================================================================
+
+option(EMBED_CLOCK_UINT8 "Use an 8 bit integer for the clock counter" OFF)
+option(EMBED_CLOCK_UINT16 "Use an 16 bit integer for the clock counter" OFF)
+option(EMBED_CLOCK_UINT32 "Use an 32 bit integer for the clock counter" OFF)
+option(EMBED_CLOCK_UINT64 "Use an 64 bit integer for the clock counter" OFF)
+
+set(_embed_clock_representations
+    EMBED_CLOCK_UINT8
+    EMBED_CLOCK_UINT16
+    EMBED_CLOCK_UINT32
+    EMBED_CLOCK_UINT64
+)
+set_exactly_one("${_embed_clock_representations}" EMBED_CLOCK_UINT32)
+
+set_default_cache_variable(EMBED_RTC_FREQ_HZ 20000 "Frequency in hertz, used for the clock tick and task scheduling")
 
 # ================================================================================
 #                                Exceptions
@@ -39,45 +58,18 @@ option(EMBED_ASSERTION_LEVEL_CRITICAL   "Enable critical level assertions" OFF)
 option(EMBED_ASSERTION_LEVEL_O1         "Enable O[1] cost development assertions + critical" OFF)
 option(EMBED_ASSERTION_LEVEL_FULL       "Enable full deep validation assertions + O[1] + full" OFF)
 
-# Check that maximal 1 is set
-# ---------------------------
-set(_embed_assert_level_count 0)
-
-foreach(_level
+set(_embed_assertion_levels
     EMBED_DISABLE_ASSERTIONS
     EMBED_ASSERTION_LEVEL_CRITICAL
     EMBED_ASSERTION_LEVEL_O1
     EMBED_ASSERTION_LEVEL_FULL
 )
-    if(${_level})
-        math(EXPR _embed_assert_level_count "${_embed_assert_level_count} + 1")
-    endif()
-endforeach()
-
-if(_embed_assert_level_count GREATER 1)
-    message(FATAL_ERROR
-        "embed: Multiple assertion levels are enabled!\n"
-        "  Please enable only ONE of the following:\n"
-        "    - EMBED_DISABLE_ASSERTIONS         = ${EMBED_DISABLE_ASSERTIONS}\n"
-        "    - EMBED_ASSERTION_LEVEL_CRITICAL   = ${EMBED_ASSERTION_LEVEL_CRITICAL}\n"
-        "    - EMBED_ASSERTION_LEVEL_O1         = ${EMBED_ASSERTION_LEVEL_O1}\n"
-        "    - EMBED_ASSERTION_LEVEL_FULL       = ${EMBED_ASSERTION_LEVEL_FULL}\n"
-    )
-endif()
-
-# Default to EMBED_ASSERTION_LEVEL_CRITICAL if none set
-# -----------------------------------------------------
-if(_embed_assert_level_count EQUAL 0)
-    set(EMBED_ASSERTION_LEVEL_O1 ON)
-    message(STATUS "embed: No assertion level set. Defaulting to EMBED_ASSERTION_LEVEL_O1 = ON")
-endif()
+set_exactly_one("${_embed_assertion_levels}" EMBED_ASSERTION_LEVEL_O1)
 
 # Assertion behavior
 # ------------------
 option(EMBED_ASSERTS_AS_ASSUME "Use compiler intrinsics that asume values instead of unused asserts - for more optimisations (like __builtin_assume, or a different, or none - depending on the compiler used)" OFF)
 option(EMBED_USE_EXCEPTION_CALLBACKS "Use user-defined callbacks for exceptions instead of throwing them" OFF)
-
-
 
 # ================================================================================
 #                           Output and String Formating
@@ -90,7 +82,7 @@ option(EMBED_DISABLE_UTF8_CODES "If `OFF` enables UTF8 codes, for exampample lin
 
 # General Number Formating
 # ------------------------
-option(EMBED_FMT_MINIMAL "If ON, uses the settings from the macros instead. This disables runtime configurability but offers more performant code and smaller binaries" OFF)
+option(EMBED_FMT_MINIMAL "Disables runtime configurability but offers more performant code and smaller binaries" OFF)
 
 # Bool Formating
 # --------------
@@ -110,94 +102,30 @@ option(EMBED_FMT_FORCE_SIGN "forces a sign, even if the number is positive. Depe
 option(EMBED_FMT_FORCE_EXPONENT "forces an exponent, even if the exponent is zero. Depends on `EMBED_FMT_MINIMAL`." OFF)
 option(EMBED_FMT_FORCE_EXPONENT_SIGN "forces a sign on the exponent, even if the exponent is positive. Depends on `EMBED_FMT_MINIMAL`." OFF)
 
-option(EMBED_FMT_DECIMALS_1 "Enables 1 decimal place. Depends on `EMBED_FMT_MINIMAL`." OFF)
-option(EMBED_FMT_DECIMALS_2 "Enables 2 decimal places. Depends on `EMBED_FMT_MINIMAL`." OFF)
-option(EMBED_FMT_DECIMALS_3 "Enables 3 decimal places. Depends on `EMBED_FMT_MINIMAL`." OFF)
-option(EMBED_FMT_DECIMALS_4 "Enables 4 decimal places. Depends on `EMBED_FMT_MINIMAL`." OFF)
-option(EMBED_FMT_DECIMALS_5 "Enables 5 decimal places. Depends on `EMBED_FMT_MINIMAL`." OFF)
-option(EMBED_FMT_DECIMALS_6 "Enables 6 decimal places. Depends on `EMBED_FMT_MINIMAL`." OFF)
+set_default_cache_variable(EMBED_FMT_FLOAT_DECIMALS 3 "Number of decimal places for float formatting. Depends on `EMBED_FMT_MINIMAL`.")
 
-## Error checking of decimals 
-set(_embed_fmt_decimals_count 0)
-
-foreach(_level
-    EMBED_FMT_DECIMALS_1
-    EMBED_FMT_DECIMALS_2
-    EMBED_FMT_DECIMALS_3
-    EMBED_FMT_DECIMALS_4
-    EMBED_FMT_DECIMALS_5
-    EMBED_FMT_DECIMALS_6
-)
-    if(${_level})
-        math(EXPR _embed_fmt_decimals_count "${_embed_fmt_decimals_count} + 1")
-    endif()
-endforeach()
-
-if(_embed_fmt_decimals_count GREATER 1)
-    message(FATAL_ERROR
-        "embed: Multiple decimal places are enabled!\n"
-        "  Please enable only ONE of the following:\n"
-        "    - EMBED_FMT_DECIMALS_1         = ${EMBED_FMT_DECIMALS_1}\n"
-        "    - EMBED_FMT_DECIMALS_2         = ${EMBED_FMT_DECIMALS_2}\n"
-        "    - EMBED_FMT_DECIMALS_3         = ${EMBED_FMT_DECIMALS_3}\n"
-        "    - EMBED_FMT_DECIMALS_4         = ${EMBED_FMT_DECIMALS_4}\n"
-        "    - EMBED_FMT_DECIMALS_5         = ${EMBED_FMT_DECIMALS_5}\n"
-        "    - EMBED_FMT_DECIMALS_6         = ${EMBED_FMT_DECIMALS_6}\n"
-    )
-endif()
-
-## Default to EMBED_FMT_DECIMALS_3 if none set
-if(_embed_fmt_decimals_count EQUAL 0)
-    set(EMBED_FMT_DECIMALS_3 ON)
-    message(STATUS "embed: No decimal place numer set. Defaulting to EMBED_FMT_DECIMALS_3 = ON")
-endif()
 
 ## Float Representations 
 option(EMBED_FMT_FLOAT_REP_SCI "Enables scientific representation. Depends on `EMBED_FMT_MINIMAL`." OFF)
 option(EMBED_FMT_FLOAT_REP_ENG "Enables engineering representation. Depends on `EMBED_FMT_MINIMAL`." OFF)
 option(EMBED_FMT_FLOAT_REP_FULL "Enables floating point representation. Depends on `EMBED_FMT_MINIMAL`." OFF)
 
-# Check if maximal 1 of the float representations has been set
-set(_embed_fmt_float_rep_count 0)
-
-foreach(_level
+## Error checking of decimals 
+set(_embed_float_representation
     EMBED_FMT_FLOAT_REP_SCI
     EMBED_FMT_FLOAT_REP_ENG
     EMBED_FMT_FLOAT_REP_FULL
 )
-    if(${_level})
-        math(EXPR _embed_fmt_float_rep_count "${_embed_fmt_float_rep_count} + 1")
-    endif()
-endforeach()
-
-# Error if more than one is enabled
-if(_embed_fmt_float_rep_count GREATER 1)
-    message(FATAL_ERROR
-        "embed: Multiple float representations are enabled!\n"
-        "  Please enable only ONE of the following:\n"
-        "    - EMBED_FMT_FLOAT_REP_SCI         = ${EMBED_FMT_FLOAT_REP_SCI}\n"
-        "    - EMBED_FMT_FLOAT_REP_ENG         = ${EMBED_FMT_FLOAT_REP_ENG}\n"
-        "    - EMBED_FMT_FLOAT_REP_FULL        = ${EMBED_FMT_FLOAT_REP_FULL}\n"
-    )
-endif()
-
-# Default to EMBED_FMT_FLOAT_REP_ENG if none set
-if(_embed_fmt_float_rep_count EQUAL 0)
-    set(EMBED_FMT_FLOAT_REP_ENG ON)
-    message(STATUS "embed: No floating point representation set. Defaulting to EMBED_FMT_FLOAT_REP_ENG = ON")
-endif()
-
+set_exactly_one("${_embed_float_representation}" EMBED_FMT_FLOAT_REP_ENG)
 
 # ================================================================================
 #                              Summary of Options
 # ================================================================================
 
-
 set(embed_cmake_flags
     EMBED_COMPILE_TESTS
     EMBED_USE_EMBED_SYS_STUBS
 )
-
 
 set(embed_main_flags
     EMBED_DISABLE_EXCEPTIONS
@@ -207,6 +135,11 @@ set(embed_main_flags
     EMBED_ASSERTION_LEVEL_FULL
     EMBED_ASSERTS_AS_ASSUME
     EMBED_USE_EXCEPTION_CALLBACKS
+    EMBED_CLOCK_UINT8
+    EMBED_CLOCK_UINT16
+    EMBED_CLOCK_UINT32
+    EMBED_CLOCK_UINT64
+    EMBED_RTC_FREQ_HZ
     EMBED_DISABLE_ANSI_CODES
     EMBED_DISABLE_UTF8_CODES
     EMBED_FMT_MINIMAL
@@ -217,14 +150,9 @@ set(embed_fmt_flags
     EMBED_FMT_FLOAT_REP_SCI
     EMBED_FMT_FLOAT_REP_ENG
     EMBED_FMT_FLOAT_REP_FULL
-    EMBED_FMT_DECIMALS_1
-    EMBED_FMT_DECIMALS_2
-    EMBED_FMT_DECIMALS_3
-    EMBED_FMT_DECIMALS_4
-    EMBED_FMT_DECIMALS_5
-    EMBED_FMT_DECIMALS_6
     EMBED_FMT_DOT_AS_COMMA
     EMBED_FMT_PAD_SIGN
+    EMBED_FMT_FLOAT_DECIMALS
     EMBED_FMT_THOUSANDS
     EMBED_FMT_FORCE_COMMA
     EMBED_FMT_FORCE_DECIMALS
@@ -253,12 +181,11 @@ message(STATUS "---------------------------")
 foreach(var IN LISTS embed_main_flags)
     message(STATUS "  ${var} = ${${var}}")
     if("${var}" STREQUAL "EMBED_FMT_MINIMAL" AND EMBED_FMT_MINIMAL)
-    message(STATUS "+ embed: Formatting Options:")
-    message(STATUS "  --------------------------")
-    foreach(var IN LISTS embed_fmt_flags)
-        message(STATUS "    ${var} = ${${var}}")
-    endforeach()
-endif()
+        message(STATUS "  + Formatting Options:")
+        foreach(var IN LISTS embed_fmt_flags)
+            message(STATUS "    ${var} = ${${var}}")
+        endforeach()
+    endif()
 endforeach()
 
 message(STATUS "")
@@ -267,11 +194,26 @@ message(STATUS "")
 #                              Apply Config
 # ================================================================================
 
-# Combine assertion + formatting flags
-set(embed_all_definitions ${embed_main_flags} ${embed_fmt_flags})
-
-foreach(var IN LISTS embed_all_definitions)
-    target_compile_definitions(embed PUBLIC
-        $<$<BOOL:${${var}}>:${var}>
-    )
+# Define main definitions
+foreach(var IN LISTS embed_main_flags)
+    if("${${var}}" MATCHES "^-?[0-9]+$")
+        # handle integers
+        target_compile_definitions(embed PUBLIC ${var}=${${var}})   
+    elseif(${${var}})
+        # default: define bool
+        target_compile_definitions(embed PUBLIC ${var})
+    endif()
 endforeach()
+
+# Conditionally define additional formating options
+if(EMBED_FMT_MINIMAL)
+    foreach(var IN LISTS embed_fmt_flags)
+        if("${${var}}" MATCHES "^-?[0-9]+$")
+            # handle integers
+            target_compile_definitions(embed PUBLIC ${var}=${${var}})   
+        elseif(${${var}})
+            # default: define bool
+            target_compile_definitions(embed PUBLIC ${var})
+        endif()
+    endforeach()
+endif()

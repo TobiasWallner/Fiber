@@ -36,7 +36,7 @@ namespace embed
          * 
          * @param delay The delay by which the task will be re-scheduled
          */
-        template<class Rep, CStdRatio Period>
+        template<class Rep, CRatio Period>
         explicit constexpr Delay(std::chrono::duration<Rep, Period> delay)
             : _delay_ready(embed::rounding_duration_cast<std::chrono::nanoseconds>(delay)){}
 
@@ -63,7 +63,7 @@ namespace embed
          * @param relative_deadline The added deadline after the delay
          * @see CoSignal::ExplicitDelay
          */
-        template<class Rep1, CStdRatio Period1, class Rep2, CStdRatio Period2>
+        template<class Rep1, CRatio Period1, class Rep2, CRatio Period2>
         explicit constexpr Delay(std::chrono::duration<Rep1, Period1> delay, std::chrono::duration<Rep2, Period2> relative_deadline)
             : _delay_ready(std::chrono::duration_cast<std::chrono::nanoseconds>(delay))
             , _delay_deadline(std::chrono::duration_cast<std::chrono::nanoseconds>(relative_deadline)){}

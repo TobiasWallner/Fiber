@@ -13,14 +13,13 @@ namespace embed
     };
 
 // --------------------------------------------------------------------------------
-//                               CStdRatio
+//                               CRatio
 // --------------------------------------------------------------------------------
 
     template<typename T>
-    concept CStdRatio = requires {
+    concept CRatio = requires {
         { T::num } -> std::convertible_to<intmax_t>;
         { T::den } -> std::convertible_to<intmax_t>;
-        requires std::is_same_v<T, std::ratio<T::num, T::den>>;
     };
 
 // --------------------------------------------------------------------------------

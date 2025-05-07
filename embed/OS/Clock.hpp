@@ -11,6 +11,7 @@
 #include <embed/Core/concepts.hpp>
 #include <embed/Core/chrono.hpp>
 #include <embed/Exceptions/Exceptions.hpp>
+#include <embed/OStream/OStream.hpp>
 
 // just expose it so everyone can write 1ms.
 using namespace std::chrono_literals;
@@ -53,7 +54,7 @@ namespace embed{
          * @param v unsigned integer value
          */
         template<std::unsigned_integral T>
-        constexpr ClockTick(const T v){
+        explicit(false) constexpr ClockTick(const T v){
             // try as much as possible to avoid '%'
             if constexpr (std::numeric_limits<T>::max() <= max_tick){
                 this->value = static_cast<UInt>(v);
@@ -69,7 +70,7 @@ namespace embed{
         }
 
         template<std::signed_integral T>
-        constexpr ClockTick(const T v){
+        explicit(false) constexpr ClockTick(const T v){
             if (v >= 0) {
                 *this = ClockTick(static_cast<UInt>(v));
             }else{
@@ -78,7 +79,7 @@ namespace embed{
         }
 
         template<std::integral T>
-        constexpr ClockTick& operator=(const T v){return *this = ClockTick(v);}
+        explicit(false) constexpr ClockTick& operator=(const T v){return *this = ClockTick(v);}
 
         /// @brief Reinterprets the integer value into the clock tick. this assumes that the passed value is smaller or equal than the overflow value
         /// @tparam Int Generic integer type
@@ -192,11 +193,11 @@ namespace embed{
             return ClockTick::reinterpret(static_cast<UInt>(lhs.value % rhs.value));
         }
 
-        inline ClockTick& operator+=(const ClockTick other){*this = *this + other;}
-        inline ClockTick& operator-=(const ClockTick other){*this = *this - other;}
-        inline ClockTick& operator*=(const ClockTick other){*this = *this * other;}
-        inline ClockTick& operator/=(const ClockTick other){*this = *this / other;}
-        inline ClockTick& operator%=(const ClockTick other){*this = *this % other;}
+        inline void operator+=(const ClockTick other){*this = *this + other;}
+        inline void operator-=(const ClockTick other){*this = *this - other;}
+        inline void operator*=(const ClockTick other){*this = *this * other;}
+        inline void operator/=(const ClockTick other){*this = *this / other;}
+        inline void operator%=(const ClockTick other){*this = *this % other;}
 
         friend constexpr bool operator==(const ClockTick lhs, const ClockTick rhs){return lhs.value == rhs.value;}
         friend constexpr bool operator!=(const ClockTick lhs, const ClockTick rhs){return lhs.value != rhs.value;}
@@ -236,26 +237,59 @@ namespace std{
 
 namespace embed{
 
-    
 
-    /// @brief Overflow aware time duration type
-    /// @tparam UInt The underlieing integral type for the counter
-    /// @tparam MaxTick Maximum distance before timer overflow
-    /// @tparam Period std::ratio to 1s
-    template<std::unsigned_integral UInt, CStdRatio Period = std::ratio<1>, UInt MaxTick = std::numeric_limits<UInt>::max()>
-    using Duration = std::chrono::duration<ClockTick<UInt, MaxTick>, Period>;
+    #if defined(EMBED_CLOCK_UINT8)
+        using DurationRepresentation = uint8_t;
+    #elif defined(EMBED_CLOCK_UINT16)
+        using DurationRepresentation = uint16_t;
+    #elif defined(EMBED_CLOCK_UINT32)
+        using DurationRepresentation = uint32_t;
+    #elif defined(EMBED_CLOCK_UINT64)
+        using DurationRepresentation = uint64_t;
+    #else
+        #error "No clock representation has been set. S: Set one of the following definitions: `EMBED_CLOCK_UINT8`, `EMBED_CLOCK_UINT16`, `EMBED_CLOCK_UINT32` or `EMBED_CLOCK_UINT64`"
+    #endif
 
-    template<std::unsigned_integral UInt, CStdRatio Period = std::ratio<1>, UInt MaxTick = std::numeric_limits<UInt>::max()>
-    OStream& operator<<(OStream& stream, const Duration<UInt, Period, MaxTick>& duration){
-        // convert to simple standard duration so it can be easily cast with duration_cast
-        const std::chrono::duration<long long, Period> d(static_cast<long long>(duration.count()));
+    #if !defined(EMBED_RTC_FREQ_HZ)
+        #error "No clock frequency has been set. S: Set `EMBED_RTC_FREQ_HZ` to an integer frequency"
+    #endif
+
+    /**
+     * \brief Representation of a time duration
+     */
+    class Duration : public std::chrono::duration<ClockTick<DurationRepresentation>, std::ratio<1, EMBED_RTC_FREQ_HZ>>{
+        public:
+        using base = std::chrono::duration<ClockTick<DurationRepresentation>, std::ratio<1, EMBED_RTC_FREQ_HZ>>;
+        using rep = typename base::rep;
+        using period = typename base::period;
+
+        constexpr Duration() = default;
+        constexpr Duration(const Duration&) = default;
+
+        constexpr Duration(rep value) : base(value){}
+
+        constexpr Duration(DurationRepresentation value) : base(value){}
+
+        template<std::integral Rep, CRatio Period>
+        constexpr Duration(std::chrono::duration<Rep, Period> duration) 
+            : base(embed::rounding_duration_cast<base>(duration)){}
+
+
+    };
+
+
+
+    /**
+     * \brief prints the time duration to the output stream
+     */
+    inline OStream& operator<<(OStream& stream, const Duration& duration){
+        using Period = std::ratio<1, EMBED_RTC_FREQ_HZ>;
+
+        // convert to standard duration so it can be easily cast with duration_cast
+        const std::chrono::duration<DurationRepresentation, Period> d(static_cast<DurationRepresentation>(duration.count()));
         
         // depending on the duration -> downcast to next lower konventional period
-        if constexpr (std::ratio_greater_equal<Period, typename std::chrono::years::period>::value){
-            return stream << embed::rounding_duration_cast<std::chrono::years>(d);
-        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::months::period>::value){
-            return stream << embed::rounding_duration_cast<std::chrono::month>(d);
-        }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::weeks::period>::value){
+        if constexpr (std::ratio_greater_equal<Period, typename std::chrono::weeks::period>::value){
             return stream << embed::rounding_duration_cast<std::chrono::weeks>(d);
         }else if constexpr (std::ratio_greater_equal<Period, typename std::chrono::days::period>::value){
             return stream << embed::rounding_duration_cast<std::chrono::days>(d);
@@ -274,73 +308,92 @@ namespace embed{
         }
     }
 
-    /// @brief Overflow aware time point
-    /// @tparam Clock The clock this time point referes to
-    /// @tparam UInt The underlieing integral type for the counter
-    /// @tparam MaxTick Maximum distance before timer overflow
-    /// @tparam Period Period std::ratio to 1s
-    template<class Clock, std::unsigned_integral UInt=Clock::value_type, CStdRatio Period = Clock::period, UInt MaxTick=Clock::max_tick>
-    using TimePoint = std::chrono::time_point<Clock, Duration<UInt, Period, MaxTick>>;
-
-    template<class Clock, std::unsigned_integral UInt=Clock::value_type, CStdRatio Period = Clock::period, UInt MaxTick=Clock::max_tick>
-    OStream& operator<<(OStream& stream, const TimePoint<Clock, UInt, Period, MaxTick>& tp){
-        return stream << tp.time_since_epoch();
-    }
-
     /**
-     * @brief Concept for a clock with overflow awareness
+     * \brief Representation of a time point
      */
-    template<class C>
-    concept CClock = requires {
-        typename C::value_type;
-        typename C::rep;
-        typename C::period;
-        typename C::duration;
-        typename C::time_point;
-        { C::max_tick } -> std::convertible_to<typename C::rep>;
-        { C::now() } -> std::same_as<typename C::time_point>;
-    }   && std::unsigned_integral<typename C::value_type> 
-        && std::same_as<typename C::rep, ClockTick<typename C::value_type, C::max_tick>> 
-        && CStdRatio<typename C::period> 
-        && std::same_as<typename C::duration, Duration<typename C::value_type, typename C::period, C::max_tick>> 
-        && std::same_as<typename C::time_point, TimePoint<C, typename C::value_type, typename C::period, C::max_tick>>;
+    class TimePoint{
+    private:
+        Duration _duration;
 
-    /** 
-     * @brief A template for an overflow aware clock type for the use with `TimePoint`
-     * 
-     * Example for a hardware timer that uses a 32-bit counter at 1MHz
-     * ```
-     * inline uint32_t get_timer1_count(){
-     *   return timer1_handle->counter_register;
-     * }
-     * 
-     * using MyClock = embed::Clock<uint32_t, 0xFFFFFFFF, std::milli, get_timer1_count>;
-     * 
-     * TimePoint<MyClock> tp;
-     * ```
-     * 
-     * 
-     * @tparam UInt The integer type of the counter/timer
-     * @tparam MaxTick The maximum tick value of the timer before the overflow
-     * @tparam Period The ratio for 1s
-     * @tparam GetTimerCount A function to the hardware timer that returns the timer count as an (preferably) unsigned integral
-     */
-    template<std::unsigned_integral UInt, CStdRatio Period, UInt (*GetTimerCount)(void), UInt MaxTick = std::numeric_limits<UInt>::max()>
-    struct Clock{
-        using value_type = UInt;
-        using rep = ClockTick<UInt, MaxTick>;
-        using period = Period;
-        using duration = Duration<UInt, Period, MaxTick>;
-        using time_point = TimePoint<Clock, UInt, Period, MaxTick>;
+    public:
+        TimePoint() = default;
+        TimePoint(const TimePoint&) = default;
+        explicit constexpr TimePoint(Duration duration) : _duration(duration){};
         
-        static constexpr inline UInt max_tick = MaxTick;
+        template<std::integral Rep, CRatio Period>
+        explicit constexpr TimePoint(std::chrono::duration<Rep, Period> duration) 
+            : _duration(embed::rounding_duration_cast<embed::Duration>(duration)){}
+
+        constexpr TimePoint& operator+=(Duration d){this->_duration += d; return *this;}
+        constexpr TimePoint& operator-=(Duration d){this->_duration -= d; return *this;}
         
-        static time_point now() noexcept {
-            const UInt timer_count = GetTimerCount();
-            const duration dur(timer_count);
-            const time_point result(dur);
+        template<std::integral Rep, CRatio Period>
+        constexpr TimePoint& operator+=(std::chrono::duration<Rep, Period> d){this->_duration += embed::rounding_duration_cast<Duration>(d); return *this;}
+        
+        template<std::integral Rep, CRatio Period>
+        constexpr TimePoint& operator-=(Duration d){this->_duration -= embed::rounding_duration_cast<Duration>(d); return *this;}
+
+        constexpr Duration time_since_epoch() const {return this->_duration;}
+
+        friend constexpr TimePoint operator+ (TimePoint lhs, Duration rhs){
+            const TimePoint result(lhs.time_since_epoch() + rhs);
             return result;
         }
+
+        template<std::integral Rep, CRatio Period>
+        friend constexpr TimePoint operator+ (TimePoint lhs, std::chrono::duration<Rep, Period> rhs){
+            return lhs + embed::rounding_duration_cast<Duration>(rhs);
+        }
+
+        friend constexpr TimePoint operator+ (Duration lhs, TimePoint rhs){
+            const TimePoint result(lhs + rhs.time_since_epoch());
+            return result;
+        }
+
+        template<std::integral Rep, CRatio Period>
+        friend constexpr TimePoint operator+ (std::chrono::duration<Rep, Period> lhs, TimePoint rhs){
+            return embed::rounding_duration_cast<Duration>(lhs) + rhs;
+        }
+
+        friend constexpr TimePoint operator- (TimePoint lhs, Duration rhs){
+            const TimePoint result(lhs.time_since_epoch() - rhs);
+            return result;
+        }
+
+        template<std::integral Rep, CRatio Period>
+        friend constexpr TimePoint operator- (TimePoint lhs, std::chrono::duration<Rep, Period> rhs){
+            return lhs - embed::rounding_duration_cast<Duration>(rhs);
+        }
+
+        friend constexpr TimePoint operator- (Duration lhs, TimePoint rhs){
+            const TimePoint result(lhs - rhs.time_since_epoch());
+            return result;
+        }
+
+        template<std::integral Rep, CRatio Period>
+        friend constexpr TimePoint operator- (std::chrono::duration<Rep, Period> lhs, TimePoint rhs){
+            return embed::rounding_duration_cast<Duration>(lhs) - rhs;
+        }
+
+        friend constexpr Duration operator- (TimePoint lhs, TimePoint rhs){
+            const Duration result = lhs.time_since_epoch() - rhs.time_since_epoch();
+            return result;
+        }
+
+        friend constexpr bool operator==(TimePoint lhs, TimePoint rhs){return lhs._duration == rhs._duration;}
+        friend constexpr bool operator!=(TimePoint lhs, TimePoint rhs){return lhs._duration != rhs._duration;}
+
+        friend constexpr bool operator<=(TimePoint lhs, TimePoint rhs){return lhs._duration <= rhs._duration;}
+        friend constexpr bool operator>=(TimePoint lhs, TimePoint rhs){return lhs._duration >= rhs._duration;}
+        friend constexpr bool operator<(TimePoint lhs, TimePoint rhs){return lhs._duration < rhs._duration;}
+        friend constexpr bool operator>(TimePoint lhs, TimePoint rhs){return lhs._duration > rhs._duration;}
     };
+
+    /**
+     * \brief prints the time point to the output stream
+     */
+    inline OStream& operator<<(OStream& stream, const TimePoint& time){
+        return stream << time.time_since_epoch();
+    }
 
 } // namespace embed

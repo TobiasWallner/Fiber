@@ -1,7 +1,12 @@
 /**
+
+
 @page page_overflow_aware_clocks Overflow aware: Clocks, Time-Points and Durations
 
 @section page_exceptions_and_assertions_disable Overview
+
+# TODO: Rewrite for new `TimePoint` and `Duration`
+
 
 The `embed` library provides a fully overflow-aware timing system including:
 - Clocks
