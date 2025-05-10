@@ -54,6 +54,7 @@ namespace embed{
          * @param v unsigned integer value
          */
         template<std::unsigned_integral T>
+        requires (!std::same_as<T, ClockTick>)
         constexpr ClockTick(const T v){
             // try as much as possible to avoid '%'
             if constexpr (std::numeric_limits<T>::max() <= max_tick){
@@ -70,6 +71,7 @@ namespace embed{
         }
 
         template<std::signed_integral T>
+        requires (!std::same_as<T, ClockTick>)
         constexpr ClockTick(const T v){
             if (v >= 0) {
                 *this = ClockTick(static_cast<UInt>(v));
