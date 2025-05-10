@@ -274,6 +274,7 @@ namespace embed{
 
         constexpr Duration() = default;
         constexpr Duration(const Duration&) = default;
+        constexpr Duration& operator=(const Duration&) = default;
 
         constexpr Duration(rep value) : base(value){}
 
@@ -325,8 +326,9 @@ namespace embed{
         Duration _duration;
 
     public:
-        TimePoint() = default;
-        TimePoint(const TimePoint&) = default;
+        constexpr TimePoint() = default;
+        constexpr TimePoint(const TimePoint&) = default;
+        constexpr TimePoint& operator=(const TimePoint&) = default;
         explicit constexpr TimePoint(Duration duration) : _duration(duration){};
         
         template<class Rep, CRatio Period>
