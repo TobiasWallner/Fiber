@@ -82,12 +82,10 @@ namespace embed{
         constexpr ClockTick& operator=(const T v){return *this = ClockTick(v);}
 
         /// @brief Reinterprets the integer value into the clock tick. this assumes that the passed value is smaller or equal than the overflow value
-        /// @tparam Int Generic integer type
         /// @param v an integer
         /// @return a ClockTick
         /// @throws If full assertions are enabled, throws if the passed value is larger than the modulo
-        template<std::unsigned_integral Int>
-        static constexpr ClockTick reinterpret(const Int v){
+        static constexpr ClockTick reinterpret(const UInt v){
             EMBED_ASSERT_FULL(v <= modulo);
             ClockTick result;
             result.value = static_cast<UInt>(v);
@@ -105,14 +103,14 @@ namespace embed{
         friend constexpr ClockTick operator+(const ClockTick lhs, const ClockTick rhs){
             if constexpr (max_tick_is_limit){
                 // if the overflow happens at the maximal representable value: just add them and let them wrap around by themselfes
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>(lhs.value + rhs.value));
+                return ClockTick::reinterpret(static_cast<UInt>(lhs.value + rhs.value));
             }else if constexpr (modulo_is_power_of_two){
                 // use a mask to do a quick modulo
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>((lhs.value + rhs.value) & max_tick));
+                return ClockTick::reinterpret(static_cast<UInt>((lhs.value + rhs.value) & max_tick));
             }else{
                 // if all else failes, fall back 
                 const auto result = lhs.value + rhs.value;
-                return  ClockTick::reinterpret<UInt>(static_cast<UInt>((result < modulo) ? result : result - modulo));
+                return  ClockTick::reinterpret(static_cast<UInt>((result < modulo) ? result : result - modulo));
             }
         }
 
@@ -131,7 +129,7 @@ namespace embed{
             }else {
                 // fallback
                 const auto result = lhs.value - rhs.value;
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>((lhs.value < rhs.value) ? result + modulo : result));
+                return ClockTick::reinterpret(static_cast<UInt>((lhs.value < rhs.value) ? result + modulo : result));
             }
         }
 
@@ -150,10 +148,10 @@ namespace embed{
         friend constexpr ClockTick operator-(const ClockTick v){
             if constexpr (max_tick_is_limit && (/* stupid integer promotion rules */sizeof(UInt) >= sizeof(int))){
                 // if the overflow happens at the maximal representable value: just add them and let them wrap around by themselfes
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>(-v.value));
+                return ClockTick::reinterpret(static_cast<UInt>(-v.value));
             } else {
                 // wrap around
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>(modulo - v.value));
+                return ClockTick::reinterpret(static_cast<UInt>(modulo - v.value));
             }
         }
 
@@ -168,12 +166,12 @@ namespace embed{
         friend constexpr ClockTick operator*(const ClockTick lhs, const ClockTick rhs){
             if constexpr (max_tick_is_limit){
                 // if the overflow happens at the maximal representable value: just add them and let them wrap around by themselfes
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>(lhs.value * rhs.value));
+                return ClockTick::reinterpret(static_cast<UInt>(lhs.value * rhs.value));
             }else if constexpr (modulo_is_power_of_two){
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>((lhs.value * rhs.value) & max_tick));
+                return ClockTick::reinterpret(static_cast<UInt>((lhs.value * rhs.value) & max_tick));
             }else {
                 // do the modulo and pray that the compiler can optimize it away
-                return ClockTick::reinterpret<UInt>(static_cast<UInt>((lhs.value * rhs.value) % modulo));
+                return ClockTick::reinterpret(static_cast<UInt>((lhs.value * rhs.value) % modulo));
             }
         }
 
@@ -182,7 +180,7 @@ namespace embed{
          */
         friend constexpr ClockTick operator/(const ClockTick lhs, const ClockTick rhs){
             // the number can only get smaller
-            return ClockTick::reinterpret<UInt>(static_cast<UInt>(lhs.value / rhs.value));
+            return ClockTick::reinterpret(static_cast<UInt>(lhs.value / rhs.value));
         }
 
         /**
@@ -190,7 +188,7 @@ namespace embed{
          */
         friend constexpr ClockTick operator%(const ClockTick lhs, const ClockTick rhs){
             // the number can only get smaller
-            return ClockTick::reinterpret<UInt>(static_cast<UInt>(lhs.value % rhs.value));
+            return ClockTick::reinterpret(static_cast<UInt>(lhs.value % rhs.value));
         }
 
         inline void operator+=(const ClockTick other){*this = *this + other;}
