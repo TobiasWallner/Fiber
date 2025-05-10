@@ -6,6 +6,8 @@ Version: early alpha
 
 [Documentation](https://tobiaswallner.github.io/embedOS/)
 
+[Repository](https://github.com/TobiasWallner/embedOS)
+
 Copyright © Tobias Wallner
 
 [![gcc-build-and-test](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_gcc.yml/badge.svg)](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_gcc.yml) [![clang-build-and-test](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_clang.yml/badge.svg)](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_clang.yml)
