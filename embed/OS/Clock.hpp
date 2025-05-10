@@ -18,12 +18,21 @@ using namespace std::chrono_literals;
 
 namespace embed{
 
+    template<std::unsigned_integral UInt, UInt MAX_TICK = std::numeric_limits<UInt>::max()>
+    class ClockTick;
+
+    template<typename T>
+    inline constexpr bool is_clocktick = false;
+
+    template<typename U, U Max>
+    inline constexpr bool is_clocktick<ClockTick<U, Max>> = true;
+
     /**
      * @brief An overflow aware tick class template to simulate the behaviour of hardware timers in microcontrollers for use in Duration and TimePoint types
      * @tparam UInt The underlieing integer type
      * @tparam MAX_TICK The largest/last value before the overflow.
      */
-    template<std::unsigned_integral UInt, UInt MAX_TICK = std::numeric_limits<UInt>::max()>
+    template<std::unsigned_integral UInt, UInt MAX_TICK>
     class ClockTick{
     public:
 
@@ -53,7 +62,8 @@ namespace embed{
          * @tparam T Generic unsigned integer type
          * @param v unsigned integer value
          */
-        template<std::unsigned_integral T>
+        template<class T>
+        requires(!is_clocktick<T> && std::is_unsigned_v<T>)
         constexpr ClockTick(const T v){
             // try as much as possible to avoid '%'
             if constexpr (std::numeric_limits<T>::max() <= max_tick){
@@ -69,7 +79,8 @@ namespace embed{
             }
         }
 
-        template<std::signed_integral T>
+        template<class T>
+        requires(!is_clocktick<T> && std::is_signed_v<T>)
         constexpr ClockTick(const T v){
             if (v >= 0) {
                 *this = ClockTick(static_cast<UInt>(v));
