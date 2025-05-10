@@ -47,8 +47,6 @@ target_compile_options(embed PRIVATE
     -Wextra
     -Werror
     -Wsign-compare
-    -fmax-errors=1
-    -O0
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
