@@ -54,7 +54,6 @@ namespace embed{
          * @param v unsigned integer value
          */
         template<std::unsigned_integral T>
-        requires (!std::same_as<T, ClockTick>)
         constexpr ClockTick(const T v){
             // try as much as possible to avoid '%'
             if constexpr (std::numeric_limits<T>::max() <= max_tick){
@@ -71,7 +70,6 @@ namespace embed{
         }
 
         template<std::signed_integral T>
-        requires (!std::same_as<T, ClockTick>)
         constexpr ClockTick(const T v){
             if (v >= 0) {
                 *this = ClockTick(static_cast<UInt>(v));
@@ -224,14 +222,14 @@ namespace std{
     /// @brief Overload `std::is_integral` with `std::true_type` for `embed::ClockTick`
     /// @tparam UInt an integer/integral type
     /// @tparam MaxTick the maximum number of representable ticks before overflow
-    template<std::integral Int, Int MaxTick>
-    struct is_integral<embed::ClockTick<Int, MaxTick>> : std::true_type{};
+    // template<std::integral Int, Int MaxTick>
+    // struct is_integral<embed::ClockTick<Int, MaxTick>> : std::true_type{};
 
     /// @brief Overload `std::is_unsigned` with `std::true_type` for `embed::ClockTick`
     /// @tparam UInt an unsigned integer/integral
     /// @tparam MaxTick the maximum number of representable ticks before overflow
-    template<std::unsigned_integral UInt, UInt MaxTick>
-    struct is_unsigned<embed::ClockTick<UInt, MaxTick>> : std::true_type{};
+    // template<std::unsigned_integral UInt, UInt MaxTick>
+    // struct is_unsigned<embed::ClockTick<UInt, MaxTick>> : std::true_type{};
 
 }
 
@@ -268,9 +266,9 @@ namespace embed{
 
         constexpr Duration(rep value) : base(value){}
 
-        constexpr Duration(DurationRepresentation value) : base(value){}
+        constexpr Duration(DurationRepresentation value) : base(ClockTick<DurationRepresentation>(value)){}
 
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         constexpr Duration(std::chrono::duration<Rep, Period> duration) 
             : base(embed::rounding_duration_cast<base>(duration)){}
 
@@ -320,17 +318,17 @@ namespace embed{
         TimePoint(const TimePoint&) = default;
         explicit constexpr TimePoint(Duration duration) : _duration(duration){};
         
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         explicit constexpr TimePoint(std::chrono::duration<Rep, Period> duration) 
             : _duration(embed::rounding_duration_cast<embed::Duration>(duration)){}
 
         constexpr TimePoint& operator+=(Duration d){this->_duration += d; return *this;}
         constexpr TimePoint& operator-=(Duration d){this->_duration -= d; return *this;}
         
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         constexpr TimePoint& operator+=(std::chrono::duration<Rep, Period> d){this->_duration += embed::rounding_duration_cast<Duration>(d); return *this;}
         
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         constexpr TimePoint& operator-=(Duration d){this->_duration -= embed::rounding_duration_cast<Duration>(d); return *this;}
 
         constexpr Duration time_since_epoch() const {return this->_duration;}
@@ -340,7 +338,7 @@ namespace embed{
             return result;
         }
 
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         friend constexpr TimePoint operator+ (TimePoint lhs, std::chrono::duration<Rep, Period> rhs){
             return lhs + embed::rounding_duration_cast<Duration>(rhs);
         }
@@ -350,7 +348,7 @@ namespace embed{
             return result;
         }
 
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         friend constexpr TimePoint operator+ (std::chrono::duration<Rep, Period> lhs, TimePoint rhs){
             return embed::rounding_duration_cast<Duration>(lhs) + rhs;
         }
@@ -360,7 +358,7 @@ namespace embed{
             return result;
         }
 
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         friend constexpr TimePoint operator- (TimePoint lhs, std::chrono::duration<Rep, Period> rhs){
             return lhs - embed::rounding_duration_cast<Duration>(rhs);
         }
@@ -370,7 +368,7 @@ namespace embed{
             return result;
         }
 
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         friend constexpr TimePoint operator- (std::chrono::duration<Rep, Period> lhs, TimePoint rhs){
             return embed::rounding_duration_cast<Duration>(lhs) - rhs;
         }

@@ -73,7 +73,7 @@ namespace embed
             this->_schedule.deadline = this->_schedule.ready + deadline;
         }
 
-        template<std::integral Rep, CRatio Period>
+        template<class Rep, CRatio Period>
         inline RealTimeTask(Coroutine<embed::Exit>&& main, std::string_view name, embed::TimePoint ready, std::chrono::duration<Rep, Period> deadline) 
             : RealTimeTask(std::move(main), name, ready, embed::rounding_duration_cast<Duration>(deadline)){}
 
