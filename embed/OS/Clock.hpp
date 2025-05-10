@@ -54,7 +54,7 @@ namespace embed{
          * @param v unsigned integer value
          */
         template<std::unsigned_integral T>
-        explicit(false) constexpr ClockTick(const T v){
+        constexpr ClockTick(const T v){
             // try as much as possible to avoid '%'
             if constexpr (std::numeric_limits<T>::max() <= max_tick){
                 this->value = static_cast<UInt>(v);
@@ -70,7 +70,7 @@ namespace embed{
         }
 
         template<std::signed_integral T>
-        explicit(false) constexpr ClockTick(const T v){
+        constexpr ClockTick(const T v){
             if (v >= 0) {
                 *this = ClockTick(static_cast<UInt>(v));
             }else{
@@ -79,7 +79,7 @@ namespace embed{
         }
 
         template<std::integral T>
-        explicit(false) constexpr ClockTick& operator=(const T v){return *this = ClockTick(v);}
+        constexpr ClockTick& operator=(const T v){return *this = ClockTick(v);}
 
         /// @brief Reinterprets the integer value into the clock tick. this assumes that the passed value is smaller or equal than the overflow value
         /// @tparam Int Generic integer type
