@@ -1,0 +1,25 @@
+var classembed_1_1_future =
+[
+    [ "Future", "d8/d8c/classembed_1_1_future.html#acb5567ecd4aa18fa441fe164e43b6dcc", null ],
+    [ "Future", "d8/d8c/classembed_1_1_future.html#a07d91f4e11841fa2bc43fdc7a1f486ea", null ],
+    [ "Future", "d8/d8c/classembed_1_1_future.html#ae1ee39e6eb02a413a3d787e5fc1fc186", null ],
+    [ "~Future", "d8/d8c/classembed_1_1_future.html#afab425d7aa6558ae61afde4b4a6930fb", null ],
+    [ "await_ready", "d8/d8c/classembed_1_1_future.html#a92fa06d35842cc0f3fc38e0bc976f03c", null ],
+    [ "await_resume", "d8/d8c/classembed_1_1_future.html#a679f5cf83b34a6fbb28107f3efc620ac", null ],
+    [ "get", "d8/d8c/classembed_1_1_future.html#a3067c4778648cb9c6c33f5bd64aa04ef", null ],
+    [ "get_if", "d8/d8c/classembed_1_1_future.html#a6bf48e07eb8aec23f78b5bd814ccd98e", null ],
+    [ "get_state", "d8/d8c/classembed_1_1_future.html#a08d8ebdc836b5130bcc91333ba7c3557", null ],
+    [ "is_broken_promise", "d8/d8c/classembed_1_1_future.html#aadc70622d849db7d87422dfdcefdfd87", null ],
+    [ "is_connected", "d8/d8c/classembed_1_1_future.html#a4ddfa5dabe06bc9bded63c37d2e7020b", null ],
+    [ "is_connected_to", "d8/d8c/classembed_1_1_future.html#abd63d5c401e9bfa64a5e3fb0a3b17c85", null ],
+    [ "is_detatched", "d8/d8c/classembed_1_1_future.html#a55103810dcdccfc208d0368d1654654a", null ],
+    [ "is_ready", "d8/d8c/classembed_1_1_future.html#acbe3a0a1c64e650a4ca1f95bef0a7c58", null ],
+    [ "is_waiting", "d8/d8c/classembed_1_1_future.html#a9ac70ce391748ab45c8ffdae8bed0370", null ],
+    [ "operator bool", "d8/d8c/classembed_1_1_future.html#a06617386d7c9125788a3343caeb55e2d", null ],
+    [ "operator=", "d8/d8c/classembed_1_1_future.html#a7361eb0868f3881ca1f1f6666858ad30", null ],
+    [ "operator=", "d8/d8c/classembed_1_1_future.html#ac00c50676baa7e34c30b16ff4fb9b0bb", null ],
+    [ "state", "d8/d8c/classembed_1_1_future.html#a4fdeca96063e9988a0dcf742571478a1", null ],
+    [ "wait", "d8/d8c/classembed_1_1_future.html#aedeac1b3349e254090c92eff0de2902a", null ],
+    [ "make_future_promise", "d8/d8c/classembed_1_1_future.html#ac0789e89aad14d96ad83c5481c7d9318", null ],
+    [ "Promise< T >", "d8/d8c/classembed_1_1_future.html#a697fa51a09bfecabc58fd6d07ce8f501", null ]
+];
