@@ -100,35 +100,15 @@ What This Means for You:
 - without threads, without stacks, without interrupts
 - on a single core/or multi if you feel fancy.
 
-
-## 🔍 Who is embedOS for?
-
-If you’re unsure whether embedOS is right for your project, this section will help you decide—and if it’s not, we’ll gladly point you toward alternatives that might serve you better. We’re not here to compete with every RTOS—we're here to **fill a niche**. We believe in putting the power back in the engineer’s hands with a minimal and deterministic scheduling model that gets out of your way.
-
-Here’s how embedOS compares to other common choices:
-
-| Feature    | **Zephyr**     | **FreeRTOS**   | **embedOS** (this project) |
-|------------|----------------|----------------|----------------------------|
-| **Philosophy** | Full-featured ecosystem  | Lightweight priority based task management | **real Real-Time** deadline based task management with high CPU efficiency |
-| **Use Case** | IoT, industrial, networking | General embedded apps | **"real" Real-time control**, **constrained systems**, **highly-dependable/predictable systems** |
-| **Scheduling** | complex priority-based, preemptive | priority-based, preemptive, time slicing | **deadline-based**, cooperative |
-| **Threading Model** | Full threads, context switching, per-thread stacks | Tasks with independent stacks and context switching    | **Coroutines** coroutine frame buffers instead of stacks, no context switching, state machine task management|
-| **Memory Usage per Task** | High (>1kB), full-stack, depends on configuration and features | Moderate (>1kB), requires full-stack per task  | **Extremely low** (~128B), no stacks, small coroutine frames|
-| **Binary Footprint** | High, 300kB–500kB+ depending on config | Low, ~10kB–100kB | **<10kB for Scheduler**, 30–100kB including extras |
-| **Peripheral Handling** | Device tree, HAL, built-in driver APIs | User-defined, often with vendor HAL | **No interference**—you write your own, OS doesn't touch your peripherals |
-| **Context Switch Overhead**| ~200–1500 cycles, sometimes more | 100–600 cycles (stack switch + cpu register save/load) | 30–100 CPU cycles (function call + frame jump) |
-| **Platform Support** | Pre-built boards + some MCUs and SoCs  | Wide MCU support, especially with vendor integrations | **Widest support**—designed to run anywhere that compiles C++. Not tied to any platform or architecture |
-| **Build System** | CMake + Kconfig (Linux-style) | PlatformIO/Make/CMake | CMake/Your own build system. embedOS is just a simple library. Package manager support: `CPM.cmake` |
-
-If you still don’t know which one to pick, reach out—we’ll help you find the right one, even if it’s not us.
-
 ## ✨ Features
 
 - ⚙️ **Cooperative Real-Time Scheduling (`embedOS`)**
   - The heart of embed: a **cooperative, coroutine-based, real-time scheduler**
   - Uses `co_await`-based tasks with structured parent-child relationships
   - Deadline-driven scheduling with optional yielding, delaying, awaiting
-  - No threads, no stacks—just pure control flow
+  - Tiny coroutine task frames (~128B)
+  - Fast task/coroutine switching
+  - Runs everywhere that comptiles C++20
   - Supports task failure propagation, exception handling, and kill-safe teardown
 - 🧮 **Fixed-Size, Stack-Friendly Containers**
   - `ArrayList`, `PriorityQueue`, `StaticLinearAllocator` and more
