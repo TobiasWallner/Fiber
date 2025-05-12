@@ -5,7 +5,7 @@
 namespace embed{
 
     /**
-     * @brief Tests ClockTick and instantiations of derived Duration, TimePoint, CClock and Clock
+     * @brief Tests Tick and instantiations of derived Duration, TimePoint, CClock and Clock
      * 
      * Depends on `OStream`, `embed::cerr` and `embed::cout`.
      */

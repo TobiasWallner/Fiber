@@ -1,7 +1,7 @@
 #include "RealTimeScheduler_test.hpp"
 
 #include <embed/TestFramework/TestFramework.hpp>
-#include <embed/OS/Clock.hpp>
+#include <embed/Chrono/TimePoint.hpp>
 #include <embed/OS/RealTimeTask.hpp>
 #include <embed/OS/RealTimeScheduler.hpp>
 #include <embed/Memory/Allocator.hpp>

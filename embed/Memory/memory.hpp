@@ -1,6 +1,6 @@
 #pragma once
 
-#include <embed/OS/Future.hpp>
+#include <embed/Future/Future.hpp>
 
 namespace embed{
 

@@ -10,7 +10,7 @@
 //embed
 #include <embed/Core/concepts.hpp>
 #include <embed/Core/type_traits.hpp>
-#include <embed/Core/chrono.hpp>
+#include <embed/Chrono/rounding_duration_cast.hpp>
 #include <embed/math/math.hpp>
 #include <embed/Exceptions/Exceptions.hpp>
 

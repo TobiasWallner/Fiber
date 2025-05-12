@@ -5,7 +5,7 @@
 #include <embed/TestFramework/TestFramework.hpp>
 #include <embed/Memory/Allocator.hpp>
 #include <embed/OS/Exit.hpp>
-#include <embed/OS/Future.hpp>
+#include <embed/Future/Future.hpp>
 #include <embed/OS/TryAwait.hpp>
 #include <embed/OS/Delay.hpp>
 #include <embed/OS/NextCycle.hpp>

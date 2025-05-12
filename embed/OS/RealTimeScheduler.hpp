@@ -7,7 +7,7 @@
 #include <string_view>
 
 // embed
-#include <embed/OS/Clock.hpp>
+#include <embed/Chrono/TimePoint.hpp>
 #include <embed/Containers/ArrayList.hpp>
 #include <embed/Containers/DualPriorityQueue.hpp>
 #include <embed/OS/RealTimeTask.hpp>

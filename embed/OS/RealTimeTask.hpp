@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <embed/OS/Clock.hpp>
+#include <embed/Chrono/TimePoint.hpp>
 #include <embed/OS/Coroutine.hpp>
 
 namespace embed

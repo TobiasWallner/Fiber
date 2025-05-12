@@ -3,8 +3,8 @@
 // embed-tests
 #include <embed/Containers/tests/ArrayList_test.hpp>
 #include <embed/Containers/tests/DualArrayList_test.hpp>
-#include <embed/OS/tests/Clock_test.hpp>
-#include <embed/OS/tests/Future_test.hpp>
+#include <embed/Chrono/tests/Clock_test.hpp>
+#include <embed/Future/tests/Future_test.hpp>
 #include <embed/OS/tests/Coroutine_test.hpp>
 #include <embed/OS/tests/RealTimeScheduler_test.hpp>
 #include <embed/OStream/tests/OStream_test.hpp>

@@ -1,6 +1,6 @@
 #include "Future_test.hpp"
 
-#include <embed/OS/Future.hpp>
+#include <embed/Future/Future.hpp>
 #include <embed/OStream/OStream.hpp>
 #include <embed/TestFramework/TestFramework.hpp>
 

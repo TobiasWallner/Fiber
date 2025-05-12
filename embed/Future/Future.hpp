@@ -11,7 +11,6 @@
 // embed
 #include <embed/Exceptions/Exceptions.hpp>
 #include <embed/interrupts/interrupts.hpp>
-#include <embed/OS/Coroutine.hpp>
 
 namespace embed{    
 
