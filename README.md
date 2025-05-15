@@ -14,15 +14,27 @@ Copyright © Tobias Wallner
 
 ## ⚡ Motivation
 
-Modern embedded systems demand more than just correctness—they demand **performance**, **dependability**, **Real-Time** and **predictability**.
+A Fiber-like Cooperative Operating System for Embedded Systems
 
-Traditional RTOSes rely on **context switching**, are **stack-heavy** and use **interrupt driven preemption**, which introduce runtime overhead and memory waste.
+fiber is a lightweight cooperative operating system for embedded applications built on top of modern C++20 coroutines. It provides a structured, predictable, and memory-safe way to manage multiple tasks without preemption, context switching, or real-time OS overhead.
 
-> **What if task switching is just a state machine?**
+### What does "fiber-like" mean?
 
-### 🌀 Coroutine-powered, zero-waste tasking
+In computing, a fiber is a user-space thread that:
 
-By using **C++20 coroutines**, tasks in `Fiber` are structured as lightweight state machines with no context-switching and interrupt overhead. The syntax is modern, expressive, and reads like a simple switch, no unreadable branching necessary:
+- Runs until it yields control voluntarily (i.e., cooperative multitasking),
+- Does not require kernel support or stack switching,
+- Is typically very lightweight (a few dozen bytes),
+- Has full control over when and how to suspend/resume.
+
+fiber follows this model conceptually, but instead of emulating fibers via thread stacks, it uses:
+
+- C++20 coroutines as the execution primitive,
+- `co_await` to represent yield points and scheduling logic,
+- A task system that tracks and resumes coroutines based on time, signals, or readiness.
+
+---
+## Example
 
 ```cpp
 Coroutine<Exit> coroutine(){
@@ -42,25 +54,6 @@ Coroutine<Exit> coroutine(){
   co_return Exit::Success;
 }
 ```
-Each task suspends explicitly at `co_await` points, allowing others to run. No busy-waiting, no polling, no thread stacks. Just pure, cooperative, non-blocking execution.
-
-The OS is just the scheduler of your choice, add some tasks and let it spin.
-```cpp
-int main(){
-  Task task(coroutine(), "task");
-
-  fiber::StaticLinearScheduler scheduler;
-  scheduler.addTask(task);
-
-  while(true){
-    scheduler.spin();
-  }
-}
-```
-
-Want multithreading? Just create a scheduler for each core. 
-
-
 
 ### ⏱ Real-Time scheduling
 
@@ -73,13 +66,11 @@ The scheduler enforces **deadlines** with priority queues and can track deadline
 
 ### 💡 Stackless, deterministic memory usage
 
-One of the biggest hidden costs in traditional RTOSes is **stack sizing**. You guess how big each task’s stack should be. 
-- Too small and you get stack overflows and corrupted memory. 
-- Too large and you waste precious RAM.
+One of the biggest hidden costs in traditional RTOSes is **stack sizing**. You guess how big each task’s stack should be. Too small and you get stack overflows and corrupted memory, which may be uncaught and silently corrupts your memory.
 
-#### 🎯 In Fiber, there's no guessing.
+In Fiber each coroutine **allocates automatically and exactly** as much memory as needed, in its **initialisation**. If a coroutine cannot be allocated within the tasks memory, it will throw an exception, which - if uncaught - will print an error message and gracefully kills 🔪 the task.
 
-Each coroutine task **allocates exactly** as much memory as needed, in the **initialisation**, to store its state at suspension points. The system never stores full stacks—only the **delta state**, reducing memory usage by 5x to 10x compared to traditional context switching.
+Further, Fiber never stores full stacks, what is needed to recover from suspension points, reducing memory significantly.
 
 No stack overflow. No corrupted memory. No waste. Just predictable, dependable engineering.
 
