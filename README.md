@@ -72,39 +72,16 @@ In Fiber each coroutine **allocates automatically and exactly** as much memory a
 
 Further, Fiber never stores full stacks, what is needed to recover from suspension points, reducing memory significantly.
 
-No stack overflow. No corrupted memory. No waste. Just predictable, dependable engineering.
-
-### 🔐 Dependability by Design
-
-`Fiber` is built with dependability as a first-class concern, not a reactive patch.
-
-Unlike traditional RTOSes that rely on threads, shared stacks, and weak exception handling, `Fiber` uses structured coroutines, deterministic control flow, and explicit task ownership to provide built-in fault isolation and graceful failure handling.
-
-Each task is fully isolated: an exception only affects that task. The rest of the system runs uninterrupted.
-
-What This Means for You:
-- A single task crashing won’t bring down your system
-- You don’t need hardware MMU or MPU protection to isolate behavior
-- You get the freedom of concurrency with the safety of separation
-- You can log, recover, or restart failed tasks at runtime
-- Fiber brings fail-operational behavior to bare-metal systems
-- without threads, without stacks, without interrupts
-- on a single core/or multi if you feel fancy.
-
 ## ✨ Features
 
-- ⚙️ **Cooperative Real-Time Scheduling (`Fiber`)**
+- ⚙️ **Cooperative Real-Time Scheduling**
   - The heart of fiber: a **cooperative, coroutine-based, real-time scheduler**
   - Uses `co_await`-based tasks with structured parent-child relationships
   - Deadline-driven scheduling with optional yielding, delaying, awaiting
-  - Tiny coroutine task frames (~128B)
+  - Tiny coroutine task frames (~256B)
   - Fast task/coroutine switching
   - Runs everywhere that comptiles C++20
   - Supports task failure propagation, exception handling, and kill-safe teardown
-- 🧮 **Fixed-Size, Stack-Friendly Containers**
-  - `ArrayList`, `PriorityQueue`, `StaticLinearAllocator` and more
-  - Designed for bounded memory environments (MCUs, no heap)
-  - Fast, safe, and easy to reason about
 - 🔧 **Custom Allocator Support**
   - Easily override coroutine frame allocation, exception memory, dynamic data
   - Control exactly how and where memory is used—no malloc required
@@ -117,21 +94,6 @@ What This Means for You:
   - Replaces exit-to-main code, because embedded never exits
   - Removes unused libc glue code
   - Up to **90% binary size reduction** when enabling exceptions on Cortex-M
-
-
-## 🧠 Design Philosophy
-
-- **No Context Switches**: Tasks are C++20 coroutines that the compiler will turn into switch statements.
-- **Cooperative**: Users must explicitly `co_await` or `co_return`. No task is ever preempted.
-- **Explicit deadlines**: Finally a real-RTOS. You control timing windows explicitly. Start time and deadline are part of every task.
-- **Safe Exceptions**: Uses exceptions safely, with zero heap allocations or overhead. It just jumps from the `throw` directly to your `catch`. No need to pass error values around. Exceptions might even reduce your binary size.
-- **Minimal**: Small binary. No interrupts, no stacks, no ISRs. Minimal Flash footprint.
-- **Portable**: Just provide a `time()` function and run `.spin()` in your main loop. Fully platform-agnostic, does not depend on any MCU architectures. 
-- **Customizeable**: Allows you to overwrite/redirect critical functions like `fiber::memcpy()` or default output character streams `fiber::cout()`. So you can hook in your own functions that use your on chips DMA controler or USART peripherals.
-
-> "At the crossroads of optimization and correctness, remember: optimization saves runtime — but correctness saves debug time. Choose which time you truly want to optimize."
-
-
 
 ## 🧩 Integration
 
