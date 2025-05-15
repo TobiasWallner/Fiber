@@ -1,56 +1,18 @@
 
+// std
+#include <utility>
+
+// fiber
 #include <fiber/OS/Coroutine.hpp>
 #include <fiber/OStream/OStream.hpp>
 #include <fiber/OStream/ansi.hpp>
 
 namespace fiber{
     
-    Task::Task(Coroutine<fiber::Exit>&& main, std::string_view task_name) noexcept
-            : _task_name(task_name)
-            , _main_coroutine(std::move(main))
-    {
-        this->_leaf_coroutine = this->_main_coroutine.node();
-        this->_main_coroutine.Register(this);
-    }
-
-    Task::Task(Task&& other) noexcept
-        : _task_name(other._task_name)
-        , _main_coroutine(std::move(other._main_coroutine))
-        , _leaf_coroutine(std::move(other._leaf_coroutine))
-        , _leaf_awaitable(other._leaf_awaitable)
-        , _instant_resume(other._instant_resume) 
-    {
-        this->_main_coroutine.Register(this); // re-register
-        other._task_name = "";
-        other._id = -1;
-        other._leaf_awaitable = nullptr;
-        other._instant_resume = false;
-    }
-
-    Task& Task::operator=(Task&& other) noexcept {
-        if(this != &other){
-            this->_task_name = other._task_name;
-            this->_id = other._id;
-            this->_main_coroutine = std::move(other._main_coroutine);
-            this->_leaf_coroutine = std::move(other._leaf_coroutine);
-            this->_leaf_awaitable = other._leaf_awaitable;
-            this->_instant_resume = other._instant_resume;
-            this->_main_coroutine.Register(this); // re-register
-
-            other._id = -1;
-            other._task_name = "";
-            other._leaf_awaitable = nullptr;
-            other._instant_resume = false;
-        }
-        return *this;
-    }
-
-    
-
-    bool Task::is_resumable() const {
+    bool TaskBase::is_resumable() const {
         if(this->_leaf_coroutine && !this->is_done()){
-            if(this->_leaf_awaitable != nullptr){
-                return this->_leaf_awaitable->await_ready();
+            if(this->_leaf_awaitable_obj != nullptr){
+                return this->_leaf_awaitable_ready_func(this->_leaf_awaitable_obj);
             }else{
                 return true;
             }
@@ -58,11 +20,11 @@ namespace fiber{
         return false;
     }
 
-    void Task::resume(){
+    void TaskBase::resume(){
         FIBER_ASSERT_O1(this->is_resumable());
         do{
             this->_instant_resume = false;
-            this->_leaf_awaitable = nullptr;
+            this->_leaf_awaitable_obj = nullptr;
             this->_leaf_coroutine->resume();
         }while(this->_instant_resume); // instantly resume. E.g.: if a new coroutine spawned.
         /*
@@ -74,7 +36,7 @@ namespace fiber{
 
     #ifndef FIBER_DISABLE_EXCEPTIONS
         // Variation using exceptions
-        void Task::handle_exception(std::exception_ptr except_ptr) {
+        void TaskBase::handle_exception(std::exception_ptr except_ptr) {
             try {
                 std::rethrow_exception(except_ptr);
             } catch (const fiber::Exception& e) {
@@ -91,13 +53,13 @@ namespace fiber{
         }
     #else
         // Variation limiting the use of exceptions
-        void Task::handle_exception() {
+        void TaskBase::handle_exception() {
             this->kill_chain();
             this->_instant_resume = false;
         }
     #endif
 
-    void Task::kill_chain(){
+    void TaskBase::kill_chain(){
         // kill loop
         while(this->_leaf_coroutine){
             CoroutineNode* next = this->_leaf_coroutine->parent();

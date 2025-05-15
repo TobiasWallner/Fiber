@@ -18,8 +18,13 @@ namespace fiber
         void add_task(Task* task){this->task_list.emplace_back(task);}
 
         void spin(){
-            this->task_list.for_each([](Task* task){if(task->await_ready()) task->resume();});
-            this->task_list.erase_if([](const Task* task){return task->is_done();});
+            this->task_list.erase_if([](const Task* task){
+                if(task->is_resumable()){
+                    fiber::detail::frame_allocator = task->_frame_allocator;
+                    task->resume();
+                }
+                return task->is_done();
+            });
         }
     };
 

@@ -2,6 +2,7 @@
 #pragma once
 
 #include <fiber/Chrono/TimePoint.hpp>
+#include <fiber/Memory/StackAllocator.hpp>
 #include <fiber/OS/Coroutine.hpp>
 
 namespace fiber
@@ -56,33 +57,66 @@ namespace fiber
      * \see fiber::Clock
      * \see fiber::ClockTick
      */
-    class RealTimeTask : public Task{
+    class RealTimeTaskBase : public TaskBase{
     private:
     public:
         // TODO: store schedules in the scheduler - keep cache misses short - remove from user perspective
         RealTimeSchedule _schedule;
         TimePoint _execution_start;
 
+        constexpr RealTimeTaskBase() = default;
+        constexpr RealTimeTaskBase(RealTimeTaskBase&&) = default;
+        constexpr RealTimeTaskBase(const RealTimeTaskBase&) = delete;
+        constexpr RealTimeTaskBase& operator=(RealTimeTaskBase&&) = default;
+        constexpr RealTimeTaskBase& operator=(const RealTimeTaskBase&) = delete;
+
         /**
          * @brief sets the ready time to the absolute time point and the deadline relative from the start time
          */
-        inline RealTimeTask(Coroutine<fiber::Exit>&& main, std::string_view name, fiber::TimePoint ready, fiber::Duration deadline) 
-            : Task(std::move(main), name)
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr RealTimeTaskBase(
+                std::string_view name, 
+                fiber::StackAllocatorExtern* frame_allocator, 
+                fiber::TimePoint ready, 
+                fiber::Duration deadline,
+                F&& function, Args&&... args
+            ) 
+            : TaskBase(name, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
         {
             this->_schedule.ready = ready;
             this->_schedule.deadline = this->_schedule.ready + deadline;
         }
 
-        template<class Rep, CRatio Period>
-        inline RealTimeTask(Coroutine<fiber::Exit>&& main, std::string_view name, fiber::TimePoint ready, std::chrono::duration<Rep, Period> deadline) 
-            : RealTimeTask(std::move(main), name, ready, fiber::rounding_duration_cast<Duration>(deadline)){}
+        template<class Rep, CRatio Period, class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr RealTimeTaskBase(
+                std::string_view name, 
+                fiber::StackAllocatorExtern* frame_allocator, 
+                fiber::TimePoint ready, 
+                std::chrono::duration<Rep, Period> deadline,
+                F&& function, Args&&... args) 
+            : RealTimeTaskBase(name, frame_allocator, ready, fiber::rounding_duration_cast<Duration>(deadline), std::forward<F>(function), std::forward<Args>(args)...){}
 
         /**
          * @brief sets the ready and deadline time to the absolute time points
          */
-        RealTimeTask(Coroutine<fiber::Exit>&& main, std::string_view name, fiber::TimePoint ready, fiber::TimePoint deadline) 
-            : 
-        Task(std::move(main), name){
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr RealTimeTaskBase(
+                std::string_view name, 
+                fiber::StackAllocatorExtern* frame_allocator, 
+                fiber::TimePoint ready, 
+                fiber::TimePoint deadline,
+                F&& function, Args&&... args) 
+            : TaskBase(name, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+        {
             this->_schedule.ready = ready;
             this->_schedule.deadline = deadline;
         }
@@ -113,42 +147,91 @@ namespace fiber
         /**
          * \brief returns the time point at which this task becomes ready to be executed
          */
-        inline fiber::TimePoint ready_time() const {return this->_schedule.ready;}
+        constexpr fiber::TimePoint ready_time() const {return this->_schedule.ready;}
 
         /**
          * \brief returns the time point before which this task needs to be executed
          */
-        inline fiber::TimePoint deadline() const {return this->_schedule.deadline;}
+        constexpr fiber::TimePoint deadline() const {return this->_schedule.deadline;}
 
         
     };
 
     struct smaller_ready_time{
-        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.ready_time() < rhs.ready_time();}
-        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->ready_time() < rhs->ready_time();}
-        inline bool operator() (const RealTimeTask& lhs, const typename fiber::TimePoint& rhs){return lhs.ready_time() < rhs;}
-        inline bool operator() (const RealTimeTask* lhs, const typename fiber::TimePoint& rhs){return lhs->ready_time() < rhs;}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const RealTimeTaskBase& rhs){return lhs.ready_time() < rhs.ready_time();}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const RealTimeTaskBase* rhs){return lhs->ready_time() < rhs->ready_time();}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const typename fiber::TimePoint& rhs){return lhs.ready_time() < rhs;}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const typename fiber::TimePoint& rhs){return lhs->ready_time() < rhs;}
     };
 
     struct larger_ready_time{
-        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.ready_time() > rhs.ready_time();}
-        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->ready_time() > rhs->ready_time();}
-        inline bool operator() (const RealTimeTask& lhs, const typename fiber::TimePoint& rhs){return lhs.ready_time() > rhs;}
-        inline bool operator() (const RealTimeTask* lhs, const typename fiber::TimePoint& rhs){return lhs->ready_time() > rhs;}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const RealTimeTaskBase& rhs){return lhs.ready_time() > rhs.ready_time();}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const RealTimeTaskBase* rhs){return lhs->ready_time() > rhs->ready_time();}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const typename fiber::TimePoint& rhs){return lhs.ready_time() > rhs;}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const typename fiber::TimePoint& rhs){return lhs->ready_time() > rhs;}
     };
 
     struct smaller_deadline{
-        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.deadline() < rhs.deadline();}
-        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->deadline() < rhs->deadline();}
-        inline bool operator() (const RealTimeTask& lhs, const typename fiber::TimePoint& rhs){return lhs.deadline() < rhs;}
-        inline bool operator() (const RealTimeTask* lhs, const typename fiber::TimePoint& rhs){return lhs->deadline() < rhs;}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const RealTimeTaskBase& rhs){return lhs.deadline() < rhs.deadline();}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const RealTimeTaskBase* rhs){return lhs->deadline() < rhs->deadline();}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const typename fiber::TimePoint& rhs){return lhs.deadline() < rhs;}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const typename fiber::TimePoint& rhs){return lhs->deadline() < rhs;}
     };
 
     struct larger_deadline{
-        inline bool operator() (const RealTimeTask& lhs, const RealTimeTask& rhs){return lhs.deadline() > rhs.deadline();}
-        inline bool operator() (const RealTimeTask* lhs, const RealTimeTask* rhs){return lhs->deadline() > rhs->deadline();}
-        inline bool operator() (const RealTimeTask& lhs, const typename fiber::TimePoint& rhs){return lhs.deadline() > rhs;}
-        inline bool operator() (const RealTimeTask* lhs, const typename fiber::TimePoint& rhs){return lhs->deadline() > rhs;}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const RealTimeTaskBase& rhs){return lhs.deadline() > rhs.deadline();}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const RealTimeTaskBase* rhs){return lhs->deadline() > rhs->deadline();}
+        constexpr bool operator() (const RealTimeTaskBase& lhs, const typename fiber::TimePoint& rhs){return lhs.deadline() > rhs;}
+        constexpr bool operator() (const RealTimeTaskBase* lhs, const typename fiber::TimePoint& rhs){return lhs->deadline() > rhs;}
+    };
+
+
+    template<std::size_t frame_size>
+    class RealTimeTask : public RealTimeTaskBase{
+    private:
+        fiber::StackAllocator<frame_size> _local_frame_allocator;
+
+    public:
+
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr RealTimeTask(
+                std::string_view name, 
+                fiber::TimePoint ready, 
+                fiber::Duration deadline,
+                F&& function, Args&&... args
+            )
+        {
+            this->RealTimeTaskBase::operator=(RealTimeTaskBase(name, &_local_frame_allocator, ready, deadline, std::forward<F>(function), std::forward<Args>(args)...));
+        }
+
+        template<class Rep, CRatio Period, class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr RealTimeTask(
+                std::string_view name, 
+                fiber::TimePoint ready, 
+                std::chrono::duration<Rep, Period> deadline,
+                F&& function, Args&&... args)
+        {
+            this->RealTimeTaskBase::operator=(RealTimeTaskBase(name, &_local_frame_allocator, ready, deadline, std::forward<F>(function), std::forward<Args>(args)...));
+        }
+
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr RealTimeTask(
+                std::string_view name, 
+                fiber::TimePoint ready, 
+                fiber::TimePoint deadline,
+                F&& function, Args&&... args) 
+        {
+            this->RealTimeTaskBase::operator=(RealTimeTaskBase(name, &_local_frame_allocator, ready, deadline, std::forward<F>(function), std::forward<Args>(args)...));
+        }
     };
 
 } // namespace fiber

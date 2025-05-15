@@ -100,19 +100,15 @@ namespace fiber{
         const std::size_t to_allocate;
         const std::size_t buffer_size;
         const std::size_t largest_free;
-        const std::size_t nfree;
-        const std::size_t nalloc;
         /*
         [AllocationFailure]: Failed to allocate xx bytes
         */
 
-        inline AllocationFailure(std::size_t to_allocate, std::size_t buffer_size, std::size_t largest_free, std::size_t nfree, std::size_t nalloc) 
+        inline AllocationFailure(std::size_t to_allocate, std::size_t buffer_size, std::size_t largest_free) 
             : Exception("AllocationFailure", "Could not allocate memory")
             , to_allocate(to_allocate)
             , buffer_size(buffer_size)
-            , largest_free(largest_free)
-            , nfree(nfree)
-            , nalloc(nalloc){}
+            , largest_free(largest_free){}
 
         virtual void print(OStream& stream) const final;
     };

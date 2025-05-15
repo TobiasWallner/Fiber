@@ -16,8 +16,6 @@
 
 int test_all(){
 
-    
-
     #ifndef FIBER_DISABLE_EXCEPTIONS
     try{
     #endif

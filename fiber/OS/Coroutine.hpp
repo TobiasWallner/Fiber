@@ -6,89 +6,29 @@
 #include <memory_resource>
 #include <optional>
 #include <string_view>
+#include <utility>
 
 //fiber
 #include <fiber/Exceptions/Exceptions.hpp>
-#include <fiber/Containers/ArrayList.hpp>
 #include <fiber/OS/Exit.hpp>
+#include <fiber/Memory/StackAllocator.hpp>
 #include <fiber/OS/CoSignal.hpp>
 
 
 namespace fiber{
 
     // foreward declarations
-    class Task;
+    class Delay;
+    class NextCycle;
+    class TaskBase;
     class AwaitableNode;
     class CoroutineNode;
     template<class ReturnType> class Coroutine;
     template<class ReturnType> class CoroutinePromise;
 
-    inline std::pmr::memory_resource* coroutine_frame_allocator = nullptr;
-
-    /**
-     * @brief Interface tobe awaited via `co_await` and cooperativly works together will all other `Fiber` async infrastructure
-     * 
-     * The `AwaitableNode` is the final leaf of `fiber`'s reverse linked coroutine chain. 
-     * 
-     * Example:
-     * ```
-     * send_data(tx_data);
-     * rx_data = co_await receive_data();
-     * ```
-     * 
-     * Derive from `AwaitableNode` and implement:
-     * 
-     * - `bool await_ready() const noexcept final { ...Code... }`
-     * 
-     * - `auto await_resume() const noexcept { ...Code... }`
-     * 
-     * optionally also define:
-     * 
-     * - `CoSignal await_suspend_signal() noexcept  final { ... Code ... }`
-     * 
-     * if you want to send a signal to the task
-     */
-    class AwaitableNode{
-    public:
-        virtual ~AwaitableNode() noexcept = default;
-        /*
-            Coroutine expansion of `co_await`:
-            ```
-            auto&& awaitable = expr;
-            if (!awaitable.await_ready()) {
-                awaitable.await_suspend(current_coroutine_handle);
-                co_return;
-            }
-            auto result = awaitable.await_resume();
-            ```
-        */
-
-        /**
-         * @brief Overridable: Returns `true` if the result of the awaitable is ready.
-         */
-        virtual bool await_ready() const noexcept = 0;
-
-        /**
-         * @brief Overridable: gets called after the Awaitable node has been registered with the master.
-         * 
-         * Allows to send a signal to the master
-         */
-        virtual CoSignal await_suspend_signal() noexcept {return CoSignal().await();}
-
-        /** 
-         * @brief Appends itself to the existing linked list of coroutines and registers itself (node) as the new leaf/tail of the list by the master (container)
-         * @tparam ReturnType Generic return type for custom coroutines with custom returns
-         * @param handle A handle that has to be an `fiber::CoroutinePromise` but can have any return type. 
-         * */ 
-        template<class ReturnType>
-        inline void await_suspend(std::coroutine_handle<fiber::CoroutinePromise<ReturnType>> handle) noexcept {
-            // register leaf in master to tell it what awaitable to wait for
-            handle.promise().master()->register_leaf(this);
-
-            // optionally send a signal to the master
-            handle.promise().master()->signal(await_suspend_signal());
-        }
-    };
+    namespace detail{
+        inline fiber::StackAllocatorExtern* frame_allocator = nullptr;
+    }
 
     /**
      * \brief Represents a coroutine (node) in a reverse-linked list of nested coroutines
@@ -97,7 +37,7 @@ namespace fiber{
      * and allows arbitrary nesting of such.
      * 
      * If a new coroutine is being `co_await`ed, this class makes sure it is being registered at
-     * the root Task. Further, it stores a handle to its parent/callers coroutine.
+     * the root TaskBase. Further, it stores a handle to its parent/callers coroutine.
      * 
      * If the coroutine finishes, e.g.: via `co_return`, then it will un-register itself and
      * re-register the parent/callers coroutine for execution.
@@ -112,18 +52,14 @@ namespace fiber{
      * - `bool is_done() const noexcept`
      * 
      * 
-     * @see fiber::Task
+     * @see fiber::TaskBase
      * @see fiber::Coroutine
      * @see fiber::CoroutinePromise
      */
-    class CoroutineNode{
-    private:
-        Task* _master = nullptr;
+    struct CoroutineNode{
+        std::coroutine_handle<> _handle = nullptr;
+        TaskBase* _task = nullptr;
         CoroutineNode* _parent = nullptr;
-
-    public: 
-        virtual ~CoroutineNode() noexcept = default;
-
         /*
             Coroutine expansion of `co_await`:
             ```
@@ -136,25 +72,28 @@ namespace fiber{
             ```
         */
         
-        virtual void destroy() noexcept = 0;
-        virtual void resume() noexcept = 0;
-        virtual bool is_done() const noexcept = 0;
+        inline void destroy() noexcept;
+        inline void resume() noexcept {this->_handle.resume();}
+        inline bool is_done() const noexcept {return this->_handle.done();}
+        constexpr operator bool(){return bool(this->_handle);}
 
-        inline constexpr Task* master(){return this->_master;}
-        inline constexpr const Task* master() const {return this->_master;}
+        constexpr TaskBase* task(){return this->_task;}
+        constexpr const TaskBase* task() const {return this->_task;}
 
-        inline constexpr CoroutineNode* parent() {return this->_parent;}
-        inline constexpr const CoroutineNode* parent() const {return this->_parent;}
+        constexpr CoroutineNode* parent() {return this->_parent;}
+        constexpr const CoroutineNode* parent() const {return this->_parent;}
 
+        constexpr std::coroutine_handle<> handle() {return this->_handle;}
+        constexpr const std::coroutine_handle<> handle() const {return this->_handle;}
 
-        inline void Register(Task* master){this->_master = master;}
+        constexpr void Register(TaskBase* task){this->_task = task;}
 
         template<class ReturnType>
-        inline void await_suspend(std::coroutine_handle<CoroutinePromise<ReturnType>> handle) noexcept;
+        constexpr void await_suspend(std::coroutine_handle<CoroutinePromise<ReturnType>> handle) noexcept;
         inline bool await_ready() const noexcept {return this->is_done();};
 
-        inline std::suspend_always final_suspend() noexcept;
-        inline std::suspend_always initial_suspend() noexcept {return std::suspend_always{};}
+        constexpr std::suspend_always final_suspend() noexcept;
+        constexpr std::suspend_always initial_suspend() noexcept {return std::suspend_always{};}
     };
 
     /**
@@ -200,15 +139,15 @@ namespace fiber{
         promise_handle coro = nullptr;
     public:
 
-        inline Coroutine() = default;
-        explicit Coroutine(promise_handle&& h) : coro(std::move(h)) {}
+        constexpr Coroutine() = default;
+        constexpr explicit Coroutine(promise_handle&& h) : coro(std::move(h)) {}
 
-        inline Coroutine(const Coroutine&) = delete;
-        inline Coroutine& operator=(const Coroutine&) = delete;
-        inline Coroutine(Coroutine&& other) noexcept : coro(std::move(other.coro)) {
+        constexpr Coroutine(const Coroutine&) = delete;
+        constexpr Coroutine& operator=(const Coroutine&) = delete;
+        constexpr Coroutine(Coroutine&& other) noexcept : coro(std::move(other.coro)) {
             other.coro = nullptr;
         }
-        inline Coroutine& operator=(Coroutine&& other) noexcept {
+        constexpr Coroutine& operator=(Coroutine&& other) noexcept {
             if (this != &other) {
                 this->coro = other.coro;
                 other.coro = nullptr;
@@ -216,7 +155,7 @@ namespace fiber{
             return *this;
         }
 
-        inline ~Coroutine() noexcept;
+        constexpr ~Coroutine() noexcept;
 
         /*
             Coroutine expansion of `co_await`:
@@ -230,42 +169,41 @@ namespace fiber{
             ```
         */
 
-        inline void resume();
+        constexpr void resume();
 
-        inline void destroy();
+        constexpr void destroy();
 
-        inline void Register(Task* task);
+        constexpr void Register(TaskBase* task);
 
-        inline bool is_done() const;
+        constexpr bool is_done() const;
 
-        explicit inline operator bool() const noexcept;
+        explicit constexpr operator bool() const noexcept;
 
-        inline CoroutinePromise<ReturnType>& promise();
+        constexpr CoroutinePromise<ReturnType>& promise();
 
-        inline CoroutineNode* node();
-        inline const CoroutineNode* node() const;
+        constexpr CoroutineNode* node();
+        constexpr const CoroutineNode* node() const;
 
-        inline bool await_ready() const noexcept;
+        constexpr bool await_ready() const noexcept;
         
         template<class T>
-        inline void await_suspend(std::coroutine_handle<CoroutinePromise<T>> handle) noexcept;
+        constexpr void await_suspend(std::coroutine_handle<CoroutinePromise<T>> handle) noexcept;
 
-        inline ReturnType await_resume();
-
+        constexpr ReturnType await_resume();
     };
 
     /**
-     * \brief A `Task` (short for coroutine task) is the root of a linked list of nested coroutines.
+     * \brief A `TaskBase` (short for coroutine task) is the root of a linked list of nested coroutines.
      * 
-     * A Task contains one or more (nested) coroutines in an acyclic graph. 
+     * A TaskBase contains one or more (nested) coroutines in an acyclic graph. 
      * It will always resume the last/leaf coroutine and is done onece all coroutines have `co_retun`ed.
      * 
-     * A Task is itsef an `AwaitableNode` and thus might be `co_await`ed by another task.
+     * A TaskBase is itsef an `AwaitableNode` and thus might be `co_await`ed by another task.
      * This might be useful, for example if one task issues 3 other tasks to the scheduler, and the `co_awaits` all of them
      * to continue its own execution only once all are finished.
      * 
-     * The leaf coroutine can communicate to the Task via the interface provided by the `AwaitableNode` that 
-     * is `co_await`ed. Through `co_await` the leaf coroutine can send a signal to the Task (and thus the scheduler) 
+     * The leaf coroutine can communicate to the TaskBase via the interface provided by the `AwaitableNode` that 
+     * is `co_await`ed. Through `co_await` the leaf coroutine can send a signal to the TaskBase (and thus the scheduler) 
      * to tell that it is awaiting on some external task, hardware, I/O, etc.
      * 
      * You might customise the behaviour of the task by overloading the error handler,
@@ -276,54 +214,105 @@ namespace fiber{
      * 
      * \see fiber::AwaitableNode
      * \see fiber::LinearScheduler
+     * 
+     * \tparam N The number of bytes used for the tasks frame allocator
      */
-    class Task{
-    private:
+    class TaskBase{
+    public:
         std::string_view _task_name = "";
+        fiber::StackAllocatorExtern* _frame_allocator;
         Coroutine<fiber::Exit> _main_coroutine;
-        CoroutineNode* _leaf_coroutine;
-        AwaitableNode* _leaf_awaitable = nullptr;
-        CoSignal _signal; // TODO: remove from Task and add to RealTimeTask
+        CoroutineNode* _leaf_coroutine = nullptr;
+        bool (*_leaf_awaitable_ready_func)(const void* _leaf_awaitable_obj) = nullptr;
+        const void* _leaf_awaitable_obj = nullptr;
+        CoSignal _signal; // TODO: remove from TaskBase and add to RealTimeTask
         unsigned int _id = 0;
         bool _instant_resume = false;
         
     public:
 
-        Task(Coroutine<fiber::Exit>&& main, std::string_view task_name = "") noexcept;
-        Task(const Task&)=delete;
-        Task(Task&& other) noexcept;
-        Task& operator=(const Task&)=delete;
-        Task& operator=(Task&& other) noexcept;
+        constexpr TaskBase() = default;
+        constexpr TaskBase(const TaskBase&)=delete;
+        constexpr TaskBase& operator=(const TaskBase&)=delete;
 
-        virtual ~Task(){}
+        constexpr TaskBase(TaskBase&& other) noexcept
+            : _task_name(std::exchange(other._task_name, ""))
+            , _frame_allocator(std::exchange(other._frame_allocator, nullptr))
+            , _main_coroutine(std::move(other._main_coroutine))
+            , _leaf_coroutine(std::move(other._leaf_coroutine))
+            , _leaf_awaitable_ready_func(std::exchange(other._leaf_awaitable_ready_func, nullptr))
+            , _leaf_awaitable_obj(std::exchange(other._leaf_awaitable_obj, nullptr))
+            , _instant_resume(std::exchange(other._instant_resume, false))
+        {
+            this->_main_coroutine.Register(this); // re-register
+        }
 
-        constexpr void id(unsigned int id){this->_id = id;} // TODO: make only visible for scheduler
+        constexpr TaskBase& operator=(TaskBase&& other) noexcept {
+            if(this != &other){
+                this->_task_name = std::exchange(other._task_name, "");
+                this->_main_coroutine = std::move(other._main_coroutine);
+                this->_frame_allocator = std::exchange(other._frame_allocator, nullptr);
+                this->_id = std::exchange(other._id, -1);
+                this->_leaf_coroutine = std::exchange(other._leaf_coroutine, nullptr);
+                this->_leaf_awaitable_ready_func = std::exchange(other._leaf_awaitable_ready_func, nullptr);
+                this->_leaf_awaitable_obj = std::exchange(other._leaf_awaitable_obj, nullptr);
+                this->_instant_resume = std::exchange(other._instant_resume, false);
+                this->_main_coroutine.Register(this); // re-register
+            }
+            return *this;
+        }
+
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr TaskBase(std::string_view task_name, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+            : _task_name(task_name)
+            , _frame_allocator(frame_allocator)
+        {
+            // make sure that at the constrution of the coroutine the frame_allocator of the task is set
+            auto temp = std::exchange(fiber::detail::frame_allocator, _frame_allocator);
+
+            // construct the coroutine
+            this->_main_coroutine = std::forward<F>(function)(std::forward<Args>(args)...);
+
+            // reset allocator
+            fiber::detail::frame_allocator = temp;
+
+            // registering
+            this->_leaf_coroutine = this->_main_coroutine.node();
+            this->_main_coroutine.Register(this);
+        }
+
+        
+
+        virtual ~TaskBase(){}
+
         constexpr unsigned int id() const {return this->_id;}
-
 
         constexpr std::string_view name() const {return this->_task_name;}
 
         /**
          * @brief sets a signal
          */
-        inline void signal(const CoSignal& signal){this->_signal = signal;}
+        constexpr void signal(const CoSignal& signal){this->_signal = signal;}
         
         /**
          * @brief reads and clears the signal
          */
-        inline const CoSignal get_signal() {
+        constexpr const CoSignal get_signal() {
             CoSignal result = this->_signal;
             this->_signal.none(); // clear signal
             return result;
         }
 
-        inline void destroy(){this->_main_coroutine.destroy();}
+        constexpr void destroy(){this->_main_coroutine.destroy();}
         
 
         /// @brief Registers the leaf nested coroutine that serves as the resume point after suspensions
         /// @details Meant to be called by the Coroutine
         /// @param leaf a coroutine handle to the leaf tasks
-        inline void register_leaf(CoroutineNode* leaf) noexcept {
+        constexpr void register_leaf(CoroutineNode* leaf) noexcept {
             if(this->_leaf_coroutine){
                 this->_leaf_coroutine = leaf;
                 this->_instant_resume = true;
@@ -333,7 +322,11 @@ namespace fiber{
         /// @brief Registers a leaf awaitable that will be waited on before resuming its parents coroutine
         /// @details Meant to be called by the Awaitable
         /// @param awaitable The awaitable that will be waited on
-        inline void register_leaf(AwaitableNode* awaitable) noexcept {this->_leaf_awaitable = awaitable;}
+        template<class T>
+        constexpr void register_leaf(const T* obj, bool (*func)(const T* obj)) noexcept {
+            _leaf_awaitable_ready_func = reinterpret_cast<bool (*)(const void*)>(func);
+            _leaf_awaitable_obj = reinterpret_cast<const void*>(obj);
+        }
 
         /**
          * @brief resumes the task/coroutine
@@ -355,18 +348,24 @@ namespace fiber{
 
         /// @brief returns `true` if the awaitable that this task is waiting on is still waiting for completion - aka. this task is not resumable
         /// @details equivalent to `!task->is_resumable()`
-        inline bool is_awaiting() const {return (this->_leaf_awaitable) ? !this->_leaf_awaitable->await_ready() : false;}
+        constexpr bool is_awaiting() const {
+            if(this->_leaf_awaitable_obj!=nullptr){
+                return !this->_leaf_awaitable_ready_func(this->_leaf_awaitable_obj);
+            }else{
+                return false;
+            }
+        }
 
         /// @brief returns `true` if the main/root coroutine is done - thus the task is done
-        inline bool is_done() const {return this->_main_coroutine.is_done();}
+        constexpr bool is_done() const {return this->_main_coroutine.is_done();}
 
         /// @brief same as `is_done()` but for interoperability with `co_await`
-        inline bool await_ready() const noexcept {return this->is_done();}
+        constexpr bool await_ready() const noexcept {return this->is_done();}
 
         /// @brief interoperability with `co_await` 
-        inline Exit await_resume();
+        constexpr Exit await_resume();
 
-        inline Exit exit_status();
+        constexpr Exit exit_status();
 
         /// @brief exception handler - will be called if an un-catched exception in a coroutine arises
         #ifndef FIBER_DISABLE_EXCEPTIONS
@@ -385,7 +384,7 @@ namespace fiber{
      * \brief Wraps awaitables that are not yet derived from `fiber::AwaitableNode`
      * 
      * If wraps arbitrary awaitables that do not derive from `fiber::AwaitableNode` that 
-     * implements the registration infrastructure relied on by `fiber::Coroutine` and `fiber::Task`.
+     * implements the registration infrastructure relied on by `fiber::Coroutine` and `fiber::TaskBase`.
      * 
      * Specialises for awaitable passed as lvalues.
      * 
@@ -396,12 +395,12 @@ namespace fiber{
      * \see fiber::AwaitableNode
      * \see fiber::Coroutine
      * \see fiber::CoroutinePromise
-     * \see fiber::Task
+     * \see fiber::TaskBase
      * \see fiber::wrap_awaitable(Awaitable&& awaitable)
      */
     template<class Awaitable, bool is_lvalue=true>
     requires (!std::derived_from<Awaitable, AwaitableNode>)
-    class AwaitableWrapper : public AwaitableNode{
+    class AwaitableWrapper{
     private:
         Awaitable& _awaitable;
 
@@ -409,19 +408,26 @@ namespace fiber{
         constexpr AwaitableWrapper(Awaitable& awaitable)
             : _awaitable(awaitable){}
 
-        constexpr bool await_ready() const noexcept final {
+        constexpr bool await_ready() const noexcept {
             return this->_awaitable.await_ready();
+        }
+
+        static bool s_await_ready(const AwaitableWrapper* This){
+            return This->await_ready();
         }
 
         constexpr auto await_resume() noexcept {
             return this->_awaitable.await_resume();
         }
 
-        virtual CoSignal await_suspend_signal() noexcept final {return CoSignal().await();}
+        constexpr CoSignal await_suspend_signal() const noexcept {return CoSignal().await();}
 
-        template<class Handle>
-        constexpr auto await_suspend(Handle handle) noexcept {
-            this->AwaitableNode::await_suspend(handle);
+        template<class ReturnType>
+        constexpr auto await_suspend(std::coroutine_handle<fiber::CoroutinePromise<ReturnType>> handle) noexcept {
+            // register leaf in task to tell it what awaitable to wait for
+            handle.promise().task()->register_leaf(this, AwaitableWrapper::s_await_ready);
+
+            handle.promise().task()->signal(await_suspend_signal());
 
             // await_suspend is optional, so check if the Type supports it at compile time and call it conditionally
             if constexpr (requires {this->_awaitable.await_suspend(handle);} ){
@@ -436,7 +442,7 @@ namespace fiber{
      * \brief Wraps awaitables that are not yet derived from `fiber::AwaitableNode`
      * 
      * If wraps arbitrary awaitables that do not derive from `fiber::AwaitableNode` that 
-     * implements the registration infrastructure relied on by `fiber::Coroutine` and `fiber::Task`.
+     * implements the registration infrastructure relied on by `fiber::Coroutine` and `fiber::TaskBase`.
      * 
      * Specialises for awaitable passed as rvalues.
      * 
@@ -447,12 +453,11 @@ namespace fiber{
      * \see fiber::AwaitableNode
      * \see fiber::Coroutine
      * \see fiber::CoroutinePromise
-     * \see fiber::Task
+     * \see fiber::TaskBase
      * \see fiber::wrap_awaitable(Awaitable&& awaitable)
      */
     template<class Awaitable>
-    requires (!std::derived_from<Awaitable, AwaitableNode>)
-    class AwaitableWrapper<Awaitable, false> : public AwaitableNode{
+    class AwaitableWrapper<Awaitable, false>{
     private:
         Awaitable _awaitable;
 
@@ -460,20 +465,33 @@ namespace fiber{
         constexpr AwaitableWrapper(Awaitable&& awaitable)
             : _awaitable(std::move(awaitable)){}
 
-        constexpr bool await_ready() const noexcept final {
+        constexpr bool await_ready() const noexcept {
             return this->_awaitable.await_ready();
+        }
+
+        static bool s_await_ready(const AwaitableWrapper* This){
+            return This->await_ready();
         }
 
         constexpr auto await_resume() noexcept {
             return this->_awaitable.await_resume();
         }
 
-        virtual CoSignal await_suspend_signal() noexcept final {return CoSignal().await();}
+        constexpr CoSignal await_suspend_signal() const noexcept {return CoSignal().await();}
 
         template<class ReturnType>
         constexpr auto await_suspend(std::coroutine_handle<fiber::CoroutinePromise<ReturnType>> handle) noexcept {
-            this->AwaitableNode::await_suspend(handle);
-            return this->_awaitable.await_suspend(handle);
+            // register leaf in task to tell it what awaitable to wait for
+            handle.promise().task()->register_leaf(this, AwaitableWrapper::s_await_ready);
+
+            handle.promise().task()->signal(await_suspend_signal());
+
+            // await_suspend is optional, so check if the Type supports it at compile time and call it conditionally
+            if constexpr (requires {this->_awaitable.await_suspend(handle);} ){
+                return this->_awaitable.await_suspend(handle);
+            }else{
+                return void();
+            }
         }
     };
 
@@ -490,7 +508,6 @@ namespace fiber{
      * \see fiber::AwaitableNode
      */
     template<class Awaitable>
-        requires (!std::derived_from<Awaitable, AwaitableNode>)
     AwaitableWrapper<Awaitable, std::is_lvalue_reference<Awaitable>::value> wrap_awaitable(Awaitable&& awaitable){
         if constexpr (std::is_lvalue_reference<Awaitable>::value){
             return AwaitableWrapper<Awaitable, true>(awaitable);
@@ -525,8 +542,8 @@ namespace fiber{
      * This supports customization of how `co_await` expressions behave within the coroutine body.
      * 
      * ### Memory Management
-     * Overrides `operator new` and `operator delete` to allocate memory for the coroutine frame from a custom allocator (`coroutine_frame_allocator`).
-     * This supports embedded or specialized memory management scenarios.
+     * Overrides `operator new` and `operator delete` to allocate memory for the coroutine frame from a custom allocator.
+     * In the usual cast this allocator is provided by the root task of the coroutine chain
      * 
      * \see fiber::Coroutine
      * \see fiber::CoroutinePromiseSize
@@ -540,66 +557,53 @@ namespace fiber{
     
     public:
 
-        ~CoroutinePromise() = default;
+        inline CoroutinePromise(){
+            this->CoroutineNode::_handle = std::coroutine_handle<CoroutinePromise>::from_promise(*this);
+        }
 
         template<class Awaitable>
-        inline auto await_transform(Awaitable&& awaitable){
-            if constexpr (!std::derived_from<Awaitable, AwaitableNode> && !std::derived_from<Awaitable, CoroutineNode>){
-                return wrap_awaitable(std::forward<Awaitable>(awaitable));
-            }else{
+        constexpr auto await_transform(Awaitable&& awaitable){
+            if constexpr (std::same_as<Awaitable, Delay> || std::same_as<Awaitable, NextCycle> || std::derived_from<Awaitable, CoroutineNode>){
                 return std::forward<Awaitable>(awaitable);
+            }else{
+                return wrap_awaitable(std::forward<Awaitable>(awaitable));
             }
         }
 
-        inline auto get_return_object(){return Coroutine<ReturnType>(std::coroutine_handle<CoroutinePromise>::from_promise(*this));}
+        constexpr auto get_return_object(){return Coroutine<ReturnType>(std::coroutine_handle<CoroutinePromise>::from_promise(*this));}
         
 
         /// @brief Print an error message and kill the task
-        inline void unhandled_exception() noexcept {
+        constexpr void unhandled_exception() noexcept {
             #ifndef FIBER_DISABLE_EXCEPTIONS
-                this->master()->handle_exception(std::current_exception());
+                this->task()->handle_exception(std::current_exception());
             #else
-                this->master()->handle_exception();
+                this->task()->handle_exception();
             #endif
         } 
 
-        inline void return_value(const ReturnType& value){this->_return_value = value;}
-        inline void return_value(ReturnType&& value){this->_return_value = std::move(value);}
+        constexpr void return_value(const ReturnType& value){this->_return_value = value;}
+        constexpr void return_value(ReturnType&& value){this->_return_value = std::move(value);}
 
-        inline ReturnType&& get_return_value() {
+        constexpr ReturnType&& get_return_value() {
             FIBER_ASSERT_O1_MSG(this->is_done(), "Tried to get coroutine return value, before `is_done()`. S: Read value after the coroutine is finished. Check for `is_done()` or use co_await");
             return std::move(_return_value);
         }
 
-        inline static void* operator new(std::size_t size){
-            FIBER_ASSERT_CRITICAL_MSG(coroutine_frame_allocator != nullptr, "No memory resource provided. S: Assign a memory `fiber::coroutine_mem_resource= &resource;`");
-            void* result = coroutine_frame_allocator->allocate(size);
+        constexpr static void* operator new(std::size_t size){
+            void* result = fiber::detail::frame_allocator->allocate(size);
             reinterpret_cast<CoroutinePromiseSize*>(result)->_allocated_size = size;
             return result;
         }
 
-        inline static void operator delete(void* ptr, std::size_t size){
-            coroutine_frame_allocator->deallocate(ptr, size);
+        constexpr static void operator delete(void* ptr, std::size_t size){
+            fiber::detail::frame_allocator->deallocate(ptr, size);
             return;
         }
         
-        inline void destroy() noexcept final{
-            std::coroutine_handle<CoroutinePromise>::from_promise(*this).destroy();
-        }
-        
-        inline void resume() noexcept final{
-            std::coroutine_handle<CoroutinePromise>::from_promise(*this).resume();
-        }
-        
-        inline bool is_done() const noexcept  final{
-            // use const cast, because the `std::coroutine_handle<>::from_promise()` has no `const` version but `is_done()` is still `const`, so it it fine here.
-            // `const_cast` is not ideal but necessary due to the lack of `const` overloads of `std::coroutine_handle<>::from_promise()`
-            return std::coroutine_handle<CoroutinePromise>::from_promise(const_cast<CoroutinePromise&>(*this)).done();
-        }
-        
-        inline bool await_ready() const noexcept {return this->is_done();}
+        constexpr bool await_ready() const noexcept {return this->is_done();}
 
-        inline ReturnType await_resume() {
+        constexpr ReturnType await_resume() {
             FIBER_ASSERT_CRITICAL_MSG(this->await_ready(), "Resume on unready coroutnie awaitable. S: Check `await_ready()` before calling `resume()`.");
             return std::move(this->_return_value); // move out before destroying to prevent use after free
         }
@@ -611,66 +615,66 @@ namespace fiber{
 //------------------------------------------------------------------------------------------------------------------------------------------
 
     template<class T>
-    inline Coroutine<T>::~Coroutine() noexcept {
+    constexpr Coroutine<T>::~Coroutine() noexcept {
+        this->destroy();
+    }
+
+    template<class T>
+    constexpr void Coroutine<T>::resume() {this->coro.resume();}
+
+    template<class T>
+    constexpr void Coroutine<T>::destroy() {
         if(this->coro != nullptr){
-            this->coro.destroy();
+            this->coro.promise().destroy();
             this->coro = nullptr;
         } 
     }
 
     template<class T>
-    inline void Coroutine<T>::resume() {this->coro.resume();}
+    constexpr void Coroutine<T>::Register(TaskBase* task){this->coro.promise().Register(task);}
 
     template<class T>
-    inline void Coroutine<T>::destroy() {
-        if(this->coro != nullptr) this->coro.destroy(); // prevent accidental double free
-    }
+    constexpr bool Coroutine<T>::is_done() const {return this->coro.done();}
 
     template<class T>
-    inline void Coroutine<T>::Register(Task* task){this->coro.promise().Register(task);}
+    constexpr Coroutine<T>::operator bool() const noexcept {return this->coro != nullptr;}
 
     template<class T>
-    inline bool Coroutine<T>::is_done() const {return this->coro.done();}
+    constexpr CoroutinePromise<T>& Coroutine<T>::promise() {return this->coro.promise();}
 
     template<class T>
-    inline Coroutine<T>::operator bool() const noexcept {return this->coro != nullptr;}
+    constexpr CoroutineNode* Coroutine<T>::node() {return &this->coro.promise();}
 
     template<class T>
-    inline CoroutinePromise<T>& Coroutine<T>::promise() {return this->coro.promise();}
+    constexpr const CoroutineNode* Coroutine<T>::node() const {return &this->coro.promise();}
 
     template<class T>
-    inline CoroutineNode* Coroutine<T>::node() {return &this->coro.promise();}
-
-    template<class T>
-    inline const CoroutineNode* Coroutine<T>::node() const {return &this->coro.promise();}
-
-    template<class T>
-    inline bool Coroutine<T>::await_ready() const noexcept {
+    constexpr bool Coroutine<T>::await_ready() const noexcept {
         return this->coro.promise().await_ready();
     }
     
     template<class ReturnValue>
     template<class T>
-    inline void Coroutine<ReturnValue>::await_suspend(std::coroutine_handle<CoroutinePromise<T>> handle) noexcept {
+    constexpr void Coroutine<ReturnValue>::await_suspend(std::coroutine_handle<CoroutinePromise<T>> handle) noexcept {
         this->coro.promise().await_suspend(handle);
     }
 
     template<class T>
-    inline T Coroutine<T>::await_resume() {
+    constexpr T Coroutine<T>::await_resume() {
         FIBER_ASSERT_CRITICAL_MSG(this->coro, "Attempting to read from a deleted coroutine. S: Remove double `await_resume()`. Check for call to `await_resume()` after `co_await`.");
         return this->coro.promise().await_resume();
     }
     
 //------------------------------------------------------------------------------------------------------------------------------------------
-//                                                   Task: Implementation
+//                                                   TaskBase: Implementation
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-    inline Exit Task::await_resume(){
+    constexpr Exit TaskBase::await_resume(){
         FIBER_ASSERT_O1(this->is_done());
         return this->_main_coroutine.promise().get_return_value();
     }
     
-    inline Exit Task::exit_status() {
+    constexpr Exit TaskBase::exit_status() {
         FIBER_ASSERT_O1(this->is_done());
         return this->_main_coroutine.promise().get_return_value();
     }
@@ -679,21 +683,26 @@ namespace fiber{
 //                                                   CoroutineNode: Implementation
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+    inline void CoroutineNode::destroy() noexcept {
+        auto temp = std::exchange(fiber::detail::frame_allocator, this->task()->_frame_allocator);
+        this->_handle.destroy();
+        fiber::detail::frame_allocator = temp;  
+    };
 
     template<class ReturnType>
-    inline void CoroutineNode::await_suspend(std::coroutine_handle<CoroutinePromise<ReturnType>> handle) noexcept {
-        // store parent and master
+    constexpr void CoroutineNode::await_suspend(std::coroutine_handle<CoroutinePromise<ReturnType>> handle) noexcept {
+        // store parent and task
         this->_parent = &handle.promise();
-        this->_master = handle.promise().master();
+        this->_task = handle.promise().task();
 
-        // register leafe in master to tell it what coroutine to resume next
-        this->_master->register_leaf(this);
+        // register leafe in task to tell it what coroutine to resume next
+        this->_task->register_leaf(this);
     }
 
-    inline std::suspend_always CoroutineNode::final_suspend() noexcept {
-        // unregister self and re-register the parent, so next time the master will resume the parent
+    constexpr std::suspend_always CoroutineNode::final_suspend() noexcept {
+        // unregister self and re-register the parent, so next time the task will resume the parent
         if(this->_parent != nullptr){
-            this->_master->register_leaf(this->_parent);
+            this->_task->register_leaf(this->_parent);
         }
         return std::suspend_always{};
     }

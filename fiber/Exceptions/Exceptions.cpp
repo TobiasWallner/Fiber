@@ -69,10 +69,9 @@ namespace fiber{
     // -----------------------------------------------------------------------------------------------
 
     void AllocationFailure::print(OStream& stream) const {
-        stream << '[' << fiber::ansi::bright_red << fiber::ansi::bold << this->type() << fiber::ansi::reset << "]: Failed to allocate: " << this->to_allocate << " byte. S: Provide more memory, prevent fragmentation, use differnet allocation strategies." << fiber::newl;
-        stream << "    buffer size: " << this->buffer_size << " byte" << fiber::newl;
-        stream << "    largest free region: " << this->largest_free << " byte" << fiber::newl;
-        stream << "    free/allocated regions: " << this->nfree << '/' << this->nalloc << fiber::endl;
+        stream << '[' << fiber::ansi::bright_red << fiber::ansi::bold << this->type() << fiber::ansi::reset << "]: Failed to allocate: " << this->to_allocate << "B" << fiber::newl;
+        stream << "    buffer size: " << this->buffer_size << "B" << fiber::newl;
+        stream << "    largest free region: " << this->largest_free << "B" << fiber::newl;
     }
 
 }// namespace fiber

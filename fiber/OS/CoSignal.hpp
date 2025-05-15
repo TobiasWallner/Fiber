@@ -5,6 +5,7 @@
 #include <variant>
 
 // fiber
+#include <fiber/Chrono/Duration.hpp>
 #include <fiber/Exceptions/Exceptions.hpp>
 
 namespace fiber
@@ -30,8 +31,8 @@ namespace fiber
         enum class Type{None = 0, Await, NextCycle, ImplicitDelay, ExplicitDelay};
 
     private:
-        std::chrono::nanoseconds _delay = std::chrono::nanoseconds(0);
-        std::chrono::nanoseconds _deadline = std::chrono::nanoseconds(0);
+        fiber::Duration _delay = fiber::Duration(0);
+        fiber::Duration _deadline = fiber::Duration(0);
         Type _type = Type::None;
 
     public:
@@ -46,7 +47,7 @@ namespace fiber
 
         /// @brief Suspend execution and delay the next schedule
         /// @param delay time in ns relative from now
-        constexpr CoSignal& implicit_delay(std::chrono::nanoseconds delay){
+        constexpr CoSignal& implicit_delay(fiber::Duration delay){
             this->_delay = delay;
             this->_type = Type::ImplicitDelay;
             return *this;
@@ -55,7 +56,7 @@ namespace fiber
         /// @brief Suspend execution and delay the next schedule
         /// @param delay time in ns relative to now
         /// @param rel_deadline time in ns relative to the resulting ready time
-        constexpr CoSignal& explicit_delay(std::chrono::nanoseconds delay, std::chrono::nanoseconds rel_deadline){
+        constexpr CoSignal& explicit_delay(fiber::Duration delay, fiber::Duration rel_deadline){
             this->_delay = delay;
             this->_deadline = rel_deadline;
             this->_type = Type::ExplicitDelay;
@@ -69,12 +70,12 @@ namespace fiber
         /// @brief get the implicit delay time
         /// @returns the implicit delay time
         /// @throws If `ASSERTION_LEVEL_O1` or higher is enabled: throws an AssertionFailure, if the signal does not hold an implicit delay
-        constexpr std::chrono::nanoseconds delay() const {return this->_delay;}
+        constexpr fiber::Duration delay() const {return this->_delay;}
 
         /// @brief get the explicit delay time
         /// @returns the implicit delay time
         /// @throws If `ASSERTION_LEVEL_O1` or higher is enabled: throws an AssertionFailure, if the signal does not hold an explicit delay
-        constexpr std::chrono::nanoseconds deadline() const {return this->_deadline;}
+        constexpr fiber::Duration deadline() const {return this->_deadline;}
         
     };
 

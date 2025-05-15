@@ -19,7 +19,7 @@ namespace fiber
     template<size_t Bytes>
     struct StaticLinearAllocator : public std::pmr::memory_resource{
         using word = uint32_t;
-        static constexpr size_t bufferSize = Bytes / sizeof(uint32_t);
+        static constexpr size_t bufferSize = Bytes / sizeof(word);
         word buffer[bufferSize];
 
         struct Header{
@@ -121,14 +121,14 @@ namespace fiber
                 }
             }
             // TODO: use an fiber error here
-            FIBER_THROW(AllocationFailure(size, bufferSize*sizeof(word), largest_free_size*sizeof(word), nfree, nalloc));
+            FIBER_THROW(AllocationFailure(size, bufferSize*sizeof(word), largest_free_size*sizeof(word)));
         }
 
         void do_deallocate(void* ptr, [[maybe_unused]]std::size_t bytes, [[maybe_unused]]std::size_t alignment) final {
             #if (!defined(FIBER_DISABLE_ASSERTIONS) && (defined(FIBER_ASSERTION_LEVEL_CRITICAL) || defined(FIBER_ASSERTION_LEVEL_O1) || defined(FIBER_ASSERTION_LEVEL_FULL)))
                 // do manual, because deallocate is probably in a destructor and noexcept would call `__exit()` instead of propperly throwing
                 if(!(reinterpret_cast<const void*>(&buffer[0]) <= ptr) && (ptr < reinterpret_cast<const void*>(&buffer[bufferSize]))){
-                    fiber::cerr << fiber::AssertionFailureCritical("(&buffer[0]) <= ptr) && (ptr < (&buffer[bufferSize])", "Tried to free pointer that is not in the range of the allocator.", FIBER_FUNCTION_SIGNATURE) << fiber::endl;
+                    std::terminate(); // terminate on error
                     return;
                 }
             #endif
@@ -141,11 +141,11 @@ namespace fiber
                 --header;
                 #if (!defined(FIBER_DISABLE_ASSERTIONS) && (defined(FIBER_ASSERTION_LEVEL_CRITICAL) || defined(FIBER_ASSERTION_LEVEL_O1) || defined(FIBER_ASSERTION_LEVEL_FULL)))
                     if(!(reinterpret_cast<const void*>(header) >= reinterpret_cast<const void*>(&buffer[0]))){
-                        fiber::cerr << fiber::AssertionFailureCritical("reinterpret_cast<const void*>(header) >= reinterpret_cast<const void*>(&buffer[0])", "Tried to free a pointer that is not a valid memory segment within the allocator", FIBER_FUNCTION_SIGNATURE) << fiber::endl;
+                        std::terminate(); // terminate on error
                         return;
                     }
                     if(!(iterations < alignment)){
-                        fiber::cerr << fiber::AssertionFailureCritical("iterations < alignment", "Tried to free a pointer that is not a valid memory segment within the allocator", FIBER_FUNCTION_SIGNATURE) << fiber::endl;
+                        std::terminate(); // terminate on error
                         return;
                     }
                     ++iterations;

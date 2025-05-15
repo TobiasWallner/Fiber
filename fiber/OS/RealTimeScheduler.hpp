@@ -184,14 +184,14 @@ namespace fiber
     template<size_t n_tasks, CRealTimeSchedulerLogger logger = NullLogger>
     class RealTimeScheduler {
     private:
-        using dual_priority_queue_type = DualPriorityQueue<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
-        using dual_array_list_type = DualArrayList<RealTimeTask*, n_tasks>;
+        using dual_priority_queue_type = DualPriorityQueue<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
+        using dual_array_list_type = DualArrayList<RealTimeTaskBase*, n_tasks>;
 
-        using waiting_queue_ref = Stage1DualPriorityQueueRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
-        using running_queue_ref = Stage2DualPriorityQueueRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
+        using waiting_queue_ref = Stage1DualPriorityQueueRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
+        using running_queue_ref = Stage2DualPriorityQueueRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
 
-        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
-        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<RealTimeTask*, n_tasks, larger_ready_time, larger_deadline>;
+        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
+        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
         
         TimePoint (*_now)(); // function pointer to a function returning the current time
         void (*_sleep_until)(TimePoint); // function pointer to a function returning the current time
@@ -200,7 +200,7 @@ namespace fiber
         //       [stage 2 priority queue][reserve][unordered list][reserve][stage 1 priority list]
         //       consider if the complexity is worth it - probably not!
         dual_priority_queue_type _priority_queue; // ready + deadline
-        ArrayList<RealTimeTask*, n_tasks> _await_bench;
+        ArrayList<RealTimeTaskBase*, n_tasks> _await_bench;
         unsigned int _next_task_id = 0; // next id for the next added task
 
 
@@ -220,17 +220,17 @@ namespace fiber
          */
         void promote(){
             // promote await back into running queue
-            for(RealTimeTask* task : this->_await_bench){
+            for(RealTimeTaskBase* task : this->_await_bench){
                 if(!task->is_awaiting()){
                     logger::log_move(this->now(), task->name(), task->id(), "await", "run");
                     this->running_queue().push(task);
                 }
             }
-            this->_await_bench.erase_if([](const RealTimeTask* task){return !task->is_awaiting();});
+            this->_await_bench.erase_if([](const RealTimeTaskBase* task){return !task->is_awaiting();});
 
             // promote waiting queue into running queue
             while(!this->waiting_queue().empty()){
-                RealTimeTask* task = this->waiting_queue().top();
+                RealTimeTaskBase* task = this->waiting_queue().top();
                 const TimePoint now = this->now();
                 if(task->ready_time() <= now){
                     logger::log_move(now, task->name(), task->id(), "wait", "run");
@@ -264,8 +264,9 @@ namespace fiber
          * @see fiber::AwaitableNode
          */
         void run_next(){
-            RealTimeTask* task = this->running_queue().top_pop();
+            RealTimeTaskBase* task = this->running_queue().top_pop();
             task->_execution_start = this->now();
+            fiber::detail::frame_allocator = task->_frame_allocator;
             task->resume();
             logger::log_resume(task->_execution_start, this->now(), task->name(), task->id());
             // re-schedule
@@ -335,8 +336,8 @@ namespace fiber
          * 
          * @throws Throws an `AssertionFailureO1` if `FIBER_ASSERTION_LEVEL_O1` or higher is enabled, if the task could not be added and the scheduler is already full.
          */
-        void add(RealTimeTask* task){
-            task->id(this->_next_task_id++);
+        void add(RealTimeTaskBase* task){
+            task->_id = this->_next_task_id++;
             FIBER_ASSERT_O1_MSG(!this->is_full(), "Scheduler is full and cannot handle more tasks safely. S: Increase the storage capacity for the number of tasks in the template parameter `n_taks`.");
             const TimePoint now = this->now();
             if(task->ready_time() <= now){
@@ -453,7 +454,7 @@ namespace fiber
         /**
          * @brief prints a scheduler queue to the stream
          * @param stream An `fiber::OStream` reference
-         * @param taskList A range that contains `RealTimeTask*` objects
+         * @param taskList A range that contains `RealTimeTaskBase*` objects
          */
         template<std::ranges::range TaskList>
         static void print_task_list(OStream& stream, const TaskList& taskList, const int indentation = 0){
@@ -462,7 +463,7 @@ namespace fiber
 
             // get length of longest name
             int max_name_length = 4;
-            for(const RealTimeTask* task : taskList){
+            for(const RealTimeTaskBase* task : taskList){
                 const int name_size = static_cast<int>(task->name().size());
                 max_name_length =  (name_size > max_name_length) ? name_size : max_name_length;
             }
@@ -509,7 +510,7 @@ namespace fiber
             stream << fiber::newl;
 
             // print table
-            for(const RealTimeTask* task : taskList){
+            for(const RealTimeTaskBase* task : taskList){
                 stream.put(' ', indentation);
                 stream << single_vertical << ' ';
                 stream << FormatStr(task->name()).mwidth(max_name_length).left();

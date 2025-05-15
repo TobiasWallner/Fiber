@@ -19,21 +19,18 @@ namespace fiber
 
             g_mock_time = TimePoint(0);
 
-            fiber::StaticLinearAllocatorDebug<1024> allocator;
-            fiber::coroutine_frame_allocator = &allocator;
-
             class CoSuit{
                 public:
                 int proof = 0;
-                Coroutine<Exit> coroutine(){
-                    this->proof = 258;
+                static Coroutine<Exit> coroutine(CoSuit& self){
+                    self.proof = 258;
                     co_return Exit::Success;
                 }
             };
 
             CoSuit co_suit;
 
-            RealTimeTask simpleTask(co_suit.coroutine(), "simpleTask", get_time(), 1ms);
+            RealTimeTask<512> simpleTask("simpleTask", get_time(), 1ms, CoSuit::coroutine, co_suit);
 
             RealTimeScheduler<1> scheduler(get_time);
 
@@ -61,23 +58,20 @@ namespace fiber
 
             // global state setup
             g_mock_time = TimePoint(0);
-
-            fiber::StaticLinearAllocatorDebug<1024> allocator;
-            fiber::coroutine_frame_allocator = &allocator;
-
+            
             // task setup
-            class Task : public RealTimeTask{
+            class Task : public RealTimeTask<256>{
                 public:
                 int proof = 0;
 
                 Task(std::string_view name, TimePoint ready, Duration deadline) 
-                    : RealTimeTask(this->main(), name, ready, deadline){}
+                    : RealTimeTask(name, ready, deadline, Task::main, this){}
 
                 Task(std::string_view name, TimePoint ready, std::chrono::milliseconds deadline) 
-                    : RealTimeTask(this->main(), name, ready, deadline){}
+                    : RealTimeTask(name, ready, deadline, Task::main, this){}
 
-                Coroutine<Exit> main(){
-                    this->proof = 258;
+                static Coroutine<Exit> main(Task* This){
+                    This->proof = 258;
                     co_return Exit::Success;
                 }
             };
@@ -118,24 +112,21 @@ namespace fiber
         // global state setup
         g_mock_time = TimePoint(0);
 
-        fiber::StaticLinearAllocatorDebug<1024> allocator;
-        fiber::coroutine_frame_allocator = &allocator;
-
         // task setup
-        class Task : public RealTimeTask{
+        class Task : public RealTimeTask<256>{
             public:
             int proof = 0;
 
             Task(std::string_view name, Duration ready, Duration deadline) 
-                : RealTimeTask(this->main(), name, ready + get_time(), deadline){}
+                : RealTimeTask(name, ready + get_time(), deadline, Task::main, this){}
 
             Task(std::string_view name, std::chrono::milliseconds ready, std::chrono::milliseconds deadline) 
                 : Task(name, fiber::rounding_duration_cast<fiber::Duration>(ready), fiber::rounding_duration_cast<fiber::Duration>(deadline)){}
 
-            Coroutine<Exit> main(){
-                this->proof = 1;
+            static Coroutine<Exit> main(Task* This){
+                This->proof = 1;
                 co_await Delay(2ms);
-                this->proof = 2;
+                This->proof = 2;
                 co_return Exit::Success;
             }
         };
@@ -207,11 +198,8 @@ namespace fiber
         // global state setup
         g_mock_time = TimePoint(0);
 
-        fiber::StaticLinearAllocatorDebug<1024> allocator;
-        fiber::coroutine_frame_allocator = &allocator;
-
         // task setup
-        class Task : public RealTimeTask{
+        class Task : public RealTimeTask<256>{
             /*
             Tests the Earliest-Ready-Time / Earliest-Deadline scheduling priorities
              */
@@ -219,15 +207,15 @@ namespace fiber
             int proof = 0;
 
             Task(std::string_view name, TimePoint ready, Duration deadline) 
-                : RealTimeTask(this->main(), name, ready, deadline){}
+                : RealTimeTask(name, ready, deadline, Task::main, this){}
 
             Task(std::string_view name, TimePoint ready, std::chrono::milliseconds deadline) 
-                : RealTimeTask(this->main(), name, ready, deadline){}
+                : RealTimeTask(name, ready, deadline, Task::main, this){}
 
-            Coroutine<Exit> main(){
-                this->proof = 1;
+            static Coroutine<Exit> main(Task* This){
+                This->proof = 1;
                 co_await Delay(0ms); // basically yield to other tasks
-                this->proof = 2;
+                This->proof = 2;
                 co_return Exit::Success;
             }
         };

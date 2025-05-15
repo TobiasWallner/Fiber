@@ -5,16 +5,17 @@
 #include <optional>
 
 // fiber
+#include <fiber/Chrono/Duration.hpp>
 #include <fiber/OS/Coroutine.hpp>
 #include <fiber/Core/concepts.hpp>
 
 namespace fiber
 {
     
-    class Delay : public AwaitableNode{
-        std::chrono::nanoseconds _delay_ready = std::chrono::nanoseconds(0);
-        std::optional<std::chrono::nanoseconds> _delay_deadline = std::nullopt;
-        bool _ready = false;
+    class Delay{
+        const fiber::Duration _delay_ready;
+        const fiber::Duration _delay_deadline;
+        const bool _has_deadline = false;
     public:
 
         /**
@@ -36,9 +37,8 @@ namespace fiber
          * 
          * @param delay The delay by which the task will be re-scheduled
          */
-        template<class Rep, CRatio Period>
-        explicit constexpr Delay(std::chrono::duration<Rep, Period> delay)
-            : _delay_ready(fiber::rounding_duration_cast<std::chrono::nanoseconds>(delay)){}
+        constexpr Delay(fiber::Duration delay)
+            : _delay_ready(delay){}
 
         /**
          * @brief Constructs a delay that can be `co_await`ed and sends a signal to the scheduler for re-scheduleing.
@@ -55,32 +55,36 @@ namespace fiber
          * next_deadline = Clock::now() + delay + relative_deadline
          * ```
          * 
-         * @tparam Rep1 The representation of the std::chrono::duration, usually an integer type
-         * @tparam Period1 The period of the std::chrono::duration. Has to be a std::ratio
-         * @tparam Rep2 The representation of the std::chrono::duration, usually an integer type
-         * @tparam Period2 The period of the std::chrono::duration. Has to be a std::ratio
          * @param delay The delay by which this task should be delayed
          * @param relative_deadline The added deadline after the delay
          * @see CoSignal::ExplicitDelay
          */
-        template<class Rep1, CRatio Period1, class Rep2, CRatio Period2>
-        explicit constexpr Delay(std::chrono::duration<Rep1, Period1> delay, std::chrono::duration<Rep2, Period2> relative_deadline)
-            : _delay_ready(std::chrono::duration_cast<std::chrono::nanoseconds>(delay))
-            , _delay_deadline(std::chrono::duration_cast<std::chrono::nanoseconds>(relative_deadline)){}
+        constexpr Delay(fiber::Duration delay, fiber::Duration relative_deadline)
+            : _delay_ready(delay)
+            , _delay_deadline(relative_deadline)
+            , _has_deadline(true){}
         
         /// @brief return `true` if the awatiable is ready. 
         /// @details initially returns `false` on the first read, but `true` on the second. `_ready` is set `true` in `await_suspend_signal()`
-        inline bool await_ready() const noexcept final {return this->_ready;}
+        constexpr bool await_ready() const noexcept {return false;}
 
         /// @brief A delay does not return a value to be read -> `void`
-        inline void await_resume() noexcept {}
+        constexpr void await_resume() const noexcept {}
 
+        template<class ReturnType>
+        constexpr void await_suspend(std::coroutine_handle<fiber::CoroutinePromise<ReturnType>> handle) const noexcept {
+            // do not register --> task stays resumable
+            // handle.promise().task()->register_leaf(this, Delay::s_await_ready);
+
+            // optionally send a signal to the task
+            handle.promise().task()->signal(await_suspend_signal());
+        }
+    private:
         /// @brief Signals a delay to the root task or scheduler and sets `_ready` to `true`.
-        virtual CoSignal await_suspend_signal() noexcept final {
-            this->_ready = true;
+        constexpr CoSignal await_suspend_signal() const noexcept {
             CoSignal signal;
-            if(this->_delay_deadline.has_value()){
-                signal.explicit_delay(this->_delay_ready, this->_delay_deadline.value());
+            if(this->_has_deadline){
+                signal.explicit_delay(this->_delay_ready, this->_delay_deadline);
             }else{
                 signal.implicit_delay(this->_delay_ready);
             }
