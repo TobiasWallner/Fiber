@@ -67,7 +67,7 @@ namespace fiber
         constexpr RealTimeTaskBase() = default;
         constexpr RealTimeTaskBase(RealTimeTaskBase&&) = default;
         constexpr RealTimeTaskBase(const RealTimeTaskBase&) = delete;
-        constexpr RealTimeTaskBase& operator=(RealTimeTaskBase&&) = default;
+        inline RealTimeTaskBase& operator=(RealTimeTaskBase&&) = default;
         constexpr RealTimeTaskBase& operator=(const RealTimeTaskBase&) = delete;
 
         /**

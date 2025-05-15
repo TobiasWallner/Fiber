@@ -21,8 +21,7 @@ namespace fiber{
     class Delay;
     class NextCycle;
     class TaskBase;
-    class AwaitableNode;
-    class CoroutineNode;
+    struct CoroutineNode;
     template<class ReturnType> class Coroutine;
     template<class ReturnType> class CoroutinePromise;
 
@@ -247,7 +246,7 @@ namespace fiber{
             this->_main_coroutine.Register(this); // re-register
         }
 
-        constexpr TaskBase& operator=(TaskBase&& other) noexcept {
+        inline TaskBase& operator=(TaskBase&& other) noexcept {
             if(this != &other){
                 this->_task_name = std::exchange(other._task_name, "");
                 this->_main_coroutine = std::move(other._main_coroutine);
@@ -399,7 +398,6 @@ namespace fiber{
      * \see fiber::wrap_awaitable(Awaitable&& awaitable)
      */
     template<class Awaitable, bool is_lvalue=true>
-    requires (!std::derived_from<Awaitable, AwaitableNode>)
     class AwaitableWrapper{
     private:
         Awaitable& _awaitable;
