@@ -1,4 +1,4 @@
-# embed License Overview
+# fiber License Overview
 
 This project is dual-licensed under two compatible terms:
 
@@ -6,12 +6,12 @@ This project is dual-licensed under two compatible terms:
 
 See [`LICENSE_OPEN_SOURCE`](./LICENSE_OPEN_SOURCE)
 
-You may use embed freely in open-source projects under an OSI-approved license. You must share changes and retain attribution.
+You may use fiber freely in open-source projects under an OSI-approved license. You must share changes and retain attribution.
 
 ## 2. Commercial License
 
 See [`LICENSE_COMMERCIAL`](./LICENSE_COMMERCIAL.md)
 
-If you're using embed in a proprietary or commercial context, please contact the author to purchase a commercial license.
+If you're using fiber in a proprietary or commercial context, please contact the author to purchase a commercial license.
 
 **Contact:** your@email.com

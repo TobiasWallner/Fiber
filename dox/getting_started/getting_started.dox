@@ -1,6 +1,6 @@
 /**
 @page getting_started Getting Started
-@brief A step-by-step introduction to using embedOS.
+@brief A step-by-step introduction to using Fiber.
 
 This tutorial walks through installation, configuration, and writing your first coroutine-based task.
 

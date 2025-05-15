@@ -30,7 +30,7 @@ jobs:
           echo "CXX=clang++" >> $GITHUB_ENV
 
     - name: Configure with CMake
-      run: cmake -S . -B build -G "Ninja Multi-Config" build -DEMBED_COMPILE_TESTS=ON -DEMBED_CTEST=ON
+      run: cmake -S . -B build -G "Ninja Multi-Config" build -DFIBER_COMPILE_TESTS=ON -DFIBER_CTEST=ON
 
     - name: Build
       run: cmake --build build --config Release

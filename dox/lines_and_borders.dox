@@ -2,7 +2,7 @@
 @page lines_and_borders Lines and Borders
 
 
-The namespace `embed::utf8_lines` offers beautiful UTF-8 lines and borders.
+The namespace `fiber::utf8_lines` offers beautiful UTF-8 lines and borders.
 
 Lines are defined as:
 ```cpp
@@ -14,7 +14,7 @@ If you are using CMake, UTF8 codes are enabled by default. If your terminal does
 UTF-8 characters you can disable them by stting the following CMake or equally named compiler definition:
 
 ```cmake
-set(EMBED_DISABLE_UTF8_CODES=ON)
+set(FIBER_DISABLE_UTF8_CODES=ON)
 ```
 
 @section single_lines Single Line Drawing Characters

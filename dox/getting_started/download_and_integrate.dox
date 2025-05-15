@@ -1,13 +1,13 @@
 /**
 @page page_getting_started_download_and_integration Download & Integration
 @ingroup getting_started
-@brief How to fetch and integrate embedOS into your CMake project.
+@brief How to fetch and integrate Fiber into your CMake project.
 
-You can integrate the embedOS library in multiple ways depending on your workflow.
+You can integrate the Fiber library in multiple ways depending on your workflow.
 The main target to link against is:
 
-- embed (link PRIVATE)
-- Optionally, embed_sys_stubs (link PUBLIC) for system call stubs
+- fiber (link PRIVATE)
+- Optionally, fiber_sys_stubs (link PUBLIC) for system call stubs
 
 @section page_getting_started_download_cmake_cpm (Preferred) [CMake](https://cmake.org/) and [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 
@@ -21,16 +21,16 @@ Just add the following ot your `CMakeLists.txt`:
 include(CPM.cmake)
 
 # Optional: Enable system call stubs for freestanding/bare-metal
-set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # add/downloads the library
-CPMAddPackage("gh:TobiasWallner/embedOS#main")
+CPMAddPackage("gh:TobiasWallner/Fiber#main")
 
-# link embed to your project
-target_link_libraries(my_target PRIVATE embed)
+# link fiber to your project
+target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
-target_link_libraries(my_target PUBLIC embed_sys_stubs)
+# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC fiber_sys_stubs)
 ```
 
 @section page_getting_started_download_cmake_fetchcontent [CMake](https://cmake.org/) with its command [`FetchContent`](https://cmake.org/cmake/help/latest/module/FetchContent.html)
@@ -42,48 +42,48 @@ Add to your `CMakeLists.txt`:
 
 ```cmake
 # optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
-set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # adds/downloads the library
 include(FetchContent)
 FetchContent_Declare(
-  embedOS
-  GIT_REPOSITORY https://github.com/TobiasWallner/embedOS.git
+  Fiber
+  GIT_REPOSITORY https://github.com/TobiasWallner/Fiber.git
   GIT_TAG main
 )
 
 # make the library avaliable
-FetchContent_MakeAvailable(embedOS)
+FetchContent_MakeAvailable(Fiber)
 
 # link to the emebed library
-target_link_libraries(my_target PRIVATE embed)
+target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
-target_link_libraries(my_target PUBLIC embed_sys_stubs)
+# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC fiber_sys_stubs)
 ```
 
 @section page_getting_started_download_cmake_add_subdir [CMake](https://cmake.org/) with its command [`add_subdirectory`](https://cmake.org/cmake/help/latest/command/add_subdirectory.html)
 
-Download `embedOS` into a subdirectory of your project:
+Download `Fiber` into a subdirectory of your project:
 
 ```bash
-git clone https://github.com/TobiasWallner/embedOS.git external/embedOS --depth=1
+git clone https://github.com/TobiasWallner/Fiber.git external/Fiber --depth=1
 ```
 
 Add to your `CMakeLists.txt`:
 
 ```cmake
 # optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
-set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # add the library
-add_subdirectory(external/embedOS)
+add_subdirectory(external/Fiber)
 
 # link to the emebed library
-target_link_libraries(my_target PRIVATE embed)
+target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
-target_link_libraries(my_target PUBLIC embed_sys_stubs) # if ON
+# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC fiber_sys_stubs) # if ON
 ```
 
 
@@ -91,10 +91,10 @@ target_link_libraries(my_target PUBLIC embed_sys_stubs) # if ON
 
 No worries. If you're using STM32CubeIDE, Atmel Studio, or Keil:
 
-- download the library from `https://github.com/TobiasWallner/embedOS`
-- Add all .cpp files from `embed/*` to your project.
-- Include `/embed/` to your include path.
-- Start using `#include <embed/xxx.hpp>` and you're good to go.
+- download the library from `https://github.com/TobiasWallner/Fiber`
+- Add all .cpp files from `fiber/*` to your project.
+- Include `/fiber/` to your include path.
+- Start using `#include <fiber/xxx.hpp>` and you're good to go.
 
 Please refere to your IDE vendor on how to include libraries.
 

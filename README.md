@@ -1,16 +1,16 @@
 
-EmbedOS
+Fiber
 =======
 
 Version: early alpha
 
-[Documentation](https://tobiaswallner.github.io/embedOS/)
+[Documentation](https://tobiaswallner.github.io/Fiber/)
 
-[Repository](https://github.com/TobiasWallner/embedOS)
+[Repository](https://github.com/TobiasWallner/Fiber)
 
 Copyright © Tobias Wallner
 
-[![gcc-build-and-test](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_gcc.yml/badge.svg)](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_gcc.yml) [![clang-build-and-test](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_clang.yml/badge.svg)](https://github.com/TobiasWallner/embedOS/actions/workflows/test_with_clang.yml)
+[![gcc-build-and-test](https://github.com/TobiasWallner/Fiber/actions/workflows/test_with_gcc.yml/badge.svg)](https://github.com/TobiasWallner/Fiber/actions/workflows/test_with_gcc.yml) [![clang-build-and-test](https://github.com/TobiasWallner/Fiber/actions/workflows/test_with_clang.yml/badge.svg)](https://github.com/TobiasWallner/Fiber/actions/workflows/test_with_clang.yml)
 
 ## ⚡ Motivation
 
@@ -22,7 +22,7 @@ Traditional RTOSes rely on **context switching**, are **stack-heavy** and use **
 
 ### 🌀 Coroutine-powered, zero-waste tasking
 
-By using **C++20 coroutines**, tasks in `embedOS` are structured as lightweight state machines with no context-switching and interrupt overhead. The syntax is modern, expressive, and reads like a simple switch, no unreadable branching necessary:
+By using **C++20 coroutines**, tasks in `Fiber` are structured as lightweight state machines with no context-switching and interrupt overhead. The syntax is modern, expressive, and reads like a simple switch, no unreadable branching necessary:
 
 ```cpp
 Coroutine<Exit> coroutine(){
@@ -49,7 +49,7 @@ The OS is just the scheduler of your choice, add some tasks and let it spin.
 int main(){
   Task task(coroutine(), "task");
 
-  embed::StaticLinearScheduler scheduler;
+  fiber::StaticLinearScheduler scheduler;
   scheduler.addTask(task);
 
   while(true){
@@ -64,7 +64,7 @@ Want multithreading? Just create a scheduler for each core.
 
 ### ⏱ Real-Time scheduling
 
-With embedOS, you can declare tasks with explicit timing guarantees:
+With Fiber, you can declare tasks with explicit timing guarantees:
 ```cpp
 PeriodicTask task(/* period */ 1ms, /* deadline */ 100us);
 ```
@@ -77,7 +77,7 @@ One of the biggest hidden costs in traditional RTOSes is **stack sizing**. You g
 - Too small and you get stack overflows and corrupted memory. 
 - Too large and you waste precious RAM.
 
-#### 🎯 In embedOS, there's no guessing.
+#### 🎯 In Fiber, there's no guessing.
 
 Each coroutine task **allocates exactly** as much memory as needed, in the **initialisation**, to store its state at suspension points. The system never stores full stacks—only the **delta state**, reducing memory usage by 5x to 10x compared to traditional context switching.
 
@@ -85,9 +85,9 @@ No stack overflow. No corrupted memory. No waste. Just predictable, dependable e
 
 ### 🔐 Dependability by Design
 
-`embedOS` is built with dependability as a first-class concern, not a reactive patch.
+`Fiber` is built with dependability as a first-class concern, not a reactive patch.
 
-Unlike traditional RTOSes that rely on threads, shared stacks, and weak exception handling, `embedOS` uses structured coroutines, deterministic control flow, and explicit task ownership to provide built-in fault isolation and graceful failure handling.
+Unlike traditional RTOSes that rely on threads, shared stacks, and weak exception handling, `Fiber` uses structured coroutines, deterministic control flow, and explicit task ownership to provide built-in fault isolation and graceful failure handling.
 
 Each task is fully isolated: an exception only affects that task. The rest of the system runs uninterrupted.
 
@@ -96,14 +96,14 @@ What This Means for You:
 - You don’t need hardware MMU or MPU protection to isolate behavior
 - You get the freedom of concurrency with the safety of separation
 - You can log, recover, or restart failed tasks at runtime
-- embedOS brings fail-operational behavior to bare-metal systems
+- Fiber brings fail-operational behavior to bare-metal systems
 - without threads, without stacks, without interrupts
 - on a single core/or multi if you feel fancy.
 
 ## ✨ Features
 
-- ⚙️ **Cooperative Real-Time Scheduling (`embedOS`)**
-  - The heart of embed: a **cooperative, coroutine-based, real-time scheduler**
+- ⚙️ **Cooperative Real-Time Scheduling (`Fiber`)**
+  - The heart of fiber: a **cooperative, coroutine-based, real-time scheduler**
   - Uses `co_await`-based tasks with structured parent-child relationships
   - Deadline-driven scheduling with optional yielding, delaying, awaiting
   - Tiny coroutine task frames (~128B)
@@ -136,7 +136,7 @@ What This Means for You:
 - **Safe Exceptions**: Uses exceptions safely, with zero heap allocations or overhead. It just jumps from the `throw` directly to your `catch`. No need to pass error values around. Exceptions might even reduce your binary size.
 - **Minimal**: Small binary. No interrupts, no stacks, no ISRs. Minimal Flash footprint.
 - **Portable**: Just provide a `time()` function and run `.spin()` in your main loop. Fully platform-agnostic, does not depend on any MCU architectures. 
-- **Customizeable**: Allows you to overwrite/redirect critical functions like `embed::memcpy()` or default output character streams `embed::cout()`. So you can hook in your own functions that use your on chips DMA controler or USART peripherals.
+- **Customizeable**: Allows you to overwrite/redirect critical functions like `fiber::memcpy()` or default output character streams `fiber::cout()`. So you can hook in your own functions that use your on chips DMA controler or USART peripherals.
 
 > "At the crossroads of optimization and correctness, remember: optimization saves runtime — but correctness saves debug time. Choose which time you truly want to optimize."
 
@@ -144,11 +144,11 @@ What This Means for You:
 
 ## 🧩 Integration
 
-You can integrate the embedOS library in multiple ways depending on your workflow.
+You can integrate the Fiber library in multiple ways depending on your workflow.
 The main target to link against is:
 
-- embed (link PRIVATE)
-- Optionally, embed_sys_stubs (link PUBLIC) for system call stubs
+- fiber (link PRIVATE)
+- Optionally, fiber_sys_stubs (link PUBLIC) for system call stubs
 
 ### (Preferred) [CMake](https://cmake.org/) and [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 
@@ -161,16 +161,16 @@ Just add the following ot your `CMakeLists.txt`:
 include(CPM.cmake)
 
 # Optional: Enable system call stubs for freestanding/bare-metal
-set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # add/downloads the library
-CPMAddPackage("gh:TobiasWallner/embedOS#main")
+CPMAddPackage("gh:TobiasWallner/Fiber#main")
 
-# link embed to your project
-target_link_libraries(my_target PRIVATE embed)
+# link fiber to your project
+target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
-target_link_libraries(my_target PUBLIC embed_sys_stubs)
+# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC fiber_sys_stubs)
 ```
 
 ### [CMake](https://cmake.org/) with its command [`FetchContent`](https://cmake.org/cmake/help/latest/module/FetchContent.html)
@@ -181,55 +181,55 @@ does not support source cacheing and download the full libraries into your proje
 Add to your `CMakeLists.txt`:
 ```cmake
 # optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
-set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # adds/downloads the library
 include(FetchContent)
 FetchContent_Declare(
-  embedOS
-  GIT_REPOSITORY https://github.com/TobiasWallner/embedOS.git
+  Fiber
+  GIT_REPOSITORY https://github.com/TobiasWallner/Fiber.git
   GIT_TAG main
 )
 
 # make the library avaliable
-FetchContent_MakeAvailable(embedOS)
+FetchContent_MakeAvailable(Fiber)
 
 # link to the emebed library
-target_link_libraries(my_target PRIVATE embed)
+target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
-target_link_libraries(my_target PUBLIC embed_sys_stubs)
+# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC fiber_sys_stubs)
 ```
 
 ### [CMake](https://cmake.org/) with its command [`add_subdirectory`](https://cmake.org/cmake/help/latest/command/add_subdirectory.html)
 
-Download `embedOS` into a subdirectory of your project
+Download `Fiber` into a subdirectory of your project
 ```bash
-git clone https://github.com/TobiasWallner/embedOS.git external/embedOS --depth=1
+git clone https://github.com/TobiasWallner/Fiber.git external/Fiber --depth=1
 ```
 
 Add to your `CMakeLists.txt`:
 ```cmake
 # optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
-set(EMBED_USE_EMBED_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # add the library
-add_subdirectory(external/embedOS)
+add_subdirectory(external/Fiber)
 
 # link to the emebed library
-target_link_libraries(my_target PRIVATE embed)
+target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `EMBED_USE_EMBED_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
-target_link_libraries(my_target PUBLIC embed_sys_stubs) # if ON
+# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+target_link_libraries(my_target PUBLIC fiber_sys_stubs) # if ON
 ```
 
 ### 🛠 Don't Want to Use CMake?
 
 No worries. If you're using STM32CubeIDE, Atmel Studio, or Keil:
 
-- Add all .cpp files from `embed/*` to your project.
-- Include `/embed/` to your include path.
-- Start using `#include <embed/xxx.hpp>` and you're good to go.
+- Add all .cpp files from `fiber/*` to your project.
+- Include `/fiber/` to your include path.
+- Start using `#include <fiber/xxx.hpp>` and you're good to go.
 
 Please refere to your IDE vendor on how to include libraries.
 
@@ -238,23 +238,23 @@ Please refere to your IDE vendor on how to include libraries.
 
 ## 📜 Licensing
 
-embed is dual-licensed under a Qt-style model:
+fiber is dual-licensed under a Qt-style model:
 
-See [`LICENSE`](https://github.com/TobiasWallner/embedOS/blob/main/LICENSE)
+See [`LICENSE`](https://github.com/TobiasWallner/Fiber/blob/main/LICENSE)
 
 ### ✅ Open Source License (MIT)
 
-You may use embed freely in open source projects under the following conditions:
+You may use fiber freely in open source projects under the following conditions:
 
 - Your project must also be open source (any OSI-approved license).
-- Any modifications to embed must be shared publicly under the same license.
+- Any modifications to fiber must be shared publicly under the same license.
 - You must retain attribution to the original author.
 
-See [`LICENSE_OPEN_SOURCE`](https://github.com/TobiasWallner/embedOS/blob/main/LICENSE_OPEN_SOURCE)
+See [`LICENSE_OPEN_SOURCE`](https://github.com/TobiasWallner/Fiber/blob/main/LICENSE_OPEN_SOURCE)
 
 ### 💼 Commercial License (for Closed/Proprietary Projects)
 
-If you're using embed in a commercial product or closed-source firmware, you must purchase a commercial license.
+If you're using fiber in a commercial product or closed-source firmware, you must purchase a commercial license.
 
 With a commercial license, you gain:
 
@@ -262,7 +262,7 @@ With a commercial license, you gain:
 - License-backed usage rights
 - Priority handling for bug reports and feature requests
 
-See [`LICENSE_COMMERCIAL`](https://github.com/TobiasWallner/embedOS/blob/main/LICENSE_COMMERCIAL.md)
+See [`LICENSE_COMMERCIAL`](https://github.com/TobiasWallner/Fiber/blob/main/LICENSE_COMMERCIAL.md)
 
 👉 Contact: tobias.wallner1@gmx.com for license quotes and support plans.
 

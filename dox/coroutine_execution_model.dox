@@ -1,15 +1,13 @@
 /**
 @page page_coroutine_execution_model Coroutine Execution Model
 
-TODO: add `embed_await()`
-
-This page describes the core architecture behind coroutine-based task scheduling in embedOS.
+This page describes the core architecture behind coroutine-based task scheduling in Fiber.
 The coroutine system is designed for real-time embedded environments, supporting deeply nested coroutine chains
 with strict memory control, deterministic behavior, and minimal runtime overhead.
 
 @section section_coroutine_execution_model_overview Overview
 
-embedOS uses C++20 coroutines to model cooperative tasks. Each task consists of one or more coroutines
+Fiber uses C++20 coroutines to model cooperative tasks. Each task consists of one or more coroutines
 connected via `co_await` chains. These coroutines form a **reverse-linked list**, where:
 - Each coroutine node holds a pointer to its **parent coroutine**
 - The **tail coroutine** is the currently active/resumable node
@@ -103,12 +101,12 @@ Think of the coroutine chain as a linked list:
 
 ---
 
-@see embed::CoSignal
-@see embed::Coroutine
-@see embed::Task
-@see embed::CoroutineNode
-@see embed::CoroutinePromise
-@see embed::Future
-@see embed::Promise
+@see fiber::CoSignal
+@see fiber::Coroutine
+@see fiber::Task
+@see fiber::CoroutineNode
+@see fiber::CoroutinePromise
+@see fiber::Future
+@see fiber::Promise
 
 */

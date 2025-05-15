@@ -1,9 +1,9 @@
 /**
-@page embed_sys_stubs System Stubs: Wrappers for Embedded Binary Size Reduction
+@page fiber_sys_stubs System Stubs: Wrappers for Embedded Binary Size Reduction
 
 @section overview Overview
 
-`embed_sys_stubs` is an optional object library that can be linked into embedded projects
+`fiber_sys_stubs` is an optional object library that can be linked into embedded projects
 to eliminate unnecessary system-level functionality such as file I/O, heap management glue,
 and exit-related infrastructure — all of which are irrelevant in bare-metal environments.
 
@@ -17,16 +17,16 @@ or any part of the standard library.
 In your main `CMakeLists.txt`, enable the wrappers via an option:
 
 @code{.cmake}
-set(EMBED_USE_EMBED_SYS_STUBS ON)
-add_subdirectory(embed)
+set(FIBER_USE_FIBER_SYS_STUBS ON)
+add_subdirectory(fiber)
 
-target_link_libraries(App PRIVATE embed)
-target_link_libraries(App PUBLIC embed_sys_stubs) # apply wrapping
+target_link_libraries(App PRIVATE fiber)
+target_link_libraries(App PUBLIC fiber_sys_stubs) # apply wrapping
 @endcode
 
 @section How It Works
 
-The `embed_sys_stubs` links in `sys_stubs` together with wrapper functions and tells the
+The `fiber_sys_stubs` links in `sys_stubs` together with wrapper functions and tells the
 liker to use the wrappers instead of the originals if they are hard symbols, and just defines normally
 if it is a weak symbol.
 
@@ -50,13 +50,13 @@ By providing `__wrap_*` versions of these functions and overriding them with stu
 | Scenario                         | Binary Size (Flash) |
 |----------------------------------|----------------------|
 | Default (newlib, stdlibc++)      | ~70–90kB             |
-| With `embed_sys_stubs` enabled   | ~18–24kB             |
+| With `fiber_sys_stubs` enabled   | ~18–24kB             |
 
 Real-world savings depend on how many standard features are used (e.g., `std::string`, exceptions, RTTI).
 
 @section summary Summary
 
-`embed_sys_stubs` is the easiest and safest way to:
+`fiber_sys_stubs` is the easiest and safest way to:
 
 - Enable full C++ (including exceptions)
 - Avoid the trap of heap and stdio linkage

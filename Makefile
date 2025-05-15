@@ -15,7 +15,7 @@ CXX = g++
 
 .PHONY: build-test
 build-test:
-	cmake -S . -B build -G "Ninja Multi-Config" build -DEMBED_COMPILE_TESTS=ON -DEMBED_CTEST=ON -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+	cmake -S . -B build -G "Ninja Multi-Config" build -DFIBER_COMPILE_TESTS=ON -DFIBER_CTEST=ON -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
 	cmake --build build --config $(config)
 
 .PHONY: test

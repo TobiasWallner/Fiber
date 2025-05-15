@@ -1,5 +1,5 @@
 
-# 💼 Commercial License Tiers – embed
+# 💼 Commercial License Tiers – fiber
 
 Copyright © Tobias Wallner
 
@@ -17,7 +17,7 @@ Copyright © Tobias Wallner
 - ❗ No per-seat licensing, no audits, no tracking
 - 🤝 You are paying for support, continuity, and guaranteed answers—not artificial gates
 - 🧪 All feature work is public and shared—no private forks or proprietary side deals
-- 🎁 For companies using embed in production and profiting from it, this is how you give back and ensure it thrives
+- 🎁 For companies using fiber in production and profiting from it, this is how you give back and ensure it thrives
 
 
 ## 📮 How to Purchase

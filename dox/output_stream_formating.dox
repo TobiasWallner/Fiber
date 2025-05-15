@@ -3,7 +3,7 @@
 
 \section section_output_stream_and_formating_overview Overview
 
-`embed::OStream` provides a lightweight and flexible output streaming interface, optimized for embedded systems with limited resources.
+`fiber::OStream` provides a lightweight and flexible output streaming interface, optimized for embedded systems with limited resources.
 It offers:
 
 - Minimal FLASH memory usage compared to alternatives like std::ostream or {fmt}.
@@ -15,14 +15,14 @@ It offers:
 ### Basic example:
 \code{.cpp}
 
-embed::cout << "Hello World!" << embed::endl;
+fiber::cout << "Hello World!" << fiber::endl;
 
 \endcode
 
 ### Predefined default output streams:
 
-- embed::cout — Standard output
-- embed::cerr — Error output
+- fiber::cout — Standard output
+- fiber::cerr — Error output
 
 These must be initialized by the user to point to a concrete OStream implementation.
 Creating a Custom Output Stream.
@@ -35,15 +35,15 @@ MyCout my_cout;
 MyCerr my_cerr;
 
 int main(){
-    embed::cout = my_cout;
-    embed::cerr = my_cerr;
+    fiber::cout = my_cout;
+    fiber::cerr = my_cerr;
 }
 \endcode
 
-To create your own output stream (e.g., UART, USB), derive from embed::OStream:
+To create your own output stream (e.g., UART, USB), derive from fiber::OStream:
 
 \code{.cpp}
-class MyStream : public embed::OStream {
+class MyStream : public fiber::OStream {
 public:
     void put(char c) final {
         // Output one character
@@ -86,60 +86,60 @@ Stream the following types naturally with `operator<<`:
 Example:
 
 \code{.cpp}
-embed::cout << "Answer: " << 42 << embed::newl;
-embed::cout << "Result: " << true << embed::endl;
-embed::cout << "Address: " << myPtr << embed::endl;
+fiber::cout << "Answer: " << 42 << fiber::newl;
+fiber::cout << "Result: " << true << fiber::endl;
+fiber::cout << "Address: " << myPtr << fiber::endl;
 \endcode
 
 \section section_output_stream_and_formating_sepecial_functions Special Stream Functions
 
 You can use the following functions inside streaming expressions:
 
-- `embed::newl(stream)`: Write newline (`\n`) - may be overridden by the user by overrideing `OStream::newl()`
-- `embed::flush(stream)`: Flush the stream
-- `embed::endl(stream)`: Write newline and flush
+- `fiber::newl(stream)`: Write newline (`\n`) - may be overridden by the user by overrideing `OStream::newl()`
+- `fiber::flush(stream)`: Flush the stream
+- `fiber::endl(stream)`: Write newline and flush
 
 \section section_output_stream_and_formating_FormatStr String Formatting (FormatStr)
 
 Format strings with padding, minimum width, alignment:
 
 \code{.cpp}
-embed::cout << "[" << embed::FormatStr("OK").mwidth(6).left() << "]" << embed::endl;
+fiber::cout << "[" << fiber::FormatStr("OK").mwidth(6).left() << "]" << fiber::endl;
 // Output: [OK    ]
 \endcode
 
-All following formating types use and provide the functionalities of embed::FormatStr.
+All following formating types use and provide the functionalities of fiber::FormatStr.
 
-@see embed::FormatStr
+@see fiber::FormatStr
 
 \section section_output_stream_and_formating_FormatBool Boolean Formatting (FormatBool)
 
 Configure booleans to print as `true`/`false` or `1`/`0`:
 
 \code{.cpp}
-embed::cout << FormatBool(true).text() << embed::endl; // "true"
-embed::cout << FormatBool(false).num() << embed::endl; // "0"
+fiber::cout << FormatBool(true).text() << fiber::endl; // "true"
+fiber::cout << FormatBool(false).num() << fiber::endl; // "0"
 \endcode
 
-\see embed::FormatBool
+\see fiber::FormatBool
 
 \section section_output_stream_and_formating_FormatInt Integer Formatting (FormatInt)
 
 Enhanced integer output, with thousands, alignment, and sign padding
 
 \code{.cpp}
-embed::cout << FormatInt(123456).use_thousands().thousands('.') << embed::endl; // "123.456"
-embed::cout << FormatInt(42).fsign().mwidth(6) << embed::endl; // "  +42"
+fiber::cout << FormatInt(123456).use_thousands().thousands('.') << fiber::endl; // "123.456"
+fiber::cout << FormatInt(42).fsign().mwidth(6) << fiber::endl; // "  +42"
 \endcode
 
-\see embed::FormatInt
+\see fiber::FormatInt
 
 \section section_output_stream_and_formating_FormatIntSuffix Integer with Suffix (FormatIntSuffix)
 
 Allows to add a suffix to integers that will be aligned with the integer.
 
 \code{.cpp}
-embed::cout << FormatIntSuffix(64, "kB").left().mwidth(6) << embed::endl; // "64kB  "
+fiber::cout << FormatIntSuffix(64, "kB").left().mwidth(6) << fiber::endl; // "64kB  "
 \endcode
 
 \see FormatIntSuffix
@@ -149,12 +149,12 @@ embed::cout << FormatIntSuffix(64, "kB").left().mwidth(6) << embed::endl; // "64
 Flexible floating-point output in scientific, engineering and full formating:
 
 \code{.cpp}
-embed::cout << FormatFloat(3.14f).decimals(2).full() << embed::endl; // "3.14"
-embed::cout << FormatFloat(12345.6).sci() << embed::endl; // "1.2356e4"
-embed::cout << FormatFloat(12345.6).eng() << embed::endl; // "12.356e3"
+fiber::cout << FormatFloat(3.14f).decimals(2).full() << fiber::endl; // "3.14"
+fiber::cout << FormatFloat(12345.6).sci() << fiber::endl; // "1.2356e4"
+fiber::cout << FormatFloat(12345.6).eng() << fiber::endl; // "12.356e3"
 \endcode
 
-\see embed::FormatFloat
+\see fiber::FormatFloat
 
 \section section_output_stream_and_formating_FormatHex Hexadecimal Formatting (FormatHex)
 
@@ -164,20 +164,20 @@ leading zeros or compact notation.
 
 \code{.cpp}
 int a;
-embed::cout << FormatHex(&a).upper << embed::endl; // possible output: 0x21F56D
+fiber::cout << FormatHex(&a).upper << fiber::endl; // possible output: 0x21F56D
 \endcode
 
-\see embed::FormatHex
+\see fiber::FormatHex
 
 > Note: Pointers are automatically formatted as hexadecimal.
 
 \section section_output_stream_and_formating_format_chrono Chrono Durations
 
-Using `format_chrono(duration)` you can create an `embed::FormatIntSuffix` from 
+Using `format_chrono(duration)` you can create an `fiber::FormatIntSuffix` from 
 `std::chrono::duration` types with automatically appropriate units (determined at compile time).
 
-\see embed::format_chrono
-\see embed::FormatIntSuffix
+\see fiber::format_chrono
+\see fiber::FormatIntSuffix
 
 \section section_output_stream_and_formating_customisations Customization with Compiler Flags
 

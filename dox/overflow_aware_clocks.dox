@@ -8,7 +8,7 @@
 # TODO: Rewrite for new `TimePoint` and `Duration`
 
 
-The `embed` library provides a fully overflow-aware timing system including:
+The `fiber` library provides a fully overflow-aware timing system including:
 - Clocks
 - Time points
 - Durations
@@ -19,7 +19,7 @@ They allow safe and precise tracking of time using wraparound counters (hardware
 ---
 
 @section page_overflow_aware_clocks_overflow_awareness Overflow Awareness
-Unlike the standard `std::chrono` types which assume linear time, `embed`’s types are built on `ClockTick`, which wraps and tracks tick values modulo an overflow:
+Unlike the standard `std::chrono` types which assume linear time, `fiber`’s types are built on `ClockTick`, which wraps and tracks tick values modulo an overflow:
 
 - Overflow handling is transparent.
 - All operations (e.g., `a < b`, `b - a`) work correctly even when the counter has wrapped.
@@ -35,12 +35,12 @@ modulo operations, but only for constructions (can be mittigated by using `Clock
 ---
 
 @section page_overflow_aware_clocks_overflow_integration_with_stdchrono Integration with `<chrono>`
-`embed::Duration`, `embed::TimePoint`, and `embed::Clock` all follow the exact semantics and layout of their standard counterparts:
-- `embed::Duration` is a wrapper around `std::chrono::duration` using `ClockTick` as its representation type.
-- `embed::TimePoint` wraps `std::chrono::time_point` using your chosen `Clock`.
-- All durations can be converted using `std::chrono::duration_cast` or `embed::rounding_duration_cast`.
+`fiber::Duration`, `fiber::TimePoint`, and `fiber::Clock` all follow the exact semantics and layout of their standard counterparts:
+- `fiber::Duration` is a wrapper around `std::chrono::duration` using `ClockTick` as its representation type.
+- `fiber::TimePoint` wraps `std::chrono::time_point` using your chosen `Clock`.
+- All durations can be converted using `std::chrono::duration_cast` or `fiber::rounding_duration_cast`.
 
-You can freely mix `embed` clocks with standard `std::chrono` durations where appropriate.
+You can freely mix `fiber` clocks with standard `std::chrono` durations where appropriate.
 
 ---
 
@@ -55,12 +55,12 @@ All you need to provide is:
 ### ✔️ Full-range timer:
 ```cpp
 uint32_t get_timer_count(); // your hardware counter
-using MyClock = embed::Clock<uint32_t, std::micro, get_timer_count>;
+using MyClock = fiber::Clock<uint32_t, std::micro, get_timer_count>;
 ```
 
 ### ✔️ Timer that wraps at a custom maximum (e.g., 1023):
 ```cpp
-using MyClock = embed::Clock<uint32_t, std::micro, get_timer_count, 1024-1>;
+using MyClock = fiber::Clock<uint32_t, std::micro, get_timer_count, 1024-1>;
 ```
 
 > ⚠️ The fourth template argument is the **maximum value the counter counts to**, *not* the value *after* overflow.
@@ -70,9 +70,9 @@ Once defined, you can use this clock directly:
 MyClock::time_point start = MyClock::now();
 ...
 MyClock::time_point now = MyClock::now();
-embed::Duration<uint32_t, std::micro> elapsed = now - start;
+fiber::Duration<uint32_t, std::micro> elapsed = now - start;
 ...
-embed::RealTimeScheduler<MyClock> rtscheduler;
+fiber::RealTimeScheduler<MyClock> rtscheduler;
 rtscheduler.addTask(task);
 ```
 
@@ -82,18 +82,18 @@ rtscheduler.addTask(task);
 - Fully portable overflow handling — just like hardware timers
 - Clean, standard-compliant chrono API
 - Backed by real unit tests with corner-case handling (`Clock_test.cpp`)
-- Integrates easily into `embedOS` or any cooperative scheduler
+- Integrates easily into `Fiber` or any cooperative scheduler
 - Avoids common embedded bugs with counter wraparound and time comparison
 
 
 @section page_overflow_aware_clocks_summary Summary
-`embed` makes working with microcontroller timers as safe and intuitive as modern C++ chrono types — without giving up performance or hardware alignment.
+`fiber` makes working with microcontroller timers as safe and intuitive as modern C++ chrono types — without giving up performance or hardware alignment.
 You keep full control over the tick source, overflow range, and resolution, and the library guarantees that comparisons and arithmetic Just Work™.
 
-@see embed::ClockTick
-@see embed::TimePoint
-@see embed::Duration
-@see embed::CClock
-@see embed::Clock
+@see fiber::ClockTick
+@see fiber::TimePoint
+@see fiber::Duration
+@see fiber::CClock
+@see fiber::Clock
 
 */

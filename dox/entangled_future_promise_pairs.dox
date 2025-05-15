@@ -21,7 +21,7 @@ then continue with other computations. When the result is ready, you read it thr
 
 ```cpp
 
-auto [future, promise] = embed::make_future_promise<int>();
+auto [future, promise] = fiber::make_future_promise<int>();
 // Pass the promise into some async subsystem (e.g., an interrupt or a hardware driver)
 start_async_crc(data, length, std::move(promise));
 // Meanwhile, do other calculations
@@ -77,16 +77,16 @@ the second one will throw a fit when you try to receive something.
 
 @section section_entangled_future_promise_pairs_optimisations Optimisations
 
-If you are operating on a single core machine you may define the compiler definition `EMBED_SINGLE_CORE`, 
+If you are operating on a single core machine you may define the compiler definition `FIBER_SINGLE_CORE`, 
 or set the CMake option:
 
-This will tell `embed` that it does not need to synchronise multiple cores and possibly seperated chaches, 
+This will tell `fiber` that it does not need to synchronise multiple cores and possibly seperated chaches, 
 which will increase performance and reduce binary size.
 
 ---
 
-@see embed::make_future_promise
-@see embed::Future
-@see embed::Promise
+@see fiber::make_future_promise
+@see fiber::Future
+@see fiber::Promise
 
 */
