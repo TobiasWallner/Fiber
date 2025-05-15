@@ -49,7 +49,7 @@ target_compile_options(fiber PRIVATE
     -Wextra
     -Werror
     -Wsign-compare
-    -fmax-errors=3
+    #-fmax-errors=3
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
