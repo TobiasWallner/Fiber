@@ -218,9 +218,3 @@ With a commercial license, you gain:
 See [`LICENSE_COMMERCIAL`](https://github.com/TobiasWallner/Fiber/blob/main/LICENSE_COMMERCIAL.md)
 
 👉 Contact: tobias.wallner1@gmx.com for license quotes and support plans.
-
-## Quotes:
-
-> "There comes a point where the objects begin to speak in ways you never planned. If each method was correct, their conversation will be too. That’s when your code becomes alive."  
-> - Tobias Wallner
-
