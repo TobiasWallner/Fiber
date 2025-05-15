@@ -23,7 +23,7 @@ namespace fiber
             : buffer(buffer)
             , buffer_size(buffer_size){}
 
-        constexpr empty() const {return index == 0;}
+        constexpr bool empty() const {return index == 0;}
 
     private:
         void* do_allocate(const std::size_t size, const std::size_t alignment) final;
