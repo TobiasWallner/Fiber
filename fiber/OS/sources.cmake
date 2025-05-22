@@ -2,7 +2,7 @@ target_sources(fiber
     PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/CoSignal.hpp
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/LinearScheduler.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/Task.hpp
         ${CMAKE_CURRENT_LIST_DIR}/Scheduler.hpp
 
     PRIVATE

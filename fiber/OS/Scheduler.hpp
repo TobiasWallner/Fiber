@@ -10,7 +10,7 @@
 #include <fiber/Chrono/TimePoint.hpp>
 #include <fiber/Containers/ArrayList.hpp>
 #include <fiber/Containers/DualPriorityQueue.hpp>
-#include <fiber/OS/RealTimeTask.hpp>
+#include <fiber/OS/Task.hpp>
 #include <fiber/OStream/OStream.hpp>
 #include <fiber/OStream/ansi.hpp>
 #include <fiber/OStream/utf8_lines.hpp>
@@ -26,10 +26,10 @@ namespace fiber
     }
 
     /**
-     * @brief The concept for a logging device that can be passed into the RealTimeScheduler
+     * @brief The concept for a logging device that can be passed into the Scheduler
      */
     template<class Logger>
-    concept CRealTimeSchedulerLogger = requires(
+    concept CSchedulerLogger = requires(
         TimePoint time, 
         TimePoint time_after, 
         TimePoint time_until, 
@@ -70,7 +70,7 @@ namespace fiber
      * @tparam Clock A Clock type that conforms to the `fiber::CClock` concept.
      * 
      * @see fiber::CClock
-     * @see fiber::RealTimeScheduler
+     * @see fiber::Scheduler
      */
     class OutputLogger {
     public:
@@ -179,19 +179,19 @@ namespace fiber
      * - awaiting: a list containing all tasks that are waiting on an awaitable or future.
      * 
      * @tparam n_tasks The maximum number of thats that will be pre-allocated for this scheduler.
-     * @tparam logger A logger that implements the functions defined by `fiber::CRealTimeSchedulerLogger`
+     * @tparam logger A logger that implements the functions defined by `fiber::CSchedulerLogger`
      */
-    template<size_t n_tasks, CRealTimeSchedulerLogger logger = NullLogger>
-    class RealTimeScheduler {
+    template<size_t n_tasks, CSchedulerLogger logger = NullLogger>
+    class Scheduler {
     private:
-        using dual_priority_queue_type = DualPriorityQueue<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
-        using dual_array_list_type = DualArrayList<RealTimeTaskBase*, n_tasks>;
+        using dual_priority_queue_type = DualPriorityQueue<TaskBase*, n_tasks, TaskBase::larger_ready_time_s, TaskBase::less_priority_s>;
+        using dual_array_list_type = DualArrayList<TaskBase*, n_tasks>;
 
-        using waiting_queue_ref = Stage1DualPriorityQueueRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
-        using running_queue_ref = Stage2DualPriorityQueueRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
+        using waiting_queue_ref = Stage1DualPriorityQueueRef<TaskBase*, n_tasks, TaskBase::larger_ready_time_s, TaskBase::less_priority_s>;
+        using running_queue_ref = Stage2DualPriorityQueueRef<TaskBase*, n_tasks, TaskBase::larger_ready_time_s, TaskBase::less_priority_s>;
 
-        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
-        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<RealTimeTaskBase*, n_tasks, larger_ready_time, larger_deadline>;
+        using waiting_queue_const_ref = Stage1DualPriorityQueueConstRef<TaskBase*, n_tasks, TaskBase::larger_ready_time_s, TaskBase::less_priority_s>;
+        using running_queue_const_ref = Stage2DualPriorityQueueConstRef<TaskBase*, n_tasks, TaskBase::larger_ready_time_s, TaskBase::less_priority_s>;
         
         TimePoint (*_now)(); // function pointer to a function returning the current time
         void (*_sleep_until)(TimePoint); // function pointer to a function returning the current time
@@ -200,7 +200,7 @@ namespace fiber
         //       [stage 2 priority queue][reserve][unordered list][reserve][stage 1 priority list]
         //       consider if the complexity is worth it - probably not!
         dual_priority_queue_type _priority_queue; // ready + deadline
-        ArrayList<RealTimeTaskBase*, n_tasks> _await_bench;
+        ArrayList<TaskBase*, n_tasks> _await_bench;
         unsigned int _next_task_id = 0; // next id for the next added task
 
 
@@ -220,19 +220,19 @@ namespace fiber
          */
         void promote(){
             // promote await back into running queue
-            for(RealTimeTaskBase* task : this->_await_bench){
+            for(TaskBase* task : this->_await_bench){
                 if(!task->is_awaiting()){
                     logger::log_move(this->now(), task->name(), task->id(), "await", "run");
                     this->running_queue().push(task);
                 }
             }
-            this->_await_bench.erase_if([](const RealTimeTaskBase* task){return !task->is_awaiting();});
+            this->_await_bench.erase_if([](const TaskBase* task){return !task->is_awaiting();});
 
             // promote waiting queue into running queue
             while(!this->waiting_queue().empty()){
-                RealTimeTaskBase* task = this->waiting_queue().top();
+                TaskBase* task = this->waiting_queue().top();
                 const TimePoint now = this->now();
-                if(task->ready_time() <= now){
+                if(task->ready_time() <= now || task->immediatelly_ready()){
                     logger::log_move(now, task->name(), task->id(), "wait", "run");
                     this->waiting_queue().pop();
                     this->running_queue().push(task);
@@ -264,7 +264,7 @@ namespace fiber
          * @see fiber::AwaitableNode
          */
         void run_next(){
-            RealTimeTaskBase* task = this->running_queue().top_pop();
+            TaskBase* task = this->running_queue().top_pop();
             task->_execution_start = this->now();
             fiber::detail::frame_allocator = task->_frame_allocator;
             task->resume();
@@ -316,7 +316,7 @@ namespace fiber
 
     public:
 
-        RealTimeScheduler(TimePoint (*now)(), void (*sleep_until)(TimePoint) = default_sleep_until) 
+        Scheduler(TimePoint (*now)(), void (*sleep_until)(TimePoint) = default_sleep_until) 
             : _now(now)
             , _sleep_until(sleep_until){}
 
@@ -336,7 +336,7 @@ namespace fiber
          * 
          * @throws Throws an `AssertionFailureO1` if `FIBER_ASSERTION_LEVEL_O1` or higher is enabled, if the task could not be added and the scheduler is already full.
          */
-        void add(RealTimeTaskBase* task){
+        void add(TaskBase* task){
             task->_id = this->_next_task_id++;
             FIBER_ASSERT_O1_MSG(!this->is_full(), "Scheduler is full and cannot handle more tasks safely. S: Increase the storage capacity for the number of tasks in the template parameter `n_taks`.");
             const TimePoint now = this->now();
@@ -454,7 +454,7 @@ namespace fiber
         /**
          * @brief prints a scheduler queue to the stream
          * @param stream An `fiber::OStream` reference
-         * @param taskList A range that contains `RealTimeTaskBase*` objects
+         * @param taskList A range that contains `TaskBase*` objects
          */
         template<std::ranges::range TaskList>
         static void print_task_list(OStream& stream, const TaskList& taskList, const int indentation = 0){
@@ -463,7 +463,7 @@ namespace fiber
 
             // get length of longest name
             int max_name_length = 4;
-            for(const RealTimeTaskBase* task : taskList){
+            for(const TaskBase* task : taskList){
                 const int name_size = static_cast<int>(task->name().size());
                 max_name_length =  (name_size > max_name_length) ? name_size : max_name_length;
             }
@@ -534,7 +534,7 @@ namespace fiber
             stream << fiber::newl;
 
             // print table
-            for(const RealTimeTaskBase* task : taskList){
+            for(const TaskBase* task : taskList){
                 stream.put(' ', indentation);
                 stream << single_vertical << ' ';
                 stream << FormatStr(task->name()).mwidth(max_name_length).left();
@@ -604,11 +604,11 @@ namespace fiber
         void print(OStream& stream) const {
             const TimePoint now = this->now();
             stream << "@" << now << " Ready: " << fiber::newl;
-            RealTimeScheduler::print_task_list(stream, this->running_queue(), 2);
+            Scheduler::print_task_list(stream, this->running_queue(), 2);
             stream << fiber::newl << "@" << now << " Waiting: " << fiber::newl;
-            RealTimeScheduler::print_task_list(stream, this->waiting_queue(), 2);
+            Scheduler::print_task_list(stream, this->waiting_queue(), 2);
             stream << fiber::newl << "@" << now << " Awaiting: " << fiber::newl;
-            RealTimeScheduler::print_task_list(stream, this->_await_bench, 2);
+            Scheduler::print_task_list(stream, this->_await_bench, 2);
             stream << fiber::newl;
         }
 
@@ -617,7 +617,7 @@ namespace fiber
         /**
          * @brief prints the state of the scheduler. Lists all queues and their contained tasks.
          */
-        friend OStream& operator<<(OStream& stream, const RealTimeScheduler& scheduler){
+        friend OStream& operator<<(OStream& stream, const Scheduler& scheduler){
             scheduler.print(stream);
             return stream;
         }

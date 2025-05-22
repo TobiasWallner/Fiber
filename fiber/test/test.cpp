@@ -6,7 +6,7 @@
 #include <fiber/Chrono/tests/Clock_test.hpp>
 #include <fiber/Future/tests/Future_test.hpp>
 #include <fiber/OS/tests/Coroutine_test.hpp>
-#include <fiber/OS/tests/RealTimeScheduler_test.hpp>
+#include <fiber/OS/tests/Scheduler_test.hpp>
 #include <fiber/OStream/tests/OStream_test.hpp>
 
 #include <iostream>
@@ -25,7 +25,7 @@ int test_all(){
             | fiber::ClockTick_test
             | fiber::Future_test
             | fiber::Coroutine_test
-            | fiber::RealTimeScheduler_test
+            | fiber::Scheduler_test
             | fiber::evaluate
             ;
     #ifndef FIBER_DISABLE_EXCEPTIONS

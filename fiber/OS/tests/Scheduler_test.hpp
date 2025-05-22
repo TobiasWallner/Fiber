@@ -4,5 +4,5 @@
 
 namespace fiber
 {
-    fiber::TestResult RealTimeScheduler_test();
+    fiber::TestResult Scheduler_test();
 } // namespace fiber

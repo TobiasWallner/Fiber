@@ -1,9 +1,9 @@
-#include "RealTimeScheduler_test.hpp"
+#include "Scheduler_test.hpp"
 
 #include <fiber/TestFramework/TestFramework.hpp>
 #include <fiber/Chrono/TimePoint.hpp>
-#include <fiber/OS/RealTimeTask.hpp>
-#include <fiber/OS/RealTimeScheduler.hpp>
+#include <fiber/OS/Task.hpp>
+#include <fiber/OS/Scheduler.hpp>
 #include <fiber/Memory/StaticLinearAllocator.hpp>
 #include <fiber/OS/Delay.hpp>
 
@@ -30,9 +30,9 @@ namespace fiber
 
             CoSuit co_suit;
 
-            RealTimeTask<512> simpleTask("simpleTask", get_time(), 1ms, CoSuit::coroutine, co_suit);
+            Task<512> simpleTask("simpleTask", get_time(), 1ms, CoSuit::coroutine, co_suit);
 
-            RealTimeScheduler<1> scheduler(get_time);
+            Scheduler<1> scheduler(get_time);
 
             TEST_TRUE(scheduler.is_waiting());
             TEST_FALSE(simpleTask.is_done());
@@ -60,15 +60,15 @@ namespace fiber
             g_mock_time = TimePoint(0);
             
             // task setup
-            class Task : public RealTimeTask<256>{
+            class Task : public fiber::Task<256>{
                 public:
                 int proof = 0;
 
                 Task(std::string_view name, TimePoint ready, Duration deadline) 
-                    : RealTimeTask(name, ready, deadline, Task::main, this){}
+                    : fiber::Task<256>(name, ready, deadline, Task::main, this){}
 
                 Task(std::string_view name, TimePoint ready, std::chrono::milliseconds deadline) 
-                    : RealTimeTask(name, ready, deadline, Task::main, this){}
+                    : fiber::Task<256>(name, ready, deadline, Task::main, this){}
 
                 static Coroutine<Exit> main(Task* This){
                     This->proof = 258;
@@ -78,7 +78,7 @@ namespace fiber
 
             Task simpleTask("simpleTask", get_time() + 1ms, 2ms);
 
-            RealTimeScheduler<1> scheduler(get_time);
+            Scheduler<1> scheduler(get_time);
 
             // added task is not done
             scheduler.add(&simpleTask);
@@ -113,12 +113,12 @@ namespace fiber
         g_mock_time = TimePoint(0);
 
         // task setup
-        class Task : public RealTimeTask<256>{
+        class Task : public fiber::Task<256>{
             public:
             int proof = 0;
 
             Task(std::string_view name, Duration ready, Duration deadline) 
-                : RealTimeTask(name, ready + get_time(), deadline, Task::main, this){}
+                : fiber::Task<256>(name, ready + get_time(), deadline, Task::main, this){}
 
             Task(std::string_view name, std::chrono::milliseconds ready, std::chrono::milliseconds deadline) 
                 : Task(name, fiber::rounding_duration_cast<fiber::Duration>(ready), fiber::rounding_duration_cast<fiber::Duration>(deadline)){}
@@ -134,9 +134,9 @@ namespace fiber
         Task task("Task", 1ms, 2ms);
 
         // OutputLogger<MockClock>::stream = fiber::cout;
-        // RealTimeScheduler<MockClock, 1, fiber::default_sleep_until<MockClock>, OutputLogger<MockClock>> scheduler;
+        // Scheduler<MockClock, 1, fiber::default_sleep_until<MockClock>, OutputLogger<MockClock>> scheduler;
 
-        RealTimeScheduler<1> scheduler(get_time);
+        Scheduler<1> scheduler(get_time);
 
         // added task is not done
         scheduler.add(&task);
@@ -199,7 +199,7 @@ namespace fiber
         g_mock_time = TimePoint(0);
 
         // task setup
-        class Task : public RealTimeTask<256>{
+        class Task : public fiber::Task<256>{
             /*
             Tests the Earliest-Ready-Time / Earliest-Deadline scheduling priorities
              */
@@ -207,10 +207,10 @@ namespace fiber
             int proof = 0;
 
             Task(std::string_view name, TimePoint ready, Duration deadline) 
-                : RealTimeTask(name, ready, deadline, Task::main, this){}
+                : fiber::Task<256>(name, ready, deadline, Task::main, this){}
 
             Task(std::string_view name, TimePoint ready, std::chrono::milliseconds deadline) 
-                : RealTimeTask(name, ready, deadline, Task::main, this){}
+                : fiber::Task<256>(name, ready, deadline, Task::main, this){}
 
             static Coroutine<Exit> main(Task* This){
                 This->proof = 1;
@@ -224,8 +224,8 @@ namespace fiber
         Task task2("Task two", get_time() + 2ms, 2ms);
 
         // OutputLogger<MockClock>::stream = fiber::cout;
-        // RealTimeScheduler<MockClock, 2, fiber::default_sleep_until<MockClock>, OutputLogger<MockClock>> scheduler;
-        RealTimeScheduler<2> scheduler(get_time);
+        // Scheduler<MockClock, 2, fiber::default_sleep_until<MockClock>, OutputLogger<MockClock>> scheduler;
+        Scheduler<2> scheduler(get_time);
 
         // added task is not done
         scheduler.add(&task1);
@@ -325,7 +325,7 @@ namespace fiber
 
     
 
-    TestResult RealTimeScheduler_test(){
+    TestResult Scheduler_test(){
         TEST_GROUP;
 
         return TestResult()

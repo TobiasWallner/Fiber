@@ -192,6 +192,16 @@ namespace fiber{
         constexpr ReturnType await_resume();
     };
 
+    struct Schedule{
+        TimePoint ready;
+        TimePoint deadline;
+    };
+
+    struct ExecutionTime{
+        TimePoint start;
+        TimePoint end;
+    };
+
     /**
      * \brief A `TaskBase` (short for coroutine task) is the root of a linked list of nested coroutines.
      * 
@@ -227,13 +237,15 @@ namespace fiber{
         const void* _leaf_awaitable_obj = nullptr;
         CoSignal _signal;
         
-        unsigned int _priority = 0; // higher number = higher priority
-        TimePoint _ready_time;
-        TimePoint _deadline;
+        uint32_t _priority = 0; // higher number = higher priority
+        Schedule _schedule;
+        TimePoint _execution_start;
         
         unsigned int _id = 0;
         bool _instant_resume = false;
+        bool _immediatelly_ready = false; // if true, ignores `_ready_time` when entering the scheduler
         
+        static constexpr uint32_t _deadline_priority = std::numeric_limits<uint32_t>::max();
     public:
 
         constexpr TaskBase() = default;
@@ -241,39 +253,59 @@ namespace fiber{
         constexpr TaskBase& operator=(const TaskBase&)=delete;
 
         constexpr TaskBase(TaskBase&& other) noexcept
-            : _task_name(std::exchange(other._task_name, ""))
-            , _frame_allocator(std::exchange(other._frame_allocator, nullptr))
+            : _task_name(other._task_name)
+            , _frame_allocator(other._frame_allocator)
             , _main_coroutine(std::move(other._main_coroutine))
-            , _leaf_coroutine(std::move(other._leaf_coroutine))
-            , _leaf_awaitable_ready_func(std::exchange(other._leaf_awaitable_ready_func, nullptr))
-            , _leaf_awaitable_obj(std::exchange(other._leaf_awaitable_obj, nullptr))
-            , _instant_resume(std::exchange(other._instant_resume, false))
+            , _leaf_coroutine(other._leaf_coroutine)
+            , _leaf_awaitable_ready_func(other._leaf_awaitable_ready_func)
+            , _leaf_awaitable_obj(other._leaf_awaitable_obj)
+            , _signal(other._signal)
+            , _priority(other._priority)
+            , _schedule(other._schedule)
+            , _execution_start(other._execution_start)
+            , _id(other._id)
+            , _instant_resume(other._instant_resume)
+            , _immediatelly_ready(other._immediatelly_ready)
         {
             this->_main_coroutine.Register(this); // re-register
         }
 
         inline TaskBase& operator=(TaskBase&& other) noexcept {
             if(this != &other){
-                this->_task_name = std::exchange(other._task_name, "");
+                this->_task_name = other._task_name;
+                this->_frame_allocator = other._frame_allocator;
                 this->_main_coroutine = std::move(other._main_coroutine);
-                this->_frame_allocator = std::exchange(other._frame_allocator, nullptr);
-                this->_id = std::exchange(other._id, -1);
-                this->_leaf_coroutine = std::exchange(other._leaf_coroutine, nullptr);
-                this->_leaf_awaitable_ready_func = std::exchange(other._leaf_awaitable_ready_func, nullptr);
-                this->_leaf_awaitable_obj = std::exchange(other._leaf_awaitable_obj, nullptr);
-                this->_instant_resume = std::exchange(other._instant_resume, false);
+                this->_leaf_coroutine = other._leaf_coroutine;
+                this->_leaf_awaitable_ready_func = other._leaf_awaitable_ready_func;
+                this->_leaf_awaitable_obj = other._leaf_awaitable_obj;
+                this->_signal = other._signal;
+                this->_priority = other._priority;
+                this->_schedule = other._schedule;
+                this->_execution_start = other._execution_start;
+                this->_id = other._id;
+                this->_instant_resume = other._instant_resume;
+                this->_immediatelly_ready = other._immediatelly_ready;
+
                 this->_main_coroutine.Register(this); // re-register
             }
             return *this;
         }
 
+    private:
         template <class F, class... Args>
         requires 
             std::invocable<F, Args...> &&
             std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
-        constexpr TaskBase(std::string_view task_name, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+        constexpr TaskBase(
+                std::string_view task_name, 
+                uint32_t priority, 
+                TimePoint ready, TimePoint deadline, 
+                fiber::StackAllocatorExtern* frame_allocator, 
+                F&& function, Args&&... args)
             : _task_name(task_name)
             , _frame_allocator(frame_allocator)
+            , _priority(priority)
+            , _schedule({ready, deadline})
         {
             // make sure that at the constrution of the coroutine the frame_allocator of the task is set
             auto temp = std::exchange(fiber::detail::frame_allocator, _frame_allocator);
@@ -288,10 +320,93 @@ namespace fiber{
             this->_leaf_coroutine = this->_main_coroutine.node();
             this->_main_coroutine.Register(this);
         }
+    public:
 
+        /**
+         * \brief constructor to create a priority-based task with the lowest priority
+         */
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr TaskBase(std::string_view task_name, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+            : TaskBase(task_name, 0, TimePoint(Duration(0)), TimePoint(Duration(0)), frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+        {
+            this->_immediatelly_ready = true;
+        }
+
+        /**
+         * \brief constructor to create a priority-based task that starts immediatelly
+         */
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr TaskBase(std::string_view task_name, uint16_t priority, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+            : TaskBase(task_name, priority, TimePoint(Duration(0)), TimePoint(Duration(0)), frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+        {
+            this->_immediatelly_ready = true;
+        }
         
 
+        /**
+         * \brief constructor to create a priority-based task that starts at a certain time point in the future
+         */
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr TaskBase(std::string_view task_name, uint16_t priority, TimePoint ready, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+            : TaskBase(task_name, priority, ready, ready, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...){}
+        
+        /**
+         * \brief constructor to create a real-time deadline-based task
+         * 
+         * deadline based tasks automatically have int_max assigned to their priority (highest priority).
+         */
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr TaskBase(std::string_view task_name, TimePoint ready, TimePoint deadline, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+            : TaskBase(task_name, _deadline_priority, ready, deadline, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...){}
+
+        /**
+         * \brief constructor to create a real-time deadline-based task
+         * 
+         * deadline based tasks automatically have int_max assigned to their priority (highest priority).
+         */
+        template <class F, class... Args>
+        requires 
+            std::invocable<F, Args...> &&
+            std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
+        constexpr TaskBase(std::string_view task_name, TimePoint ready, Duration deadline, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+            : TaskBase(task_name, ready, ready + deadline, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...){}
+
         virtual ~TaskBase(){}
+
+        /**
+         * @brief Overrideable: Gets called if the deadline has been missed and decides wether the task should still execute or not
+         * @param d The duration/time that passed since the deadline
+         * @details The default version will always return `true` to continue the task
+         * @returns Returns if the task should still be executed (`true`) or not (`false`)
+         */
+        virtual bool missed_deadline([[maybe_unused]]fiber::Duration d){return true;}
+
+        /**
+         * @brief Overrideable: Gets called after a `co_await NextCycle;` to calculate the schedule of the next cycle.
+         * 
+         * Note that `previous_execution.end` is equivalent to the current time .aka `now()`
+         * 
+         * @param previous_schedule the previous schedule of this task
+         * @param previous_execution the previous execution time from the start of the cycle to the end of the cycle
+         */
+        virtual Schedule next_schedule(
+            [[maybe_unused]]Schedule previous_schedule, 
+            [[maybe_unused]]ExecutionTime previous_execution)
+        {
+            return Schedule{previous_execution.end, previous_execution.end};
+        }
 
         /**
          * \brief returns the assigned id of the task.
@@ -409,6 +524,27 @@ namespace fiber{
             // variation limiting the use of exceptions
             void handle_exception();
         #endif
+
+        TimePoint ready_time() const {return this->_schedule.ready;}
+        TimePoint deadline() const {return this->_schedule.deadline;}
+        uint32_t priority() const {return this->_priority;}
+        bool immediatelly_ready() const {return this->_immediatelly_ready;}
+
+        struct less_priority_s{
+            constexpr bool operator () (const TaskBase* lhs, const TaskBase* rhs){
+                if(lhs->_priority == rhs->_priority){
+                    return lhs->_schedule.deadline > rhs->_schedule.deadline;
+                }else{
+                    return lhs->_priority < rhs->_priority;
+                }
+            }
+        };
+
+        struct larger_ready_time_s{
+            constexpr bool operator () (const TaskBase* lhs, const TaskBase* rhs){
+                return lhs->_schedule.ready > rhs->_schedule.ready;
+            }
+        };
     };
 
     /**

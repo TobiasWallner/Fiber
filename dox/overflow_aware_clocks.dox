@@ -72,7 +72,7 @@ MyClock::time_point start = MyClock::now();
 MyClock::time_point now = MyClock::now();
 fiber::Duration<uint32_t, std::micro> elapsed = now - start;
 ...
-fiber::RealTimeScheduler<MyClock> rtscheduler;
+fiber::Scheduler<MyClock> rtscheduler;
 rtscheduler.addTask(task);
 ```
 

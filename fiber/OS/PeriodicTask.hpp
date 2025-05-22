@@ -1,11 +1,11 @@
 #pragma once
 
 #include <fiber/Chrono/TimePoint.hpp>
-#include <fiber/OS/RealTimeTask.hpp>
+#include <fiber/OS/Task.hpp>
 
 namespace fiber{
 
-    class PeriodicTask : public RealTimeTask{
+    class PeriodicTask : public Task{
     public:
         Duration _period;
         Duration _deadline;
@@ -13,7 +13,7 @@ namespace fiber{
     private:
 
         PeriodicTask(Coroutine<fiber::Exit>&& main, std::string_view name, Duration period, Duration deadline, TimePoint first_ready)
-            : RealTimeTask<Clock>(std::move(main), name, first_ready, deadline)
+            : Task<Clock>(std::move(main), name, first_ready, deadline)
             , _period(period)
             , _deadline(deadline){}
 
@@ -25,7 +25,7 @@ namespace fiber{
 
     };
 
-    class SoftPeriodicTask : public RealTimeTask{
+    class SoftPeriodicTask : public Task{
     public:
 
         TimePoint _prev_execution;
@@ -36,7 +36,7 @@ namespace fiber{
     private:
 
         PeriodicTask(Coroutine<fiber::Exit>&& main, std::string_view name, Duration period, Duration deadline, TimePoint first_ready)
-            : RealTimeTask<Clock>(std::move(main), name, first_ready, deadline)
+            : Task<Clock>(std::move(main), name, first_ready, deadline)
             , _prev_execution(first_ready - period)
             , _period(period)
             , _deadline(deadline)
