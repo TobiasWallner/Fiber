@@ -13,6 +13,7 @@
 #include <fiber/OS/Exit.hpp>
 #include <fiber/Memory/StackAllocator.hpp>
 #include <fiber/OS/CoSignal.hpp>
+#include <fiber/Chrono/TimePoint.hpp>
 
 
 namespace fiber{
@@ -224,7 +225,12 @@ namespace fiber{
         CoroutineNode* _leaf_coroutine = nullptr;
         bool (*_leaf_awaitable_ready_func)(const void* _leaf_awaitable_obj) = nullptr;
         const void* _leaf_awaitable_obj = nullptr;
-        CoSignal _signal; // TODO: remove from TaskBase and add to RealTimeTask
+        CoSignal _signal;
+        
+        unsigned int _priority = 0; // higher number = higher priority
+        TimePoint _ready_time;
+        TimePoint _deadline;
+        
         unsigned int _id = 0;
         bool _instant_resume = false;
         
@@ -287,12 +293,38 @@ namespace fiber{
 
         virtual ~TaskBase(){}
 
+        /**
+         * \brief returns the assigned id of the task.
+         * 
+         * Has likely been assigned by the scheduler
+         */
         constexpr unsigned int id() const {return this->_id;}
 
+        /**
+         * \brief returns the name of the task
+         */
         constexpr std::string_view name() const {return this->_task_name;}
 
         /**
-         * @brief sets a signal
+         * \brief returns the maximal allocatable size of the frame (stack allocator)
+         */
+        constexpr std::size_t max_frame_size() const {return this->_frame_allocator->max_size();}
+
+        /**
+         * \brief returns the allocated size of the frame (stack allocator)
+         */
+        constexpr std::size_t allocated_frame_size() const {return this->_frame_allocator->allocated_size();}
+
+        /**
+         * \brief returns the maximal allocated size in the frame since construction (stack allocator)
+         */
+        constexpr std::size_t max_allocated_frame_size() const {return this->_frame_allocator->max_allocated_size();}
+
+        /**
+         * @brief sets a coroutine control signal.
+         * 
+         * Used by the coroutine or awaitable to set a control signal.
+         * Can be used to influence the runtime behaviour of the task, or the way the scheduler continues scheduling it.
          */
         constexpr void signal(const CoSignal& signal){this->_signal = signal;}
         
@@ -305,6 +337,9 @@ namespace fiber{
             return result;
         }
 
+        /**
+         * \brief destroys all contained coroutines
+         */
         constexpr void destroy(){this->_main_coroutine.destroy();}
         
 
@@ -374,9 +409,6 @@ namespace fiber{
             // variation limiting the use of exceptions
             void handle_exception();
         #endif
-
-        /// @brief kills the coroutine chain.
-        void kill_chain();
     };
 
     /**
@@ -514,26 +546,11 @@ namespace fiber{
         }
     }
 
-     /**
-     * \brief Stores the Allocation size of a coroutine for inspection
-     * 
-     * called by the corouine promise types new operator overload by reinterpreting the allocation `void*` pointer.
-     * 
-     * \see fiber::CoroutinePromise
-     */
-    struct CoroutinePromiseSize{
-        std::size_t _allocated_size;
-
-        constexpr std::size_t allocated_size() const {return this->_allocated_size;}
-    };
-
     /**
      * \brief Promise type for an fiber::Coroutine
      * 
      * This class implements the coroutine promise required by the C++20 coroutine machinery.
      * `CoroutinePromise<ReturnType>` is instantiated by the compiler when a coroutine with `Coroutine<ReturnType>` as its return type is used.
-     * It inherits from `CoroutinePromiseSize` and `CoroutineNode` to integrate with the custom coroutine framework’s memory management
-     * and scheduling infrastructure.
      * 
      * ### Awaitable Support
      * The `await_transform()` method is used to wrap arbitrary awaitables unless they already derive from a framework-specific `AwaitableNode`.
@@ -544,12 +561,11 @@ namespace fiber{
      * In the usual cast this allocator is provided by the root task of the coroutine chain
      * 
      * \see fiber::Coroutine
-     * \see fiber::CoroutinePromiseSize
      * \see fiber::CoroutineNode
      * \see fiber::AwaitableWrapper
      */
     template<class ReturnType>
-    class CoroutinePromise : public CoroutinePromiseSize, public CoroutineNode{
+    class CoroutinePromise : public CoroutineNode{
     private:
         ReturnType _return_value;
     
@@ -589,14 +605,11 @@ namespace fiber{
         }
 
         constexpr static void* operator new(std::size_t size){
-            void* result = fiber::detail::frame_allocator->allocate(size);
-            reinterpret_cast<CoroutinePromiseSize*>(result)->_allocated_size = size;
-            return result;
+            return fiber::detail::frame_allocator->allocate(size);
         }
 
         constexpr static void operator delete(void* ptr, std::size_t size){
             fiber::detail::frame_allocator->deallocate(ptr, size);
-            return;
         }
         
         constexpr bool await_ready() const noexcept {return this->is_done();}

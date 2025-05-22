@@ -468,8 +468,14 @@ namespace fiber
                 max_name_length =  (name_size > max_name_length) ? name_size : max_name_length;
             }
 
-            const int id_width = 12;
-            const int time_width = 24;
+            const int id_width = 6;
+            #if defined(FIBER_CLOCK_UINT64)
+                const int time_width = 22;
+            #else
+                const int time_width = 12;
+            #endif
+            const int size_width = 12;
+            const int percent_width = 7;
 
             // table top
             stream.put(' ', indentation);
@@ -481,6 +487,12 @@ namespace fiber
             for(int i = 0; i < time_width; ++i) stream << single_horizontal;
             stream << single_horizontal << single_t_up << single_horizontal;
             for(int i = 0; i < time_width; ++i) stream << single_horizontal;
+            stream << single_horizontal << single_t_up << single_horizontal;
+            for(int i = 0; i < size_width; ++i) stream << single_horizontal;
+            stream << single_horizontal << single_t_up << single_horizontal;
+            for(int i = 0; i < size_width+percent_width; ++i) stream << single_horizontal;
+            stream << single_horizontal << single_t_up << single_horizontal;
+            for(int i = 0; i < size_width+percent_width; ++i) stream << single_horizontal;
             stream << single_horizontal << single_corner_topright;
             stream << fiber::newl;
 
@@ -494,6 +506,12 @@ namespace fiber
             stream << FormatStr("ready"sv).mwidth(time_width).right();
             stream << ' ' << single_vertical << ' ';
             stream << FormatStr("deadline"sv).mwidth(time_width).right();
+            stream << ' ' << single_vertical << ' ';
+            stream << FormatStr("frame size"sv).mwidth(size_width).right();
+            stream << ' ' << single_vertical << ' ';
+            stream << FormatStr("alloc"sv).mwidth(size_width+percent_width).right();
+            stream << ' ' << single_vertical << ' ';
+            stream << FormatStr("max alloc"sv).mwidth(size_width+percent_width).right();
             stream << ' ' << single_vertical << fiber::newl;
 
             // header underline
@@ -506,6 +524,12 @@ namespace fiber
             for(int i = 0; i < time_width; ++i) stream << double_horizontal;
             stream << double_horizontal << mixed_cross << double_horizontal;
             for(int i = 0; i < time_width; ++i) stream << double_horizontal;
+            stream << double_horizontal << mixed_cross << double_horizontal;
+            for(int i = 0; i < size_width; ++i) stream << double_horizontal;
+            stream << double_horizontal << mixed_cross << double_horizontal;
+            for(int i = 0; i < size_width+percent_width; ++i) stream << double_horizontal;
+            stream << double_horizontal << mixed_cross << double_horizontal;
+            for(int i = 0; i < size_width+percent_width; ++i) stream << double_horizontal;
             stream << double_horizontal << mixed_t_right;
             stream << fiber::newl;
 
@@ -520,6 +544,13 @@ namespace fiber
                 stream << format_chrono(task->ready_time().time_since_epoch()).mwidth(time_width).right();
                 stream << ' ' << single_vertical << ' ';
                 stream << format_chrono(task->deadline().time_since_epoch()).mwidth(time_width).right();
+                stream << ' ' << single_vertical << ' ';
+                stream << FormatInt(task->max_frame_size()).mwidth(size_width).right();
+                stream << ' ' << single_vertical << ' ';
+                stream << FormatInt(task->allocated_frame_size()).mwidth(size_width).right() << " (" << FormatInt(task->allocated_frame_size()*100/task->max_frame_size()).mwidth(3) << "%)";
+                stream << ' ' << single_vertical << ' ';
+                stream << FormatInt(task->max_allocated_frame_size()).mwidth(size_width).right() << " (" << FormatInt(task->max_allocated_frame_size()*100/task->max_frame_size()).mwidth(3) << "%)";
+
                 stream << ' ' << single_vertical << fiber::newl;
             }
 
@@ -533,6 +564,12 @@ namespace fiber
             for(int i = 0; i < time_width; ++i) stream << single_horizontal;
             stream << single_horizontal << single_t_down << single_horizontal;
             for(int i = 0; i < time_width; ++i) stream << single_horizontal;
+            stream << single_horizontal << single_t_down << single_horizontal;
+            for(int i = 0; i < size_width; ++i) stream << single_horizontal;
+            stream << single_horizontal << single_t_down << single_horizontal;
+            for(int i = 0; i < size_width+percent_width; ++i) stream << single_horizontal;
+            stream << single_horizontal << single_t_down << single_horizontal;
+            for(int i = 0; i < size_width+percent_width; ++i) stream << single_horizontal;
             stream << single_horizontal << single_corner_botright;
             stream << fiber::newl;
         }
@@ -543,32 +580,30 @@ namespace fiber
          * 
          * Example output:
          * ```
-         * @2us Running:
-         *   ┌────────┬──────────────┬──────────────────────────┬──────────────────────────┐
-         *   │ name   │           id │                    ready │                 deadline │
-         *   ╞════════╪══════════════╪══════════════════════════╪══════════════════════════╡
-         *   │ Task 1 │            0 │                      1us │                      5us │
-         *   └────────┴──────────────┴──────────────────────────┴──────────────────────────┘
-         *
-         * @2us Waiting:
-         *   ┌──────────┬──────────────┬──────────────────────────┬──────────────────────────┐
-         *   │ name     │           id │                    ready │                 deadline │
-         *   ╞══════════╪══════════════╪══════════════════════════╪══════════════════════════╡
-         *   │ Task two │            1 │                      2us │                      4us │
-         *   └──────────┴──────────────┴──────────────────────────┴──────────────────────────┘
-         *
-         * @2us Awaiting:
-         *   ┌──────┬──────────────┬──────────────────────────┬──────────────────────────┐
-         *   │ name │           id │                    ready │                 deadline │
-         *   ╞══════╪══════════════╪══════════════════════════╪══════════════════════════╡
-         *   └──────┴──────────────┴──────────────────────────┴──────────────────────────┘
+         * @1000us Ready:
+         *   ┌──────┬────────┬──────────────┬──────────────┬──────────────┬─────────────────────┬─────────────────────┐
+         *   │ name │     id │        ready │     deadline │   frame size │               alloc │           max alloc │
+         *   ╞══════╪════════╪══════════════╪══════════════╪══════════════╪═════════════════════╪═════════════════════╡
+         *   └──────┴────────┴──────────────┴──────────────┴──────────────┴─────────────────────┴─────────────────────┘
+         * @1000us Waiting:
+         *   ┌──────────┬────────┬──────────────┬──────────────┬──────────────┬─────────────────────┬─────────────────────┐
+         *   │ name     │     id │        ready │     deadline │   frame size │               alloc │           max alloc │
+         *   ╞══════════╪════════╪══════════════╪══════════════╪══════════════╪═════════════════════╪═════════════════════╡
+         *   │ Task 1   │      0 │       1000us │       5000us │          256 │          132 ( 51%) │          132 ( 51%) │
+         *   │ Task two │      1 │       2000us │       4000us │          256 │          132 ( 51%) │          132 ( 51%) │
+         *   └──────────┴────────┴──────────────┴──────────────┴──────────────┴─────────────────────┴─────────────────────┘
+         * @1000us Awaiting:
+         *   ┌──────┬────────┬──────────────┬──────────────┬──────────────┬─────────────────────┬─────────────────────┐
+         *   │ name │     id │        ready │     deadline │   frame size │               alloc │           max alloc │
+         *   ╞══════╪════════╪══════════════╪══════════════╪══════════════╪═════════════════════╪═════════════════════╡
+         *   └──────┴────────┴──────────────┴──────────────┴──────────────┴─────────────────────┴─────────────────────┘
          * ```
          * 
          * @param stream A reference to an `fiber::OStream` object
          */
         void print(OStream& stream) const {
             const TimePoint now = this->now();
-            stream << "@" << now << " Running: " << fiber::newl;
+            stream << "@" << now << " Ready: " << fiber::newl;
             RealTimeScheduler::print_task_list(stream, this->running_queue(), 2);
             stream << fiber::newl << "@" << now << " Waiting: " << fiber::newl;
             RealTimeScheduler::print_task_list(stream, this->waiting_queue(), 2);
@@ -576,6 +611,8 @@ namespace fiber
             RealTimeScheduler::print_task_list(stream, this->_await_bench, 2);
             stream << fiber::newl;
         }
+
+        void print(OStreamRef stream){if(stream.ptr) this->print(*stream.ptr);}
         
         /**
          * @brief prints the state of the scheduler. Lists all queues and their contained tasks.

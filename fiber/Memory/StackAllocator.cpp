@@ -31,6 +31,7 @@ namespace fiber
 
         // advance index
         index += words_offset + words_size + 1;
+        max_index = (index > max_index) ? index : max_index;
         return result;
     }
 

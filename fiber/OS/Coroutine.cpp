@@ -48,24 +48,15 @@ namespace fiber{
             }
             fiber::cerr << "    Unhandled exception inside task: " << this->_task_name << ", id: " << this->_id << fiber::endl;
             fiber::cerr << "    Killing task." << fiber::endl;
-            this->kill_chain();
+            this->destroy();
             this->_instant_resume = false;
         }
     #else
         // Variation limiting the use of exceptions
         void TaskBase::handle_exception() {
-            this->kill_chain();
+            this->destroy();
             this->_instant_resume = false;
         }
     #endif
-
-    void TaskBase::kill_chain(){
-        // kill loop
-        while(this->_leaf_coroutine){
-            CoroutineNode* next = this->_leaf_coroutine->parent();
-            this->_leaf_coroutine->destroy();
-            this->_leaf_coroutine = next;
-        }
-    }
 
 }

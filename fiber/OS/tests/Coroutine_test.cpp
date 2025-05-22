@@ -183,6 +183,7 @@ namespace{
                 {co_await fiber::Delay(100ms);      }     // signal to await a delay (implicit) of 1ms
                 {co_await fiber::Delay(200ms, 2ms); }     // signal to delay (explicit)
                 {co_await This->fp_pair.future;     }     // signal to await a future
+
                 {co_return fiber::Exit::Success;    }     // signal should be None
             }
         };

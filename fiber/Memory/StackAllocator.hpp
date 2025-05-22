@@ -17,6 +17,7 @@ namespace fiber
         word* const buffer;
         std::size_t const buffer_size;
         std::size_t index = 0;
+        std::size_t max_index = 0;
 
     public:
         constexpr StackAllocatorExtern(word* buffer, std::size_t buffer_size)
@@ -24,6 +25,9 @@ namespace fiber
             , buffer_size(buffer_size){}
 
         constexpr bool empty() const {return index == 0;}
+        constexpr std::size_t max_size() const {return buffer_size * sizeof(word);}
+        constexpr std::size_t allocated_size() const {return index * sizeof(word);}
+        constexpr std::size_t max_allocated_size() const {return max_index * sizeof(word);}
 
     private:
         void* do_allocate(const std::size_t size, const std::size_t alignment) final;
