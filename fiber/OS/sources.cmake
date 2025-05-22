@@ -3,8 +3,7 @@ target_sources(fiber
         ${CMAKE_CURRENT_LIST_DIR}/CoSignal.hpp
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine.hpp
         ${CMAKE_CURRENT_LIST_DIR}/LinearScheduler.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/RealTimeTask.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/RealTimeScheduler.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/Scheduler.hpp
 
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/Coroutine.cpp
