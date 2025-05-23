@@ -319,6 +319,8 @@ namespace fiber{
 
         /**
          * \brief constructor to create a priority-based task with the lowest priority
+         * 
+         * Defaults to priority 1 (2nd lowest priority level, lowest priority is 0)
          */
         template <class F, class... Args>
         requires 
@@ -328,7 +330,7 @@ namespace fiber{
             : TaskBase(frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
         {
             this->_task_name = task_name;
-            this->_priority = 0;
+            this->_priority = 1;
             this->_immediatelly_ready = true;
         }
 
@@ -350,6 +352,8 @@ namespace fiber{
 
         /**
          * \brief constructor to create a priority-based task that starts at a certain time point in the future
+         * 
+         * Defaults to priority 1 (2nd lowest priority level, lowest priority is 0)
          */
         template <class F, class... Args>
         requires 
@@ -359,7 +363,7 @@ namespace fiber{
             : TaskBase(frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
         {
             this->_task_name = task_name;
-            this->_priority = priority;
+            this->_priority = 1;
             this->_schedule.ready = ready;
             this->_schedule.deadline = ready;
             this->_immediatelly_ready = false;
@@ -561,7 +565,7 @@ namespace fiber{
                     lhs_deadline_rhs_priority = 0b10,
                     both_deadline = 0b11
                 };
-                Cases Case = static_cast<Cases>((static_cast<unsigned int>(lhs->is_deadline_based()) << 1) || (static_cast<unsigned int>(rhs->is_deadline_based()) << 0));
+                const Cases Case = static_cast<Cases>((static_cast<unsigned int>(lhs->is_deadline_based()) << 1) || (static_cast<unsigned int>(rhs->is_deadline_based()) << 0));
                 bool result = false;
                 switch(Case){
                     case Cases::both_priority: result = lhs->_priority < rhs->_priority; break;
