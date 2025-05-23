@@ -263,7 +263,6 @@ namespace fiber
         
         g_mock_time = TimePoint(1ms);
         scheduler.spin();
-        scheduler.print(fiber::cout);
 
         TEST_EQUAL(scheduler.n_waiting(), 2);
         TEST_EQUAL(scheduler.n_running(), 0);

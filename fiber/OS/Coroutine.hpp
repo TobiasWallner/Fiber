@@ -241,10 +241,11 @@ namespace fiber{
         Schedule _schedule;
         TimePoint _execution_start;
         
-        unsigned int _id = 0;
+        uint16_t _id = 0;
+
         bool _instant_resume = false;
         bool _immediatelly_ready = false; // if true, ignores `_ready_time` when entering the scheduler
-        
+
         static constexpr uint32_t _deadline_priority = std::numeric_limits<uint32_t>::max();
     public:
 
@@ -296,16 +297,10 @@ namespace fiber{
         requires 
             std::invocable<F, Args...> &&
             std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
-        constexpr TaskBase(
-                std::string_view task_name, 
-                uint32_t priority, 
-                TimePoint ready, TimePoint deadline, 
+        constexpr TaskBase( 
                 fiber::StackAllocatorExtern* frame_allocator, 
                 F&& function, Args&&... args)
-            : _task_name(task_name)
-            , _frame_allocator(frame_allocator)
-            , _priority(priority)
-            , _schedule({ready, deadline})
+            : _frame_allocator(frame_allocator)
         {
             // make sure that at the constrution of the coroutine the frame_allocator of the task is set
             auto temp = std::exchange(fiber::detail::frame_allocator, _frame_allocator);
@@ -330,8 +325,10 @@ namespace fiber{
             std::invocable<F, Args...> &&
             std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
         constexpr TaskBase(std::string_view task_name, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
-            : TaskBase(task_name, 0, TimePoint(Duration(0)), TimePoint(Duration(0)), frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+            : TaskBase(frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
         {
+            this->_task_name = task_name;
+            this->_priority = 0;
             this->_immediatelly_ready = true;
         }
 
@@ -343,8 +340,10 @@ namespace fiber{
             std::invocable<F, Args...> &&
             std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
         constexpr TaskBase(std::string_view task_name, uint16_t priority, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
-            : TaskBase(task_name, priority, TimePoint(Duration(0)), TimePoint(Duration(0)), frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+            : TaskBase(frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
         {
+            this->_task_name = task_name;
+            this->_priority = priority;
             this->_immediatelly_ready = true;
         }
         
@@ -356,8 +355,15 @@ namespace fiber{
         requires 
             std::invocable<F, Args...> &&
             std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
-        constexpr TaskBase(std::string_view task_name, uint16_t priority, TimePoint ready, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
-            : TaskBase(task_name, priority, ready, ready, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...){}
+        constexpr TaskBase(std::string_view task_name, TimePoint ready, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
+            : TaskBase(frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+        {
+            this->_task_name = task_name;
+            this->_priority = priority;
+            this->_schedule.ready = ready;
+            this->_schedule.deadline = ready;
+            this->_immediatelly_ready = false;
+        }
         
         /**
          * \brief constructor to create a real-time deadline-based task
@@ -369,7 +375,14 @@ namespace fiber{
             std::invocable<F, Args...> &&
             std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
         constexpr TaskBase(std::string_view task_name, TimePoint ready, TimePoint deadline, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
-            : TaskBase(task_name, _deadline_priority, ready, deadline, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...){}
+            : TaskBase(frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+        {
+            this->_task_name = task_name;
+            this->_priority = _deadline_priority;
+            this->_schedule.ready = ready;
+            this->_schedule.deadline = deadline;
+            this->_immediatelly_ready = false;
+        }
 
         /**
          * \brief constructor to create a real-time deadline-based task
@@ -381,7 +394,14 @@ namespace fiber{
             std::invocable<F, Args...> &&
             std::same_as<std::invoke_result_t<F, Args...>, Coroutine<fiber::Exit>>
         constexpr TaskBase(std::string_view task_name, TimePoint ready, Duration deadline, fiber::StackAllocatorExtern* frame_allocator, F&& function, Args&&... args)
-            : TaskBase(task_name, ready, ready + deadline, frame_allocator, std::forward<F>(function), std::forward<Args>(args)...){}
+            : TaskBase(frame_allocator, std::forward<F>(function), std::forward<Args>(args)...)
+        {
+            this->_task_name = task_name;
+            this->_priority = _deadline_priority;
+            this->_schedule.ready = ready;
+            this->_schedule.deadline = ready + deadline;
+            this->_immediatelly_ready = false;
+        }
 
         virtual ~TaskBase(){}
 
@@ -414,6 +434,9 @@ namespace fiber{
          * Has likely been assigned by the scheduler
          */
         constexpr unsigned int id() const {return this->_id;}
+
+        constexpr bool is_deadline_based() const {return this->_priority == _deadline_priority;}
+        constexpr bool is_priority_based() const {return this->_priority != _deadline_priority;}
 
         /**
          * \brief returns the name of the task
@@ -532,11 +555,21 @@ namespace fiber{
 
         struct less_priority_s{
             constexpr bool operator () (const TaskBase* lhs, const TaskBase* rhs){
-                if(lhs->_priority == rhs->_priority){
-                    return lhs->_schedule.deadline > rhs->_schedule.deadline;
-                }else{
-                    return lhs->_priority < rhs->_priority;
+                enum class Cases : unsigned int{
+                    both_priority = 0b00,
+                    lhs_priority_rhs_deadline = 0b01,
+                    lhs_deadline_rhs_priority = 0b10,
+                    both_deadline = 0b11
+                };
+                Cases Case = static_cast<Cases>((static_cast<unsigned int>(lhs->is_deadline_based()) << 1) || (static_cast<unsigned int>(rhs->is_deadline_based()) << 0));
+                bool result = false;
+                switch(Case){
+                    case Cases::both_priority: result = lhs->_priority < rhs->_priority; break;
+                    case Cases::lhs_priority_rhs_deadline: result = true; break;
+                    case Cases::lhs_deadline_rhs_priority: result = false; break;
+                    case Cases::both_deadline: result = lhs->_schedule.deadline > rhs->_schedule.deadline; break;
                 }
+                return result;
             }
         };
 
