@@ -53,9 +53,9 @@ namespace fiber
 
         constexpr Duration(DurationRepresentation value) : base(Tick<DurationRepresentation>(value)){}
 
-        template<class Rep, CRatio Period>
+        template<RoundingMethod rounding_type = RoundingMethod::Nearest, class Rep = unsigned int, CRatio Period = std::ratio<1>>
         constexpr Duration(std::chrono::duration<Rep, Period> duration) 
-            : base(fiber::rounding_duration_cast<base>(duration)){}
+            : base(fiber::rounding_duration_cast<base, rounding_type>(duration)){}
 
 
     };
