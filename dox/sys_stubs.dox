@@ -17,7 +17,7 @@ or any part of the standard library.
 In your main `CMakeLists.txt`, enable the wrappers via an option:
 
 @code{.cmake}
-set(FIBER_USE_FIBER_SYS_STUBS ON)
+set(FIBER_USE_SYS_STUBS ON)
 add_subdirectory(fiber)
 
 target_link_libraries(App PRIVATE fiber)
