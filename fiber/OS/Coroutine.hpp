@@ -131,7 +131,7 @@ namespace fiber{
      * \see fiber::CoroutinePromise
      * \see std::coroutine_handle
      */
-    template<class ReturnType>
+    template<class ReturnType=void>
     class Coroutine {
         public:
         using promise_type = CoroutinePromise<ReturnType>;
@@ -157,18 +157,6 @@ namespace fiber{
 
         constexpr ~Coroutine() noexcept;
 
-        /*
-            Coroutine expansion of `co_await`:
-            ```
-            auto&& awaitable = expr;
-            if (!awaitable.await_ready()) {
-                awaitable.await_suspend(current_coroutine_handle);
-                co_return;
-            }
-            auto result = awaitable.await_resume();
-            ```
-        */
-
         constexpr void resume();
 
         constexpr void destroy();
@@ -184,6 +172,18 @@ namespace fiber{
         constexpr CoroutineNode* node();
         constexpr const CoroutineNode* node() const;
 
+        /*
+            Coroutine expansion of `co_await`:
+            ```
+            auto&& awaitable = expr;
+            if (!awaitable.await_ready()) {
+                awaitable.await_suspend(current_coroutine_handle);
+                co_return;
+            }
+            auto result = awaitable.await_resume();
+            ```
+        */
+
         constexpr bool await_ready() const noexcept;
         
         template<class T>
@@ -191,6 +191,15 @@ namespace fiber{
 
         constexpr ReturnType await_resume();
     };
+
+    template<class T>
+    struct is_coroutine : public std::false_type{};
+
+    template<class T>
+    struct is_coroutine<Coroutine<T>> : public std::true_type{};
+
+    template<class T>
+    constexpr bool is_coroutine_v = is_coroutine<T>::value;
 
     struct Schedule{
         TimePoint ready;
@@ -737,7 +746,7 @@ namespace fiber{
      * \see fiber::CoroutineNode
      * \see fiber::AwaitableWrapper
      */
-    template<class ReturnType>
+    template<class ReturnType=void>
     class CoroutinePromise : public CoroutineNode{
     private:
         ReturnType _return_value;
@@ -750,14 +759,14 @@ namespace fiber{
 
         template<class Awaitable>
         constexpr auto await_transform(Awaitable&& awaitable){
-            if constexpr (std::same_as<Awaitable, Delay> || std::same_as<Awaitable, NextCycle> || std::derived_from<Awaitable, CoroutineNode>){
+            if constexpr (std::same_as<Awaitable, Delay> || std::same_as<Awaitable, NextCycle> || is_coroutine_v<Awaitable>){
                 return std::forward<Awaitable>(awaitable);
             }else{
                 return wrap_awaitable(std::forward<Awaitable>(awaitable));
             }
         }
 
-        constexpr auto get_return_object(){return Coroutine<ReturnType>(std::coroutine_handle<CoroutinePromise>::from_promise(*this));}
+        inline auto get_return_object(){return Coroutine<ReturnType>(std::coroutine_handle<CoroutinePromise>::from_promise(*this));}
         
 
         /// @brief Print an error message and kill the task
@@ -773,7 +782,7 @@ namespace fiber{
         constexpr void return_value(ReturnType&& value){this->_return_value = std::move(value);}
 
         constexpr ReturnType&& get_return_value() {
-            FIBER_ASSERT_O1_MSG(this->is_done(), "Tried to get coroutine return value, before `is_done()`. S: Read value after the coroutine is finished. Check for `is_done()` or use co_await");
+            FIBER_ASSERT_INTERNAL_MSG(this->is_done(), "Tried to get coroutine return value, before `is_done()`. S: Read value after the coroutine is finished. Check for `is_done()` or use co_await");
             return std::move(_return_value);
         }
 
@@ -788,12 +797,58 @@ namespace fiber{
         constexpr bool await_ready() const noexcept {return this->is_done();}
 
         constexpr ReturnType await_resume() {
-            FIBER_ASSERT_CRITICAL_MSG(this->await_ready(), "Resume on unready coroutnie awaitable. S: Check `await_ready()` before calling `resume()`.");
+            FIBER_ASSERT_INTERNAL_MSG(this->await_ready(), "Resume on unready coroutnie awaitable. S: Check `await_ready()` before calling `resume()`.");
             return std::move(this->_return_value); // move out before destroying to prevent use after free
         }
     };
 
-    
+    /**
+     * \brief Specialisation for ReturnTypes of type `void`
+     */
+    template<>
+    class CoroutinePromise<void> : public CoroutineNode{
+    public:
+
+        inline CoroutinePromise(){
+            this->CoroutineNode::_handle = std::coroutine_handle<CoroutinePromise>::from_promise(*this);
+        }
+
+        template<class Awaitable>
+        constexpr auto await_transform(Awaitable&& awaitable){
+            if constexpr (std::same_as<Awaitable, Delay> || std::same_as<Awaitable, NextCycle> || std::derived_from<Awaitable, CoroutineNode>){
+                return std::forward<Awaitable>(awaitable);
+            }else{
+                return wrap_awaitable(std::forward<Awaitable>(awaitable));
+            }
+        }
+
+        inline auto get_return_object(){return Coroutine<void>(std::coroutine_handle<CoroutinePromise>::from_promise(*this));}
+        
+
+        /// @brief Print an error message and kill the task
+        inline void unhandled_exception() noexcept {
+            #ifndef FIBER_DISABLE_EXCEPTIONS
+                this->task()->handle_exception(std::current_exception());
+            #else
+                this->task()->handle_exception();
+            #endif
+        } 
+
+        inline static void* operator new(std::size_t size){
+            return fiber::detail::frame_allocator->allocate(size);
+        }
+
+        inline static void operator delete(void* ptr, std::size_t size){
+            fiber::detail::frame_allocator->deallocate(ptr, size);
+        }
+        
+        inline bool await_ready() const noexcept {return this->is_done();}
+
+        inline void await_resume() {
+            FIBER_ASSERT_INTERNAL_MSG(this->await_ready(), "Resume on unready coroutnie awaitable. S: Check `await_ready()` before calling `resume()`.");
+        }
+    };
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 //                                                   Coroutine: Implementation
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -845,8 +900,13 @@ namespace fiber{
 
     template<class T>
     constexpr T Coroutine<T>::await_resume() {
-        FIBER_ASSERT_CRITICAL_MSG(this->coro, "Attempting to read from a deleted coroutine. S: Remove double `await_resume()`. Check for call to `await_resume()` after `co_await`.");
+        FIBER_ASSERT_INTERNAL_MSG(this->coro, "Attempting to read from a deleted coroutine. S: Remove double `await_resume()`. Check for call to `await_resume()` after `co_await`.");
         return this->coro.promise().await_resume();
+    }
+
+    template<>
+    constexpr void Coroutine<void>::await_resume() {
+        FIBER_ASSERT_INTERNAL_MSG(this->coro, "Attempting to read from a deleted coroutine. S: Remove double `await_resume()`. Check for call to `await_resume()` after `co_await`.");
     }
     
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -854,12 +914,12 @@ namespace fiber{
 //------------------------------------------------------------------------------------------------------------------------------------------
 
     constexpr Exit TaskBase::await_resume(){
-        FIBER_ASSERT_O1(this->is_done());
+        FIBER_ASSERT_INTERNAL(this->is_done());
         return this->_main_coroutine.promise().get_return_value();
     }
     
     constexpr Exit TaskBase::exit_status() {
-        FIBER_ASSERT_O1(this->is_done());
+        FIBER_ASSERT_INTERNAL(this->is_done());
         return this->_main_coroutine.promise().get_return_value();
     }
 
