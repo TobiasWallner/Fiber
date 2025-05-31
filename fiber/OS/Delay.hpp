@@ -43,9 +43,9 @@ namespace fiber
         /**
          * \brief Constructs a delay that can be `co_await`ed and sends a signal to the scheduler for re-scheduling **with exposed rounding type**
          */
-        template<RoundingMethod rounding_type = RoundingMethod::Nearest, class Rep = unsigned int, CRatio Period = std::ratio<1>>
+        template<RoundingMethod rounding_type = RoundingMethod::Up, class Rep = unsigned int, CRatio Period = std::ratio<1>>
         constexpr Delay(std::chrono::duration<Rep, Period> delay)
-            : Delay(fiber::Duration<rounding_type>(delay)){}
+            : Delay(fiber::rounding_duration_cast<fiber::Duration, rounding_type>(delay)){}
 
         /**
          * @brief Constructs a delay that can be `co_await`ed and sends a signal to the scheduler for re-scheduleing.
