@@ -21,7 +21,7 @@ namespace fiber{
     }
 
     void TaskBase::resume(){
-        FIBER_ASSERT_O1(this->is_resumable());
+        FIBER_ASSERT_INTERNAL(this->is_resumable());
         do{
             this->_instant_resume = false;
             this->_leaf_awaitable_obj = nullptr;
