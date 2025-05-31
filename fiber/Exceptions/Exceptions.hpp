@@ -157,14 +157,14 @@ namespace fiber{
 
     // asserts everything that can be asserted - the algorithm expects a sorted list to do binary search and will check if the list is really sorted
     #if (defined(FIBER_ASSERTION_LEVEL_FULL)) && !defined(FIBER_DISABLE_ASSERTIONS)
-        #define FIBER_ASSERT_FULL(condition) FIBER_IF_UNLIKELY(!(condition)) FIBER_THROW(fiber::AssertionFailureFull(#condition, FIBER_FUNCTION_SIGNATURE))
-        #define FIBER_ASSERT_FULL_MSG(condition, message) FIBER_IF_UNLIKELY(!(condition)) FIBER_THROW(fiber::AssertionFailureFull(#condition, message, FIBER_FUNCTION_SIGNATURE))
+        #define FIBER_ASSERT_INTERNAL(condition) FIBER_IF_UNLIKELY(!(condition)) FIBER_THROW(fiber::AssertionFailureFull(#condition, FIBER_FUNCTION_SIGNATURE))
+        #define FIBER_ASSERT_INTERNAL_MSG(condition, message) FIBER_IF_UNLIKELY(!(condition)) FIBER_THROW(fiber::AssertionFailureFull(#condition, message, FIBER_FUNCTION_SIGNATURE))
     #elif defined(FIBER_ASSERTS_AS_ASSUME)
-        #define FIBER_ASSERT_FULL(condition) FIBER_ASSUME(condition)
+        #define FIBER_ASSERT_INTERNAL(condition) FIBER_ASSUME(condition)
         #define FIBER_ASSERT_O1_MSG(condition, message) FIBER_ASSUME(condition); FIBER_USE_UNUSED(message)
     #else
-        #define FIBER_ASSERT_FULL(condition) FIBER_USE_UNUSED(condition)
-        #define FIBER_ASSERT_FULL_MSG(condition, message) FIBER_USE_UNUSED(condition); FIBER_USE_UNUSED(message)
+        #define FIBER_ASSERT_INTERNAL(condition) FIBER_USE_UNUSED(condition)
+        #define FIBER_ASSERT_INTERNAL_MSG(condition, message) FIBER_USE_UNUSED(condition); FIBER_USE_UNUSED(message)
     #endif
 
 }
