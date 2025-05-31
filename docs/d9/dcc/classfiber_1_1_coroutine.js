@@ -1,0 +1,25 @@
+var classfiber_1_1_coroutine =
+[
+    [ "promise_handle", "d9/dcc/classfiber_1_1_coroutine.html#a5d6d729bf078e7324a83442d45589c47", null ],
+    [ "promise_type", "d9/dcc/classfiber_1_1_coroutine.html#a4e6de80c7c34f1110809b40a2289e1f8", null ],
+    [ "Coroutine", "d9/dcc/classfiber_1_1_coroutine.html#ac7fd8845f6c249465687f555b49dfbd0", null ],
+    [ "Coroutine", "d9/dcc/classfiber_1_1_coroutine.html#a1134952035e40b6ab955c779d10c298d", null ],
+    [ "Coroutine", "d9/dcc/classfiber_1_1_coroutine.html#a17d19bcd1ce754499d4bb287ab6b3865", null ],
+    [ "Coroutine", "d9/dcc/classfiber_1_1_coroutine.html#aaf717c71a52ad8b285ed0c0de0dbf83e", null ],
+    [ "~Coroutine", "d9/dcc/classfiber_1_1_coroutine.html#a2c4ff5d2a2068c1307e5f7c1957bca44", null ],
+    [ "await_ready", "d9/dcc/classfiber_1_1_coroutine.html#a9183114a8944245efd1f6081a09bf547", null ],
+    [ "await_resume", "d9/dcc/classfiber_1_1_coroutine.html#af1b8df3e844e3fc94474308ecb7d7ffe", null ],
+    [ "await_resume", "d9/dcc/classfiber_1_1_coroutine.html#a375af65a18d6adef012b653fde91edb3", null ],
+    [ "await_suspend", "d9/dcc/classfiber_1_1_coroutine.html#ac49ce0425e411507688dc3feb2e350fc", null ],
+    [ "destroy", "d9/dcc/classfiber_1_1_coroutine.html#a63bd9e32143ee0fe3a28d7cb272a0e8b", null ],
+    [ "is_done", "d9/dcc/classfiber_1_1_coroutine.html#aebaa453e8a46ae96ccbf8c8842a59a30", null ],
+    [ "node", "d9/dcc/classfiber_1_1_coroutine.html#a3f6c35240b24ff3ac31ebdc43cabd2a9", null ],
+    [ "node", "d9/dcc/classfiber_1_1_coroutine.html#a8bb830177ee2c9f4e7e86f59dd47758f", null ],
+    [ "operator bool", "d9/dcc/classfiber_1_1_coroutine.html#a3736b4a46afb10b62c566d03ab8ddf3c", null ],
+    [ "operator=", "d9/dcc/classfiber_1_1_coroutine.html#a28a89ec9af751da129e975a05e81ea05", null ],
+    [ "operator=", "d9/dcc/classfiber_1_1_coroutine.html#a292ff7652c5475585c0d7130364abbb8", null ],
+    [ "promise", "d9/dcc/classfiber_1_1_coroutine.html#a51db1093016c6ad4f49db2ae9f91eb90", null ],
+    [ "Register", "d9/dcc/classfiber_1_1_coroutine.html#a039bba468cfcb0818e1b73051971ced1", null ],
+    [ "resume", "d9/dcc/classfiber_1_1_coroutine.html#acd8db3357eb0da390718febbaba77b70", null ],
+    [ "coro", "d9/dcc/classfiber_1_1_coroutine.html#a7271aeadd43d10c200c87030b10d5d99", null ]
+];

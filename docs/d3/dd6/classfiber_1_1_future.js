@@ -1,0 +1,25 @@
+var classfiber_1_1_future =
+[
+    [ "Future", "d3/dd6/classfiber_1_1_future.html#abdcd8c071949ca2e09c485f4f3625684", null ],
+    [ "Future", "d3/dd6/classfiber_1_1_future.html#aa2ba7636127d63ecdc7fb8584eaa39a0", null ],
+    [ "Future", "d3/dd6/classfiber_1_1_future.html#a61657c6e242b3d91fa18d532d5b60b8a", null ],
+    [ "~Future", "d3/dd6/classfiber_1_1_future.html#a85feff0702816ce1704d163f4374aa05", null ],
+    [ "await_ready", "d3/dd6/classfiber_1_1_future.html#a1a3161bf24cb227d35d1a818fdea28d8", null ],
+    [ "await_resume", "d3/dd6/classfiber_1_1_future.html#a3998ecf6b389aee17892eddafd0223dc", null ],
+    [ "get", "d3/dd6/classfiber_1_1_future.html#a3d37486e1c7d4003d4ca3d4963a5256b", null ],
+    [ "get_if", "d3/dd6/classfiber_1_1_future.html#a32b7eb7bdb31caf56e720c2e85494032", null ],
+    [ "get_state", "d3/dd6/classfiber_1_1_future.html#a53d07c9a5fbf3a786aa4c61499f8d346", null ],
+    [ "is_broken_promise", "d3/dd6/classfiber_1_1_future.html#aff3108e790dd9a191f045561eb56ff47", null ],
+    [ "is_connected", "d3/dd6/classfiber_1_1_future.html#ac943802c7d3956beefbcb003a319ef06", null ],
+    [ "is_connected_to", "d3/dd6/classfiber_1_1_future.html#a65a88930b314fe2cdf74de9e42315f7b", null ],
+    [ "is_detatched", "d3/dd6/classfiber_1_1_future.html#a4fd419a76266f2f2e70e17b7a0fd5bfc", null ],
+    [ "is_ready", "d3/dd6/classfiber_1_1_future.html#aaa57fed3f7a04b435ffa31c1a16625c4", null ],
+    [ "is_waiting", "d3/dd6/classfiber_1_1_future.html#aaea98d6c781ed55499add68b3a855464", null ],
+    [ "operator bool", "d3/dd6/classfiber_1_1_future.html#a79c0d0c77f2767fa3e7d6334e461592e", null ],
+    [ "operator=", "d3/dd6/classfiber_1_1_future.html#a3e81d468dd71e1e26292257e59e0ab6a", null ],
+    [ "operator=", "d3/dd6/classfiber_1_1_future.html#a27e49320eb6a3c3f37b5dd018b88b829", null ],
+    [ "state", "d3/dd6/classfiber_1_1_future.html#a19dfcee7132a29cdfc8ac02e3bc1dc01", null ],
+    [ "wait", "d3/dd6/classfiber_1_1_future.html#ae3b18c66126a38a30332ccfbf8b7f716", null ],
+    [ "make_future_promise", "d3/dd6/classfiber_1_1_future.html#ac0789e89aad14d96ad83c5481c7d9318", null ],
+    [ "Promise< T >", "d3/dd6/classfiber_1_1_future.html#a697fa51a09bfecabc58fd6d07ce8f501", null ]
+];
