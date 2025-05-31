@@ -6,6 +6,86 @@
 namespace fiber
 {
 
+    enum class LCD_HD44780_NumberOfLines : unsigned int {
+        One = 0, 
+        Two = 0b00001000
+    };
+
+    enum class LCD_HD44780_Dots : unsigned int {
+        _5x8 = 0, 
+        _5x11 = 0b00000100
+    };
+
+    enum class LCD_HD44780_CursorEntryDirection : unsigned int {
+        Decrement = 0, 
+        Increment = 0b00000010
+    };
+
+    enum class LCD_HD44780_DisplayEntryShift : unsigned int {
+        Off = 0, 
+        On = 0b00000001
+    };
+
+    enum class LCD_HD44780_DisplayControl : unsigned int {
+        Off = 0, 
+        On = 0b00000100
+    };
+
+    enum class LCD_HD44780_CursorControl : unsigned int {
+        Off = 0, 
+        On = 0b00000010, 
+        Blink = 0b00000011
+    };
+
+    enum class LCD_HD44780_CursorDisplayShift : unsigned int {
+        CursorLeft   = 0b00000000,
+        CursorRight  = 0b00000100,
+        DisplayLeft  = 0b00001000,
+        DisplayRight = 0b00001100,
+    };
+
+    struct LCD_HD44780_BusyFlagAddress{
+        uint8_t address;
+        bool busy_flag;
+    };
+
+    static_assert(cAwaitable<Coroutine<void>>, "");
+
+    /**
+     * \brief Template interface for the 'LCD_HD447080' or compatible version
+     */
+    template<class LCD>
+    concept cLCD_HD44780 = requires(
+            LCD lcd, 
+            LCD_HD44780_NumberOfLines number_of_lines, 
+            LCD_HD44780_Dots dots, 
+            bool boolean,
+            LCD_HD44780_CursorEntryDirection direction, 
+            LCD_HD44780_DisplayEntryShift shift,
+            LCD_HD44780_DisplayControl display_control, 
+            LCD_HD44780_CursorControl cursor_control,
+            LCD_HD44780_CursorDisplayShift cursor_display_shift,
+            uint8_t address)
+    {
+        { lcd.columns() } -> std::unsigned_integral;
+        { lcd.rows() } -> std::unsigned_integral;
+
+        { lcd.background_light(boolean) } -> cAwaitable<void>;
+        { lcd.init() } -> cAwaitable<void>;
+        { lcd.clear_display() } -> cAwaitable<void>;
+        { lcd.return_home() } -> cAwaitable<void>;
+        { lcd.entry_mode(direction, shift) } -> cAwaitable<void>;
+        { lcd.display_control(display_control, cursor_control) } -> cAwaitable<void>;
+        { lcd.cursor_and_display_shift(cursor_display_shift) } -> cAwaitable<void>;
+        { lcd.function_set(number_of_lines, dots) } -> cAwaitable<void>;
+        { lcd.set_cg_address(address) } -> cAwaitable<void>;
+        { lcd.set_dd_address(address) } -> cAwaitable<void>;
+        { lcd.write_data(address) } -> cAwaitable<void>;
+        { lcd.read_data() } -> cAwaitable<uint8_t>;
+        { lcd.read_busy_flag_and_address() } -> cAwaitable<LCD_HD44780_BusyFlagAddress>;
+        { lcd.is_busy() } -> cAwaitable<bool>;
+    };
+
     /**
      * \brief driver for a LCD display with 8 data bit interface
      * 
@@ -33,7 +113,7 @@ namespace fiber
      * \tparam EPin Enable/Clock Pin
      * \tparam APin Background Enable Pin (optional)
      */
-    template<cPins<8> DataPins, cOutputPin RSPin, cOutputPin RWPin, cOutputPin EPin, cOutputPin APin = VoidPin>
+    template<cOutPin RSPin, cOutPin RWPin, cOutPin EPin, cPins<8> DataPins, cOutPin APin = VoidPin>
     class LCD_HD44780{
     private:
         DataPins _data_pins;
@@ -43,12 +123,16 @@ namespace fiber
         APin _a_pin;
 
         unsigned int _columns;
-        unsigned int _rows;
+
+        LCD_HD44780_NumberOfLines _lines;
+        LCD_HD44780_Dots _dots;
 
     public:
-        LCD_HD44780(
-            DataPins& data_pins, RSPin& rs_pin, RWPin& rw_pin, EPin& e_pin, APin& a_pin,
-            unsigned int columns, unsigned int rows
+        constexpr LCD_HD44780(
+            LCD_HD44780_NumberOfLines lines, unsigned int columns, LCD_HD44780_Dots dots,
+            const RSPin& rs_pin, const RWPin& rw_pin, const EPin& e_pin, 
+            const DataPins& data_pins,  
+            const APin& a_pin=VoidPin()
         )
             : _data_pins(data_pins)
             , _rs_pin(rs_pin)
@@ -56,57 +140,84 @@ namespace fiber
             , _e_pin(e_pin)
             , _a_pin(a_pin)
             , _columns(columns)
-            , _rows(rows){}
+            , _lines(lines)
+            , _dots(dots){}
 
     public:
 
         /**
          * \brief returns the number of columns of the LCD display
          */
-        unsigned int columns() const {return this->_columns;}
+        constexpr unsigned int columns() const {return this->_columns;}
 
         /**
          * \brief returns the number or rows of the LCD display
          */
-        unsigned int rows() const {return this->_rows;}
+        constexpr unsigned int rows() const {
+            if(LCD_HD44780_NumberOfLines::One == this->_lines){
+                return 1;
+            }else{
+                return 2;
+            }
+        }
 
-        std::suspend_never background_light(bool b){
-            this->_a_pin.set(b);
+        [[nodiscard]] std::suspend_never background_light(bool b){
+            this->_a_pin.write(b);
             return std::suspend_never{};
         }
 
-        [[nodiscard]] Coroutine<void> init(NumberOfLines number_of_lines, Dots dots, bool background_light){
-            co_await Delay<RoundingMethod::Up>(50ms);
+        [[nodiscard]] Coroutine<void> init(){
+            // set all output low
+            this->_data_pins.dir(0);
+            this->_rs_pin.dir(false);
+            this->_rw_pin.dir(false);
+            this->_e_pin.dir(false);
+            this->_a_pin.dir(false);
+
+            this->_data_pins.write(0);
+            this->_rs_pin.write(false);
+            this->_rw_pin.write(false);
+            this->_e_pin.write(false);
+            this->_a_pin.write(false);
+
+            co_await Delay(50ms);
             
             // function set command
             {
                 const unsigned int command_flag = 0b00100000;
                 const unsigned int dataline_flag = 0b00010000; // 8 bit interface
-                co_await this->write_command_no_wait(command_flag | dataline_flag | number_of_lines | dots);
+                const unsigned int command = command_flag | dataline_flag | static_cast<unsigned int>(_lines) | static_cast<unsigned int>(_dots);
+                co_await this->write_command_no_wait(command);
             }
 
-            co_await Delay<RoundingMethod::Up>(50us);
+            co_await Delay(50us);
 
             // display control
             {
                 const unsigned int command_flag = 0b00001000;
-                co_await this->write_command_no_wait(command_flag | DisplayControl::On | CursorControl::Off);
+                const unsigned int command = command_flag 
+                    | static_cast<unsigned int>(LCD_HD44780_DisplayControl::On) 
+                    | static_cast<unsigned int>(LCD_HD44780_CursorControl::Off);
+                co_await this->write_command_no_wait(command);
             }
 
-            co_await Delay<RoundingMethod::Up>(50us);
+            co_await Delay(50us);
 
             // display clear
             {
                 const unsigned int command_flag = 0b00000001;
-                return this->write_command_no_wait(command_flag);
+                co_await this->write_command_no_wait(command_flag);
             }
 
-            co_await Delay<RoundingMethod::Up>(2ms);
+            co_await Delay(2ms);
 
             // entry mode
             {
                 const unsigned int command_flag = 0b00000100;
-                return this->write_command_no_wait(command_flag | CursorEntryDirection::Increment | DisplayEntryShift::Off);
+                const unsigned int command = command_flag 
+                    | static_cast<unsigned int>(LCD_HD44780_CursorEntryDirection::Increment) 
+                    | static_cast<unsigned int>(LCD_HD44780_DisplayEntryShift::Off);
+                co_await this->write_command_no_wait(command);
             }
         }
 
@@ -129,50 +240,41 @@ namespace fiber
             return this->write_command(command_flag);
         }
 
-        enum class CursorEntryDirection : unsigned int {Decrement = 0, Increment = 0b00000010};
-        enum class DisplayEntryShift : unsigned int {Off = 0, On = 0b00000001};
-
+        
         /**
          * \brief Set the cursors move direction and display shift
          */
-        [[nodiscard]] Coroutine<void> entry_mode(CursorEntryDirection direction, DisplayEntryShift shift){
+        [[nodiscard]] Coroutine<void> entry_mode(LCD_HD44780_CursorEntryDirection direction, LCD_HD44780_DisplayEntryShift shift){
             const unsigned int command_flag = 0b00000100;
-            return this->write_command(command_flag | direction | shift);
+            const unsigned int command = command_flag | static_cast<unsigned int>(direction) | static_cast<unsigned int>(shift);
+            return this->write_command(command);
         }
-
-        enum class DisplayControl : unsigned int {Off = 0, On = 0b00000100};
-        enum class CursorControl : unsigned int {Off = 0, On = 0b00000010, Blink = 0b00000011};
 
         /**
          * \brief Turn the display on/off and the curser on/off/blink
          */
-        [[nodiscard]] Coroutine<void> display_control(DisplayControl display_control, CursorControl cursor_control){
+        [[nodiscard]] Coroutine<void> display_control(LCD_HD44780_DisplayControl display_control, LCD_HD44780_CursorControl cursor_control){
             const unsigned int command_flag = 0b00001000;
-            return this->write_command(command_flag | display_control | cursor_control);
+            const unsigned int command = command_flag | static_cast<unsigned int>(display_control) | static_cast<unsigned int>(cursor_control);
+            return this->write_command(command);
         }
 
-        enum class CursorDisplayShift : unsigned int {
-            CursorLeft   = 0b00000000,
-            CursorRight  = 0b00000100,
-            DisplayLeft  = 0b00001000,
-            DisplayRight = 0b00001100,
-        }
+        
 
-        [[nodiscard]] Coroutine<void> cursor_and_display_shift(CursorDisplayShift cursor_display_shift){
+        [[nodiscard]] Coroutine<void> cursor_and_display_shift(LCD_HD44780_CursorDisplayShift cursor_display_shift){
             const unsigned int command_flag = 0b00010000;
-            return this->write_command(command_flag | cursor_display_shift);
+            const unsigned int command = command_flag | static_cast<unsigned int>(cursor_display_shift);
+            return this->write_command(command);
         }
-
-        enum class NumberOfLines{One = 0, Two = 0b00001000};
-        enum class Dots{_5x8 = 0, _5x11 = 0b00000100};
         
         /**
          * \brief set the data width, the number of lines and the character font
          */
-        [[nodiscard]] Coroutine<void> function_set(NumberOfLines number_of_lines, Dots dots){
+        [[nodiscard]] Coroutine<void> function_set(LCD_HD44780_NumberOfLines number_of_lines, LCD_HD44780_Dots dots){
             const unsigned int command_flag = 0b00100000;
             const unsigned int dataline_flag = 0b00010000; // 8 bit interface
-            return this->write_command(command_flag | dataline_flag | number_of_lines | dots);
+            const unsigned int command = command_flag | dataline_flag | static_cast<unsigned int>(number_of_lines) | static_cast<unsigned int>(dots);
+            return this->write_command(command);
         }
 
         /**
@@ -180,7 +282,8 @@ namespace fiber
          */
         [[nodiscard]] Coroutine<void> set_cg_address(uint8_t addr){
             const unsigned int command_flag = 0b01000000;
-            return this->write_command(command_flag | (addr & 0b00111111));
+            const unsigned int command = command_flag | (addr & 0b00111111);
+            return this->write_command(command);
         }
 
         /**
@@ -188,7 +291,8 @@ namespace fiber
          */
         [[nodiscard]] Coroutine<void> set_dd_address(uint8_t addr){
             const unsigned int command_flag = 0b10000000;
-            return this->write_command(command_flag | (addr & 0b01111111));
+            const unsigned int command = command_flag | (addr & 0b01111111);
+            return this->write_command(command);
         }
 
         /**
@@ -205,14 +309,9 @@ namespace fiber
             return this->read(true);
         }
 
-        struct BusyFlagAddress{
-            uint8_t address;
-            bool busy_flag;
-        };
-
-        [[nodiscard]] Coroutine<busy_flag_and_address> read_busy_flag_and_address(){
+        [[nodiscard]] Coroutine<LCD_HD44780_BusyFlagAddress> read_busy_flag_and_address(){
             uint8_t data = co_await this->read_no_wait(false);
-            BusyFlagAddress result;
+            LCD_HD44780_BusyFlagAddress result;
             result.address   =  data & 0b01111111;
             result.busy_flag = (data & 0b10000000) != 0;
             co_return result;
@@ -231,7 +330,7 @@ namespace fiber
             while(true){
                 const bool busy = co_await is_busy();
                 if(busy){
-                    co_await Delay<RoundingMethod::Up>(10us);
+                    co_await Delay(10us);
                 }else{
                     break;
                 }
@@ -258,21 +357,21 @@ namespace fiber
             this->_data_pins.dir(0);
 
             // config to write command and writing mode
-            this->_rs_pin.set(rs); // rs=false: command, rs=true: data
+            this->_rs_pin.write(rs); // rs=false: command, rs=true: data
             this->_rw_pin.low(); // writing
-            co_await fiber::Delay<RoundingMethod::Up>(1us); // setup/hold time
+            co_await fiber::Delay(1us); // setup/hold time
 
             // set enable flag
             this->_e_pin.high();
-            co_await fiber::Delay<RoundingMethod::Up>(1us); // setup/hold time
+            co_await fiber::Delay(1us); // setup/hold time
 
             // set data
-            this->_data_pins.set(command);
-            co_await fiber::Delay<RoundingMethod::Up>(1us); // setup/hold time
+            this->_data_pins.write(command);
+            co_await fiber::Delay(1us); // setup/hold time
 
             // clear enable flag
             this->_e_pin.low();
-            co_await fiber::Delay<RoundingMethod::Up>(1us); // setup/hold time
+            co_await fiber::Delay(1us); // setup/hold time
         }
 
         [[nodiscard]]Coroutine<uint8_t> read(bool rs){
@@ -288,23 +387,22 @@ namespace fiber
             this->_data_pins.dir(0xFF);
 
             // config pins for data and reading
-            this->_rs_pin.set(rs); // data
+            this->_rs_pin.write(rs); // data
             this->_rw_pin.high(); // reading
-            co_await fiber::Delay<RoundingMethod::Up>(1us); // setup/hold time
+            co_await fiber::Delay(1us); // setup/hold time
 
             // set enable flag
             this->_e_pin.high();
-            co_await fiber::Delay<RoundingMethod::Up>(1us); // setup/hold time
+            co_await fiber::Delay(1us); // setup/hold time
 
             // read data
             const std::bitset<8> result_data_bits = this->_data_pins.read();
             const uint8_t result_data = static_cast<uint8_t>(result_data_bits.to_ulong());
 
             this->_e_pin.low();
-            co_await fiber::Delay<RoundingMethod::Up>(1us); // setup/hold time
+            co_await fiber::Delay(1us); // setup/hold time
 
             co_return result_data;
         }
-
-    };
+    }; static_assert(cLCD_HD44780<LCD_HD44780<VoidPin, VoidPin, VoidPin, VoidPins<8>, VoidPin>>, "LCD_HD44780 should implement cLCD_HD44780");
 } // names
