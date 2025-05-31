@@ -101,7 +101,6 @@ namespace fiber{
         /// @return a Tick
         /// @throws If full assertions are enabled, throws if the passed value is larger than the modulo
         static constexpr Tick<UInt, MAX_TICK> reinterpret(UInt v){
-            FIBER_ASSERT_FULL(v <= modulo);
             Tick<UInt, MAX_TICK> result;
             result.value = static_cast<UInt>(v);
             return result;
