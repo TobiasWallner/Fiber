@@ -46,7 +46,7 @@ This will turn all unused assertions (higher layer or all if disabled) into assu
 
 - `FIBER_ASSERT_CRITICAL(condition == true)`: Use this for an assert that uses less than ~5% of the time compared to the rest of the function.
 - `FIBER_ASSERT_O1(condition == true)`: Use this if an assert can be done in O[1] time but would take a considerable amount of time compared to the rest of the function. (50% performance hit)
-- `FIBER_ASSERT_FULL(condition == true)`: Use if an assert will take more than O[1] time. Will take a considerable amount of time.
+- `FIBER_ASSERT_INTERNAL(condition == true)`: Internal assertions for error states that should be fully handled by the library. The user should not be able to trigger them.
 
 *note that if exceptions are disabled the assertions will trap execution*
 
