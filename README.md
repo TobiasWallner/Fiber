@@ -114,7 +114,7 @@ Just add the following ot your `CMakeLists.txt`:
 include(CPM.cmake)
 
 # Optional: Enable system call stubs for freestanding/bare-metal
-set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # add/downloads the library
 CPMAddPackage("gh:TobiasWallner/Fiber#main")
@@ -122,7 +122,7 @@ CPMAddPackage("gh:TobiasWallner/Fiber#main")
 # link fiber to your project
 target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+# optionally: if `FIBER_USE_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
 target_link_libraries(my_target PUBLIC fiber_sys_stubs)
 ```
 
@@ -134,7 +134,7 @@ does not support source cacheing and download the full libraries into your proje
 Add to your `CMakeLists.txt`:
 ```cmake
 # optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
-set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # adds/downloads the library
 include(FetchContent)
@@ -150,7 +150,7 @@ FetchContent_MakeAvailable(Fiber)
 # link to the emebed library
 target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+# optionally: if `FIBER_USE_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
 target_link_libraries(my_target PUBLIC fiber_sys_stubs)
 ```
 
@@ -164,7 +164,7 @@ git clone https://github.com/TobiasWallner/Fiber.git external/Fiber --depth=1
 Add to your `CMakeLists.txt`:
 ```cmake
 # optionally: add system wrappers that reduce binary size on embedded options that never exit `main()`
-set(FIBER_USE_FIBER_SYS_STUBS ON CACHE BOOL "" FORCE)
+set(FIBER_USE_SYS_STUBS ON CACHE BOOL "" FORCE)
 
 # add the library
 add_subdirectory(external/Fiber)
@@ -172,7 +172,7 @@ add_subdirectory(external/Fiber)
 # link to the emebed library
 target_link_libraries(my_target PRIVATE fiber)
 
-# optionally: if `FIBER_USE_FIBER_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
+# optionally: if `FIBER_USE_SYS_STUBS ON`. !!! Has to link PUBLIC !!!
 target_link_libraries(my_target PUBLIC fiber_sys_stubs) # if ON
 ```
 

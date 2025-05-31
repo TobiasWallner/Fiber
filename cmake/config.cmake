@@ -53,7 +53,7 @@ option(FIBER_MULTI_CORE "Enables multicore features and safeguards" OFF)
 # ================================================================================
 
 option(
-    FIBER_USE_FIBER_SYS_STUBS 
+    FIBER_USE_SYS_STUBS 
     "Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size"
     OFF)
 # ================================================================================
@@ -165,7 +165,7 @@ set_exactly_one("${_fiber_float_representation}" FIBER_FMT_FLOAT_REP_ENG)
 
 set(fiber_cmake_flags
     FIBER_COMPILE_TESTS
-    FIBER_USE_FIBER_SYS_STUBS
+    FIBER_USE_SYS_STUBS
 )
 
 set(fiber_main_flags
@@ -210,8 +210,8 @@ message(STATUS "---------------------")
 foreach(var IN LISTS fiber_cmake_flags)
     message(STATUS "  ${var} = ${${var}}")
 
-    if("${var}" STREQUAL "FIBER_USE_FIBER_SYS_STUBS" AND NOT FIBER_USE_FIBER_SYS_STUBS)
-        message(STATUS "    Tip: `FIBER_USE_FIBER_SYS_STUBS` and link to `fiber_sys_stubs`.")
+    if("${var}" STREQUAL "FIBER_USE_SYS_STUBS" AND NOT FIBER_USE_SYS_STUBS)
+        message(STATUS "    Tip: `FIBER_USE_SYS_STUBS` and link to `fiber_sys_stubs`.")
         message(STATUS "         reduces binary size for your bare-metal embedded system\n")
     endif()
 endforeach()

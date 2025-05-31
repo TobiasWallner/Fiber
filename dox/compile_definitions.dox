@@ -25,7 +25,7 @@ This means you do not manully have to turn them `OFF`.
 
 | Definition | Description | Default value |
 |------------|-------------|---------------|
-| `FIBER_USE_FIBER_SYS_STUBS` | Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size | `OFF` |
+| `FIBER_USE_SYS_STUBS` | Enables system stubs that prevent the usage of unnecessary standard library features and massively reduces binary size | `OFF` |
 
 @section section_compile_options_exceptions_assertions Exceptions and Assertions
 
