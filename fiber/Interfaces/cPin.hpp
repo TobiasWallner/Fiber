@@ -4,6 +4,7 @@
 
 #include <concepts>
 #include <bitset>
+#include <tuple>
 
 namespace fiber
 {
@@ -17,7 +18,7 @@ namespace fiber
      * 
      * ---
      * ```cpp
-     * void set(bool b);
+     * void write(bool b);
      * ```
      * 
      * sets the pin output level to the passed state
@@ -40,11 +41,6 @@ namespace fiber
      * ```
      * sets the pin to logic low
      * 
-     * ---
-     * 
-     * ```cpp
-     * bool read();
-     * ```
      * 
      * reads the value from the pin
      * 
@@ -52,10 +48,9 @@ namespace fiber
      */
     template<class Pin>
     concept cOutPin = requires(Pin pin, bool level){
-        { pin.set(level) } -> std::same_as<void>;
         { pin.high() } -> std::same_as<void>;
         { pin.low() } -> std::same_as<void>;
-        { pin.read() } -> std::same_as<bool>;
+        { pin.write(level) } -> std::same_as<void>;
     };
 
     /**
@@ -66,16 +61,32 @@ namespace fiber
      * ---
      * 
      * ```cpp
-     * bool read();
+     * [[nodiscard]] bool read() ;
      * ```
      * 
-     * reads the value from the pin
-     * 
      * *Returns:*  the logic value applied to the pin.
+     * 
+     * ---
+     * 
+     * ```cpp
+     * [[nodiscard]] bool is_high() ;
+     * ```
+     * 
+     * *Returns:*  `true` is the pin is set to logic high.
+     * 
+     * ---
+     * 
+     * ```cpp
+     * [[nodiscard]] bool is_low() ;
+     * ```
+     * 
+     * *Returns:*  `true` is the pin is set to logic low.
      */
     template<class Pin>
-    concept cInPin = requires(Pin pin){
-        { pin.read() } -> std::same_as<bool>;
+    concept cInPin = requires( Pin pin){
+        { /*nodiscard*/ pin.is_high() } -> std::same_as<bool>;
+        { /*nodiscard*/ pin.is_low() } -> std::same_as<bool>;
+        { /*nodiscard*/ pin.read() } -> std::same_as<bool>;
     };
 
     /**
@@ -87,7 +98,7 @@ namespace fiber
      * 
      * ---
      * ```cpp
-     * void set(bool b);
+     * void write(bool b);
      * ```
      * 
      * sets the pin output level to the passed state
@@ -141,22 +152,40 @@ namespace fiber
      * ---
      * 
      * ```cpp
-     * bool read();
+     * [[nodiscard]] bool read() ;
      * ```
      * 
-     * reads the value from the pin
-     * 
      * *Returns:*  the logic value applied to the pin.
+     * 
+     * ---
+     * 
+     * ```cpp
+     * [[nodiscard]] bool is_high() ;
+     * ```
+     * 
+     * *Returns:*  `true` is the pin is set to logic high.
+     * 
+     * ---
+     * 
+     * ```cpp
+     * [[nodiscard]] bool is_low() ;
+     * ```
      */
     template<class Pin>
-    concept cPin = requires(Pin pin, bool level){
+    concept cPin = requires(Pin pin, bool boolean){
         { pin.high() } -> std::same_as<void>;
         { pin.low() } -> std::same_as<void>;
-        { pin.set(level) } -> std::same_as<void>;
+        { pin.write(boolean) } -> std::same_as<void>;
+
         { pin.input() } -> std::same_as<void>;
-        { pin.read() } -> std::same_as<bool>;
+        { pin.output() } -> std::same_as<void>;
+        { pin.dir(boolean) } -> std::same_as<void>;
+
+        { /*nodiscard*/ pin.is_high() } -> std::same_as<bool>;
+        { /*nodiscard*/ pin.is_low() } -> std::same_as<bool>;
+        { /*nodiscard*/ pin.read() } -> std::same_as<bool>;
     };
-s
+
     // ------------------ multiple pins ------------------
 
     /**
@@ -166,8 +195,8 @@ s
      */
     template<class Pins, std::size_t N>
     concept cOutPins = requires(Pins pins, std::bitset<N> values, std::size_t n){
-        { pins.set(values) } -> std::same_as<void>;
-        { pins.view(0) } -> cOutPin;
+        { pins.write(values) } -> std::same_as<void>;
+        { pins.template view<0>() } -> cOutPin;
     };
 
     /**
@@ -178,7 +207,7 @@ s
     template<class Pins, std::size_t N>
     concept cInPins = requires(Pins pins){
         { pins.read() } -> std::same_as<std::bitset<N>>;
-        { pins.view(0) } -> cInPin;
+        { pins.template view<0>() } -> cInPin;
     };
 
     /**
@@ -186,7 +215,7 @@ s
      * 
      * Pin without any practical delay, like pins of the micro controller
      * 
-     * The `set()` function writes levels to output pins and ignores values for input pins, where:
+     * The `write()` function writes levels to output pins and ignores values for input pins, where:
      *   - `true`, `1` --> High
      *   - `false`, `0` --> Low
      * 
@@ -197,10 +226,10 @@ s
      */
     template<class Pins, std::size_t N>
     concept cPins = requires(Pins pins, std::bitset<N> values){
-        { pins.set(values) } -> std::same_as<void>;
+        { pins.write(values) } -> std::same_as<void>;
         { pins.dir(values) } -> std::same_as<void>;
         { pins.read() } -> std::same_as<std::bitset<N>>;
-        { pins.view(0) } -> cPin;
+        { pins.template view<0>() } -> cPin;
     };
 
 // ---------------------------------------------------------------------------------------------
@@ -213,33 +242,134 @@ s
     class VoidPin{
         public:
 
-        /// @brief sets the pin output level to the passed state
-        /// @param b the new state for the pin
-        ///   - `true`: logic high
-        ///   - `false`: logic low
-        constexpr void set([[maybe_unused]]bool b){}
+        /// @brief does nothing (no-op)
+        constexpr void write([[maybe_unused]]bool b){}
 
-        /// @brief sets the pin to logic high
+        /// @brief does nothing (no-op)
         constexpr void high(){}
 
-        /// @brief sets the pin to logic low
+        /// @brief does nothing (no-op)
         constexpr void low(){}
 
-        /// @brief sets the pin direction to the passed state
-        /// @param b the new direction for the pin
-        ///   - `true`: input
-        ///   - `false`: output
+        /// @brief does nothing (no-op)
         constexpr void dir([[maybe_unused]] bool b){}
 
-        /// @brief configurates the pin as an input pin that can be read from
+        /// @brief does nothing (no-op)
         constexpr void input(){}
 
-        /// @brief configurates the pin as an output pin that can be written to
+        /// @brief does nothing (no-op)
         constexpr void output(){}
 
-        /// @brief reads the value from the pin
-        /// @return the logic value from the pin
-        constexpr bool read(){}
-    }
+        /// @brief always returns false
+        [[nodiscard]] constexpr bool read()  {return false;}
+
+        /// @brief always returns false
+        [[nodiscard]] constexpr bool is_high()  {return false;}
+
+        /// @brief always returns true
+        [[nodiscard]] constexpr bool is_low()  {return true;}
+    }; static_assert(cPin<VoidPin>, "VoidPin needs to implement cPin");
+
+    template<cPin Pin>
+    class InvertedPin{
+    private:
+        Pin _pin;
+
+    public: 
+        constexpr InvertedPin(const Pin& pin) : _pin(pin){}
+
+        constexpr void high(){_pin.low();}
+        constexpr void low(){_pin.high();}
+        constexpr void write(bool level){_pin.write(!level);}
+
+        constexpr void input(){_pin.input();}
+        constexpr void output(){_pin.output();}
+        constexpr void dir(bool direction){_pin.dir(direction);}
+        
+        [[nodiscard]] constexpr bool is_high()  {return _pin.is_low();}
+        [[nodiscard]] constexpr bool is_low()  {return _pin.is_high();}
+        [[nodiscard]] constexpr bool read()  {return !_pin.read();}
+    }; static_assert(cPin<InvertedPin<VoidPin>>, "InvertedPin needs to implement cPin");
+
+    template<size_t N>
+    class VoidPins{
+    public:
+        /// @brief does nothing (no-op)
+        constexpr void write([[maybe_unused]]std::bitset<N> values){}
+
+        /// @brief does nothing (no-op)
+        constexpr void dir([[maybe_unused]]std::bitset<N> values){}
+        
+        /// @brief does nothing (no-op) and returns `0`
+        [[nodiscard]] constexpr std::bitset<N> read(){return std::bitset<N>(0);}
+        
+        /// @brief returns a void pin 
+        template<size_t pin>
+        requires(pin < N)
+        [[nodiscard]] constexpr VoidPin view(){return VoidPin();}
+        
+    }; static_assert(cPins<VoidPins<8>, 8>, "cPinArray needs to implement cPins");
+
+    /**
+     * \brief A tuple (heterogenious collection) of pins that can be written together as if it was a port
+     */
+    template<typename... Pins>
+    requires (cPin<Pins> && ...)
+    class PinTuple{
+        std::tuple<Pins...> pins;
+
+    public:
+        
+        /**
+         * \brief constructs a PinTuple from a list of pins
+         */
+        constexpr PinTuple(Pins... pins) : pins(std::forward<Pins>(pins)...){}
+
+        /**
+         * \brief writes each bit to each corresponding pin
+         */
+        constexpr void write(std::bitset<sizeof...(Pins)> values){
+            write_impl(values, std::make_index_sequence<sizeof...(Pins)>{});
+        }
+
+        /**
+         * \brief writes each bit to configure each corresponding pin
+         */
+        constexpr void dir(std::bitset<sizeof...(Pins)> values){
+            dir_impl(values, std::make_index_sequence<sizeof...(Pins)>{});
+        }
+
+        /**
+         * \brief reads from all pins and writes their results to the corresponding bit position
+         */
+        [[nodiscard]] constexpr std::bitset<sizeof...(Pins)> read()  {
+            return read_impl(std::make_index_sequence<sizeof...(Pins)>{});
+        }
+
+        /**
+         * \brief returns a view of the corresponding pin position
+         */
+        template<size_t pin>
+        requires(pin < sizeof...(Pins))
+        [[nodiscard]] constexpr auto view(){return std::get<pin>(pins);}
+
+    private:
+        template<std::size_t... I>
+        constexpr void write_impl(const std::bitset<sizeof...(Pins)>& values, std::index_sequence<I...>) {
+            (..., std::get<I>(pins).write(values[I]));
+        }
+
+        template<std::size_t... I>
+        constexpr void dir_impl(const std::bitset<sizeof...(Pins)>& values, std::index_sequence<I...>) {
+            (..., std::get<I>(pins).dir(values[I]));
+        }
+
+        template<std::size_t... I>
+        constexpr std::bitset<sizeof...(Pins)> read_impl(std::index_sequence<I...>)  {
+            std::bitset<sizeof...(Pins)> result = ((std::bitset<sizeof...(Pins)>(std::get<I>(pins).read() ? 1 : 0) << I) | ...);
+            return result;
+        }
+
+    }; static_assert(cPins<PinTuple<VoidPin, VoidPin>, 2>, "PinTuple needs to implement cPins");
 
 } // namespace fiber
