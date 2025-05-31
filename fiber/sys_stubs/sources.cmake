@@ -1,5 +1,5 @@
 
-if(FIBER_USE_FIBER_SYS_STUBS)
+if(FIBER_USE_SYS_STUBS)
     add_library(fiber_sys_stubs OBJECT 
         ${CMAKE_CURRENT_LIST_DIR}/sys_stubs.cpp
     )
