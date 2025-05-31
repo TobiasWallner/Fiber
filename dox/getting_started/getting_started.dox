@@ -5,6 +5,7 @@
 This tutorial walks through installation, configuration, and writing your first coroutine-based task.
 
 - @subpage page_getting_started_download_and_integration "Download & Integration"
+- @subpage getting_started_stm32_example "STM32 Example"
 - @subpage getting_started_hello_coroutine "Hello Coroutine"
 - @subpage getting_started_async_future_promise "Async Communication with Future/Promise"
 
