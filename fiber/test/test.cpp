@@ -26,7 +26,7 @@ int test_all(){
             | fiber::Future_test
             | fiber::Coroutine_test
             | fiber::Scheduler_test
-            | fiber::evaluate
+            | fiber::evaluate 
             ;
     #ifndef FIBER_DISABLE_EXCEPTIONS
     }catch(fiber::Exception& e){
